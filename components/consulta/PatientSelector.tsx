@@ -1,0 +1,33 @@
+import type { Patient } from "@/lib/types";
+
+interface PatientSelectorProps {
+  patients: Patient[];
+  selectedPatientId?: string | null;
+  onSelectPatient?: (patientId: string) => void;
+}
+
+export function PatientSelector({
+  patients,
+  selectedPatientId,
+  onSelectPatient,
+}: PatientSelectorProps) {
+  return (
+    <div className="space-y-2">
+      {patients.map((patient) => (
+        <button
+          key={patient.id}
+          type="button"
+          onClick={() => onSelectPatient?.(patient.id)}
+          className={`w-full rounded-xl border px-4 py-3 text-left text-sm ${
+            selectedPatientId === patient.id
+              ? "border-hiro-green bg-hiro-badge-bg"
+              : "border-hiro-card bg-white/40"
+          }`}
+        >
+          <p className="font-medium text-hiro-text">{patient.name}</p>
+          <p className="text-xs text-hiro-muted">{patient.dateOfBirth}</p>
+        </button>
+      ))}
+    </div>
+  );
+}

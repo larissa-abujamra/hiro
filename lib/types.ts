@@ -1,0 +1,84 @@
+export interface Patient {
+  id: string;
+  name: string;
+  dateOfBirth: string;
+  sex: "M" | "F" | "Other";
+  height?: number;
+  weight?: number;
+  phone?: string;
+  conditions?: string[];
+  medications: Medication[];
+  cids: CidEntry[];
+  consultations: Consultation[];
+  exams: Exam[];
+  metrics: PatientMetrics[];
+}
+
+export interface Consultation {
+  id: string;
+  patientId: string;
+  date: string;
+  reason: string;
+  duration: number;
+  transcription: TranscriptionLine[];
+  soap: { s: string; o: string; a: string; p: string };
+  confirmedCids: CidCode[];
+  detectedItems: DetectedItem[];
+  documents: GeneratedDocument[];
+}
+
+export interface TranscriptionLine {
+  speaker: "doctor" | "patient";
+  text: string;
+  timestamp: number;
+  isFinal: boolean;
+}
+
+export interface DetectedItem {
+  type: "prescription" | "exam" | "return" | "certificate" | "referral";
+  text: string;
+  sourceQuote: string;
+}
+
+export interface CidCode {
+  code: string;
+  name: string;
+  confidence: number;
+  sourceQuote: string;
+  confirmed: boolean;
+}
+
+export interface PatientMetrics {
+  date: string;
+  systolic?: number;
+  diastolic?: number;
+  weight?: number;
+  glucose?: number;
+}
+
+export interface GeneratedDocument {
+  type: "prescription" | "exam-request" | "tiss" | "certificate" | "referral";
+  status: "ready" | "pending";
+  content: string;
+}
+
+export interface Medication {
+  name: string;
+  dose: string;
+  status: "active" | "suspended" | "completed";
+}
+
+export interface CidEntry {
+  code: string;
+  name: string;
+  firstSeen: string;
+  lastSeen: string;
+}
+
+export interface Exam {
+  id: string;
+  fileName: string;
+  date: string;
+  type: "lab" | "imaging" | "report" | "other";
+  url?: string;
+}

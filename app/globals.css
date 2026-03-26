@@ -1,26 +1,21 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-playfair);
+  --color-hiro-bg: #f0ede6;
+  --color-hiro-card: #e8e4dc;
+  --color-hiro-card-active: #2d5c3f;
+  --color-hiro-text: #1c2b1e;
+  --color-hiro-muted: #6b7a6d;
+  --color-hiro-green: #2d5c3f;
+  --color-hiro-amber: #c68b2f;
+  --color-hiro-red: #d94f4f;
+  --color-hiro-badge-bg: #d6e8dc;
+  --color-hiro-badge-fg: #2d5c3f;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f0ede6;
+  color: #1c2b1e;
 }
