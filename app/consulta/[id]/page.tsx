@@ -1,3 +1,6 @@
+import { ConsultationWorkspace } from "@/components/consulta/ConsultationWorkspace";
+import { mockPatients } from "@/lib/mockData";
+
 interface ConsultaPageProps {
   params: Promise<{ id: string }>;
 }
@@ -11,6 +14,7 @@ export default async function ConsultaPage({ params }: ConsultaPageProps) {
       <p className="mt-2 text-sm text-hiro-muted">
         Tela 2: gravacao e transcricao em tempo real.
       </p>
+      <ConsultationWorkspace consultationId={id} patients={mockPatients} />
     </main>
   );
 }
