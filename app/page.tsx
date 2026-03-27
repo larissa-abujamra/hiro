@@ -14,7 +14,7 @@ export default function Home() {
     mockPatients[0]?.consultations[mockPatients[0].consultations.length - 1]?.date;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col bg-hiro-bg px-4 py-4 md:px-6 md:py-6">
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-serif text-4xl text-hiro-text">Hiro</p>
@@ -54,19 +54,19 @@ export default function Home() {
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           <Link
             href="/consulta/nova"
-            className="rounded-xl bg-hiro-green px-4 py-3 text-center text-sm font-medium text-white transition hover:brightness-110"
+            className="rounded-full bg-hiro-text px-7 py-3 text-center text-sm font-medium text-white transition hover:brightness-110"
           >
             New consultation
           </Link>
           <Link
             href="/pacientes"
-            className="rounded-xl bg-white/70 px-4 py-3 text-center text-sm font-medium text-hiro-text transition hover:bg-white"
+            className="rounded-full border border-black/15 bg-transparent px-7 py-3 text-center text-sm font-medium text-hiro-text transition hover:bg-black/5"
           >
             Patient list
           </Link>
           <Link
             href="/pacientes/patient-bruno-ferreira"
-            className="rounded-xl bg-white/70 px-4 py-3 text-center text-sm font-medium text-hiro-text transition hover:bg-white"
+            className="rounded-full border border-black/15 bg-transparent px-7 py-3 text-center text-sm font-medium text-hiro-text transition hover:bg-black/5"
           >
             Bruno profile
           </Link>

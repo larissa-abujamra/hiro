@@ -1,3 +1,6 @@
+import { GeneratedSummaryWorkspace } from "@/components/prontuario/GeneratedSummaryWorkspace";
+import { mockPatients } from "@/lib/mockData";
+
 interface ResumoConsultaPageProps {
   params: Promise<{ id: string }>;
 }
@@ -8,11 +11,8 @@ export default async function ResumoConsultaPage({
   const { id } = await params;
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-8">
-      <h1 className="font-serif text-3xl text-hiro-text">Resumo {id}</h1>
-      <p className="mt-2 text-sm text-hiro-muted">
-        Tela 3: notas geradas e documentos.
-      </p>
+    <main className="mx-auto w-full max-w-6xl bg-hiro-bg px-4 py-4 md:px-6 md:py-6">
+      <GeneratedSummaryWorkspace consultationId={id} patients={mockPatients} />
     </main>
   );
 }

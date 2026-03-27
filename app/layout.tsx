@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { Sidebar } from "@/components/layout/Sidebar";
 import "./globals.css";
 
 const inter = Inter({
@@ -27,7 +28,10 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${playfair.variable} h-full antialiased`}
     >
-      <body className="min-h-full font-sans">{children}</body>
+      <body className="min-h-full font-sans bg-hiro-bg text-hiro-text">
+        <Sidebar />
+        <main className="min-h-full lg:pl-[220px]">{children}</main>
+      </body>
     </html>
   );
 }

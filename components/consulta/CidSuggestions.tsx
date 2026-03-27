@@ -6,7 +6,7 @@ interface CidSuggestionsProps {
 
 export function CidSuggestions({ suggestions }: CidSuggestionsProps) {
   return (
-    <section className="rounded-2xl bg-white/50 p-4">
+    <section className="rounded-2xl border border-black/8 bg-hiro-card p-5">
       <p className="text-sm font-medium text-hiro-text">CID sugeridos</p>
       <ul className="mt-3 space-y-2">
         {suggestions.map((cid) => (

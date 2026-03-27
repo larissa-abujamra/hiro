@@ -21,7 +21,7 @@ export function PatientSelector({
           className={`w-full rounded-xl border px-4 py-3 text-left text-sm ${
             selectedPatientId === patient.id
               ? "border-hiro-green bg-hiro-badge-bg"
-              : "border-hiro-card bg-white/40"
+              : "border-black/8 bg-hiro-card"
           }`}
         >
           <p className="font-medium text-hiro-text">{patient.name}</p>

@@ -6,8 +6,9 @@ interface ButtonHiroProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<NonNullable<ButtonHiroProps["variant"]>, string> = {
-  primary: "bg-hiro-green text-white hover:brightness-110",
-  secondary: "bg-hiro-card text-hiro-text hover:bg-hiro-card/80",
+  primary: "bg-hiro-text text-white hover:brightness-110",
+  secondary:
+    "border border-black/15 bg-transparent text-hiro-text hover:bg-black/5",
   ghost: "bg-transparent text-hiro-text hover:bg-hiro-card/70",
   danger: "bg-hiro-red text-white hover:brightness-110",
 };
@@ -20,7 +21,7 @@ export function ButtonHiro({
 }: ButtonHiroProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${className}`.trim()}
+      className={`inline-flex items-center justify-center rounded-full px-7 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${className}`.trim()}
       {...props}
     >
       {children}

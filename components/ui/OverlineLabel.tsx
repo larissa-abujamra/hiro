@@ -7,7 +7,7 @@ interface OverlineLabelProps {
 }
 
 const toneClasses: Record<NonNullable<OverlineLabelProps["tone"]>, string> = {
-  default: "text-hiro-text",
+  default: "text-hiro-muted",
   muted: "text-hiro-muted",
   success: "text-hiro-green",
 };
@@ -19,7 +19,7 @@ export function OverlineLabel({
 }: OverlineLabelProps) {
   return (
     <span
-      className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${toneClasses[tone]} ${className}`.trim()}
+      className={`text-[11px] font-medium uppercase tracking-[0.08em] ${toneClasses[tone]} ${className}`.trim()}
     >
       {children}
     </span>

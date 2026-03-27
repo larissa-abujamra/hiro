@@ -12,7 +12,7 @@ const config: Config = {
         hiro: {
           bg: "#F0EDE6",
           card: "#E8E4DC",
-          "card-active": "#2D5C3F",
+          active: "#2D5C3F",
           text: "#1C2B1E",
           muted: "#6B7A6D",
           green: "#2D5C3F",
