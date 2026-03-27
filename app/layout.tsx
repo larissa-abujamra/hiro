@@ -15,7 +15,7 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: "Hiro",
-  description: "Hiro medical scribe application",
+  description: "Aplicação de apoio clínico com IA para médicos",
 };
 
 export default function RootLayout({
@@ -25,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="pt-BR"
       className={`${inter.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full font-sans bg-hiro-bg text-hiro-text">

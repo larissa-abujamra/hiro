@@ -15,8 +15,9 @@ import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { AvatarInitials } from "@/components/ui/AvatarInitials";
 import { ButtonHiro } from "@/components/ui/ButtonHiro";
+import { useTranscription } from "@/hooks/useTranscription";
 import { useConsultationStore } from "@/lib/store";
-import type { Patient, TranscriptionLine } from "@/lib/types";
+import type { Patient } from "@/lib/types";
 
 interface ConsultationWorkspaceProps {
   consultationId: string;
@@ -27,6 +28,7 @@ export function ConsultationWorkspace({
   consultationId,
   patients,
 }: ConsultationWorkspaceProps) {
+  const patientsInStore = useConsultationStore((state) => state.patients);
   const selectedPatientId = useConsultationStore((state) => state.selectedPatientId);
   const activeConsultationId = useConsultationStore(
     (state) => state.activeConsultationId,
@@ -42,8 +44,8 @@ export function ConsultationWorkspace({
   const startRecording = useConsultationStore((state) => state.startRecording);
   const stopRecording = useConsultationStore((state) => state.stopRecording);
   const tickRecording = useConsultationStore((state) => state.tickRecording);
-  const addTranscriptionLine = useConsultationStore(
-    (state) => state.addTranscriptionLine,
+  const setTranscriptionLines = useConsultationStore(
+    (state) => state.setTranscriptionLines,
   );
   const setSuggestedCids = useConsultationStore((state) => state.setSuggestedCids);
   const setDetectedItems = useConsultationStore((state) => state.setDetectedItems);
@@ -53,6 +55,15 @@ export function ConsultationWorkspace({
     "idle",
   );
   const panelRef = useRef<HTMLDivElement>(null);
+  const {
+    lines,
+    interimText,
+    isSupported,
+    error,
+    start,
+    stop,
+    wordCount,
+  } = useTranscription();
 
   useEffect(() => {
     if (activeConsultationId !== consultationId) {
@@ -70,20 +81,27 @@ export function ConsultationWorkspace({
       top: panelRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [liveTranscription]);
+  }, [lines, interimText]);
 
+  useEffect(() => {
+    const mapped = lines.map((line) => ({
+      speaker: "doctor" as const,
+      text: line.text,
+      timestamp: line.timestamp,
+      isFinal: line.isFinal,
+    }));
+    setTranscriptionLines(mapped);
+  }, [lines, setTranscriptionLines]);
+
+  const sourcePatients = patientsInStore.length ? patientsInStore : patients;
   const patient =
-    patients.find((item) => item.id === selectedPatientId) ?? patients[0] ?? null;
+    sourcePatients.find((item) => item.id === selectedPatientId) ??
+    sourcePatients[0] ??
+    null;
 
   const age = patient
     ? new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear()
     : null;
-
-  const wordCount = liveTranscription
-    .map((line) => line.text.trim())
-    .join(" ")
-    .split(/\s+/)
-    .filter(Boolean).length;
 
   const timerLabel = useMemo(() => {
     const minutes = `${Math.floor(recordingSeconds / 60)}`.padStart(2, "0");
@@ -95,62 +113,98 @@ export function ConsultationWorkspace({
   const isPaused = recordingPhase === "paused";
 
   const toggleMainRecording = () => {
+    if (!isSupported) return;
+
     if (recordingPhase === "idle") {
-      setRecordingPhase("recording");
+      const ok = start();
+      if (!ok) return;
       startRecording();
+      setRecordingPhase("recording");
       return;
     }
     if (recordingPhase === "recording") {
+      stop();
       setRecordingPhase("paused");
       stopRecording();
       return;
     }
-    setRecordingPhase("recording");
+    const ok = start();
+    if (!ok) return;
     startRecording();
+    setRecordingPhase("recording");
   };
 
-  const handleMockLine = () => {
-    const line: TranscriptionLine = {
-      speaker: liveTranscription.length % 2 === 0 ? "doctor" : "patient",
-      text:
-        liveTranscription.length % 2 === 0
-          ? "Vamos revisar seus sinais vitais e conduta."
-          : "Estou seguindo as orientacoes e me sentindo melhor.",
-      timestamp: Date.now(),
-      isFinal: true,
-    };
-    addTranscriptionLine(line);
+  useEffect(() => {
+    if (liveTranscription.length === 0) return;
+    const last = liveTranscription[liveTranscription.length - 1];
+    const normalized = last.text.toLowerCase();
+    const alreadyDetected = (type: "return" | "exam" | "prescription") =>
+      detectedItems.some(
+        (item) => item.type === type && item.sourceQuote === last.text,
+      );
 
-    if (line.speaker === "doctor") {
+    if ((normalized.includes("retorno") || normalized.includes("volte")) && !alreadyDetected("return")) {
+      setDetectedItems([
+        ...detectedItems,
+        {
+          type: "return",
+          text: "Retorno mencionado",
+          sourceQuote: last.text,
+        },
+      ]);
+    } else if (
+      (normalized.includes("exame") ||
+        normalized.includes("hemograma") ||
+        normalized.includes("ultrassom")) &&
+      !alreadyDetected("exam")
+    ) {
+      setDetectedItems([
+        ...detectedItems,
+        {
+          type: "exam",
+          text: "Pedido de exames detectado",
+          sourceQuote: last.text,
+        },
+      ]);
+    } else if (
+      (normalized.includes("mg") ||
+        normalized.includes("miligram") ||
+        normalized.includes("tomar")) &&
+      !alreadyDetected("prescription")
+    ) {
       setDetectedItems([
         ...detectedItems,
         {
           type: "prescription",
           text: "Receituário detectado",
-          sourceQuote: line.text,
+          sourceQuote: last.text,
         },
       ]);
     }
+  }, [detectedItems, liveTranscription, setDetectedItems]);
 
-    if ((recordingSeconds >= 30 || liveTranscription.length === 0) && suggestedCids.length === 0) {
-      setSuggestedCids([
-        {
-          code: "I10",
-          name: "Hipertensão essencial (primária)",
-          confidence: 0.94,
-          sourceQuote: "Vamos revisar seus sinais vitais e conduta.",
-          confirmed: false,
-        },
-        {
-          code: "E78.5",
-          name: "Hiperlipidemia não especificada",
-          confidence: 0.81,
-          sourceQuote: "Estou seguindo as orientações e me sentindo melhor.",
-          confirmed: false,
-        },
-      ]);
+  useEffect(() => {
+    if ((recordingSeconds < 30 && liveTranscription.length === 0) || suggestedCids.length > 0) {
+      return;
     }
-  };
+    const quote = liveTranscription.at(-1)?.text ?? "Trecho clínico identificado na fala.";
+    setSuggestedCids([
+      {
+        code: "I10",
+        name: "Hipertensão essencial (primária)",
+        confidence: 0.91,
+        sourceQuote: quote,
+        confirmed: false,
+      },
+      {
+        code: "E78.5",
+        name: "Hiperlipidemia não especificada",
+        confidence: 0.78,
+        sourceQuote: quote,
+        confirmed: false,
+      },
+    ]);
+  }, [liveTranscription, recordingSeconds, setSuggestedCids, suggestedCids.length]);
 
   if (!patient) {
     return (
@@ -251,8 +305,11 @@ export function ConsultationWorkspace({
                 onClick={() => {
                   if (isRecordingActive) {
                     setRecordingPhase("paused");
+                    stop();
                     stopRecording();
                   } else {
+                    const ok = start();
+                    if (!ok) return;
                     setRecordingPhase("recording");
                     startRecording();
                   }
@@ -262,8 +319,17 @@ export function ConsultationWorkspace({
                 {isRecordingActive ? "Pausar" : "Retomar"}
               </ButtonHiro>
             )}
-
-            <ButtonHiro onClick={handleMockLine}>Adicionar fala mock</ButtonHiro>
+            {!isSupported && (
+              <div className="w-full rounded-xl border border-hiro-red/30 bg-[#FAECE7] px-4 py-3 text-sm text-hiro-red">
+                Reconhecimento de voz não disponível neste navegador. Use Chrome
+                ou Edge para transcrição em tempo real.
+              </div>
+            )}
+            {error && isSupported && (
+              <div className="w-full rounded-xl border border-hiro-red/30 bg-[#FAECE7] px-4 py-3 text-sm text-hiro-red">
+                {error}
+              </div>
+            )}
           </div>
         </CardHiro>
 
@@ -273,36 +339,30 @@ export function ConsultationWorkspace({
             ref={panelRef}
             className="mt-3 flex max-h-[260px] flex-col gap-2 overflow-y-auto"
           >
-            {liveTranscription.length === 0 && (
+            {lines.length === 0 && !interimText && (
               <p className="rounded-xl bg-hiro-bg px-3 py-3 text-sm text-hiro-muted">
                 Inicie a gravação para ver a transcrição em tempo real...
               </p>
             )}
-            {liveTranscription.map((line, index) => (
+            {lines.map((line) => (
               <div
-                key={`${line.timestamp}-${index}`}
+                key={line.id}
                 className={`rounded-xl px-3 py-2 ${
                   line.isFinal ? "bg-hiro-bg" : "border border-dashed border-black/15"
                 }`}
               >
-                {line.isFinal ? (
-                  <p className="text-sm text-hiro-text">
-                    <span
-                      className={`mr-1 font-medium ${
-                        line.speaker === "doctor" ? "text-hiro-green" : "text-[#185FA5]"
-                      }`}
-                    >
-                      {line.speaker === "doctor" ? "Médico:" : "Paciente:"}
-                    </span>
-                    {line.text}
-                  </p>
-                ) : (
-                  <p className="text-sm italic text-hiro-muted">{line.text}</p>
-                )}
+                <p className="text-sm text-hiro-text">{line.text}</p>
               </div>
             ))}
+            {interimText && (
+              <div className="rounded-xl border border-dashed border-black/15 px-3 py-2">
+                <p className="text-sm italic text-hiro-muted">{interimText}</p>
+              </div>
+            )}
           </div>
-          <p className="mt-2 text-[11px] text-hiro-muted">{wordCount} palavras transcritas</p>
+          <p className="mt-2 text-[11px] text-hiro-muted">
+            {wordCount} {wordCount === 1 ? "palavra transcrita" : "palavras transcritas"}
+          </p>
         </CardHiro>
       </section>
 

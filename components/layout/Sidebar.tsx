@@ -42,7 +42,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 space-y-1 px-4 py-4">
-        <NavItem href="/" icon="◻" label="Dashboard" onClick={onNavigate} />
+        <NavItem href="/" icon="◻" label="Início" onClick={onNavigate} />
         <NavItem
           href="/consulta/nova"
           icon="●"

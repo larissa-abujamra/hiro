@@ -24,6 +24,7 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps) {
   const [query, setQuery] = useState("");
   const [showOptional, setShowOptional] = useState(false);
   const [showContext, setShowContext] = useState(true);
+  const patientsInStore = useConsultationStore((state) => state.patients);
   const intakeMode = useConsultationStore((state) => state.intakeMode);
   const selectedPatientId = useConsultationStore((state) => state.selectedPatientId);
   const consultationReason = useConsultationStore((state) => state.consultationReason);
@@ -37,19 +38,23 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps) {
   const setActiveConsultation = useConsultationStore(
     (state) => state.setActiveConsultation,
   );
+  const createPatientFromDraft = useConsultationStore(
+    (state) => state.createPatientFromDraft,
+  );
   const resetConsultation = useConsultationStore((state) => state.resetConsultation);
+  const sourcePatients = patientsInStore.length ? patientsInStore : patients;
 
   const filteredPatients = useMemo(
     () =>
-      patients.filter((patient) =>
+      sourcePatients.filter((patient) =>
         patient.name.toLowerCase().includes(query.toLowerCase()),
       ),
-    [patients, query],
+    [query, sourcePatients],
   );
 
   const selectedPatient = useMemo(
-    () => patients.find((patient) => patient.id === selectedPatientId) ?? null,
-    [patients, selectedPatientId],
+    () => sourcePatients.find((patient) => patient.id === selectedPatientId) ?? null,
+    [selectedPatientId, sourcePatients],
   );
 
   const canStart =
@@ -63,13 +68,15 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps) {
     if (!canStart) return;
 
     const consultationId = `cons-${Date.now()}`;
-    const createdId = `new-${Date.now()}`;
-    resetConsultation();
+    let targetPatientId: string | null = null;
     if (intakeMode === "existing" && selectedPatientId) {
-      selectPatient(selectedPatientId);
+      targetPatientId = selectedPatientId;
     } else {
-      selectPatient(createdId);
+      targetPatientId = createPatientFromDraft();
+      if (!targetPatientId) return;
     }
+    resetConsultation();
+    selectPatient(targetPatientId);
     setActiveConsultation(consultationId);
     setConsultationReason(consultationReason);
     router.push(`/consulta/${consultationId}`);

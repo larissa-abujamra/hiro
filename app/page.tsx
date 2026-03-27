@@ -19,56 +19,50 @@ export default function Home() {
         <div>
           <p className="font-serif text-4xl text-hiro-text">Hiro</p>
           <p className="mt-2 text-sm text-hiro-muted">
-            Medical scribe dashboard scaffold
+            Plataforma de apoio clínico com IA
           </p>
         </div>
-        <BadgeStatus label="Prototype active" status="ready" />
+        <BadgeStatus label="Protótipo ativo" status="ready" />
       </header>
 
       <section className="grid gap-4 md:grid-cols-3">
         <CardHiro>
-          <OverlineLabel tone="muted">Patients</OverlineLabel>
+          <OverlineLabel tone="muted">Pacientes</OverlineLabel>
           <p className="mt-2 text-3xl font-semibold">{totalPatients}</p>
-          <p className="mt-2 text-sm text-hiro-muted">registered records</p>
+          <p className="mt-2 text-sm text-hiro-muted">cadastros ativos</p>
         </CardHiro>
         <CardHiro>
-          <OverlineLabel tone="muted">Consultations</OverlineLabel>
+          <OverlineLabel tone="muted">Consultas</OverlineLabel>
           <p className="mt-2 text-3xl font-semibold">{totalConsultations}</p>
-          <p className="mt-2 text-sm text-hiro-muted">historical entries</p>
+          <p className="mt-2 text-sm text-hiro-muted">atendimentos registrados</p>
         </CardHiro>
         <CardHiro>
-          <OverlineLabel tone="muted">Last follow-up</OverlineLabel>
+          <OverlineLabel tone="muted">Último retorno</OverlineLabel>
           <p className="mt-2 text-3xl font-semibold">
             {latestConsultationDate ?? "--"}
           </p>
-          <p className="mt-2 text-sm text-hiro-muted">latest consultation date</p>
+          <p className="mt-2 text-sm text-hiro-muted">data da consulta mais recente</p>
         </CardHiro>
       </section>
 
       <section className="mt-6 rounded-2xl bg-hiro-card p-6">
-        <OverlineLabel tone="success">Quick actions</OverlineLabel>
-        <h1 className="mt-2 font-serif text-2xl text-hiro-text">Welcome</h1>
+        <OverlineLabel tone="success">Ações rápidas</OverlineLabel>
+        <h1 className="mt-2 font-serif text-2xl text-hiro-text">Bem-vinda</h1>
         <p className="mt-2 text-sm text-hiro-muted">
-          Open a clinical flow directly from the dashboard.
+          Inicie os fluxos clínicos diretamente pelo painel.
         </p>
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
           <Link
             href="/consulta/nova"
             className="rounded-full bg-hiro-text px-7 py-3 text-center text-sm font-medium text-white transition hover:brightness-110"
           >
-            New consultation
+            Nova consulta
           </Link>
           <Link
             href="/pacientes"
             className="rounded-full border border-black/15 bg-transparent px-7 py-3 text-center text-sm font-medium text-hiro-text transition hover:bg-black/5"
           >
-            Patient list
-          </Link>
-          <Link
-            href="/pacientes/patient-bruno-ferreira"
-            className="rounded-full border border-black/15 bg-transparent px-7 py-3 text-center text-sm font-medium text-hiro-text transition hover:bg-black/5"
-          >
-            Bruno profile
+            Lista de pacientes
           </Link>
         </div>
       </section>
