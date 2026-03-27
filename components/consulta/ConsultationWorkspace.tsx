@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
+  Loader2,
   Mic,
   Play,
   Search,
@@ -15,6 +17,8 @@ import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { AvatarInitials } from "@/components/ui/AvatarInitials";
 import { ButtonHiro } from "@/components/ui/ButtonHiro";
+import { useCidSuggestions } from "@/hooks/useCidSuggestions";
+import { useDetection } from "@/hooks/useDetection";
 import { useTranscription } from "@/hooks/useTranscription";
 import { useConsultationStore } from "@/lib/store";
 import type { Patient } from "@/lib/types";
@@ -35,8 +39,7 @@ export function ConsultationWorkspace({
   );
   const reason = useConsultationStore((state) => state.consultationReason);
   const recordingSeconds = useConsultationStore((state) => state.recordingSeconds);
-  const liveTranscription = useConsultationStore((state) => state.liveTranscription);
-  const suggestedCids = useConsultationStore((state) => state.suggestedCids);
+  const cidSuggestions = useConsultationStore((state) => state.cidSuggestions);
   const detectedItems = useConsultationStore((state) => state.detectedItems);
   const setActiveConsultation = useConsultationStore(
     (state) => state.setActiveConsultation,
@@ -47,8 +50,11 @@ export function ConsultationWorkspace({
   const setTranscriptionLines = useConsultationStore(
     (state) => state.setTranscriptionLines,
   );
-  const setSuggestedCids = useConsultationStore((state) => state.setSuggestedCids);
-  const setDetectedItems = useConsultationStore((state) => state.setDetectedItems);
+  const setGeneratedSoap = useConsultationStore((state) => state.setGeneratedSoap);
+  const setPatientSummary = useConsultationStore((state) => state.setPatientSummary);
+  const setFlags = useConsultationStore((state) => state.setFlags);
+  const router = useRouter();
+  const [isGenerating, setIsGenerating] = useState(false);
   const [expandedCid, setExpandedCid] = useState<string | null>(null);
   const [showContext, setShowContext] = useState(true);
   const [recordingPhase, setRecordingPhase] = useState<"idle" | "recording" | "paused">(
@@ -64,6 +70,9 @@ export function ConsultationWorkspace({
     stop,
     wordCount,
   } = useTranscription();
+
+  const { analyze } = useDetection(consultationId);
+  const { analyze: analyzeCids, isAnalyzing } = useCidSuggestions(consultationId);
 
   useEffect(() => {
     if (activeConsultationId !== consultationId) {
@@ -112,6 +121,84 @@ export function ConsultationWorkspace({
   const isRecordingActive = recordingPhase === "recording";
   const isPaused = recordingPhase === "paused";
 
+  const handleStopAndGenerate = useCallback(async () => {
+    if (recordingSeconds < 30) return;
+
+    stop();
+    stopRecording();
+    setRecordingPhase("idle");
+    setIsGenerating(true);
+
+    try {
+      const store = useConsultationStore.getState();
+      const list = store.patients;
+      const sp = store.selectedPatientId
+        ? list.find((p) => p.id === store.selectedPatientId) ?? null
+        : null;
+
+      const transcriptText = store.liveTranscription
+        .map((l) => l.text)
+        .join(" ")
+        .trim();
+
+      const patientContext = sp
+        ? `${sp.name}, ${new Date().getFullYear() - new Date(sp.dateOfBirth).getFullYear()} anos.
+Condições: ${sp.cids.map((c) => c.name).join(", ") || "não informado"}.
+Medicamentos ativos: ${sp.medications
+            .filter((m) => m.status === "active")
+            .map((m) => `${m.name} ${m.dose}`)
+            .join(", ") || "nenhum"}.`
+        : null;
+
+      const res = await fetch("/api/prontuario", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcription: transcriptText,
+          patientContext,
+          confirmedCids: store.cidSuggestions,
+          detectedItems: store.detectedItems,
+        }),
+      });
+
+      const data = (await res.json()) as {
+        soap?: { s?: string; o?: string; a?: string; p?: string };
+        summary?: string;
+        flags?: unknown[];
+      };
+
+      const soap = data.soap ?? {};
+      setGeneratedSoap({
+        s: typeof soap.s === "string" ? soap.s : "",
+        o: typeof soap.o === "string" ? soap.o : "",
+        a: typeof soap.a === "string" ? soap.a : "",
+        p: typeof soap.p === "string" ? soap.p : "",
+      });
+      setPatientSummary(typeof data.summary === "string" ? data.summary : "");
+      setFlags(
+        Array.isArray(data.flags)
+          ? data.flags.filter((f): f is string => typeof f === "string")
+          : [],
+      );
+
+      router.push(`/consulta/${consultationId}/resumo`);
+    } catch (err) {
+      console.error("Prontuário error:", err);
+      router.push(`/consulta/${consultationId}/resumo`);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [
+    consultationId,
+    recordingSeconds,
+    router,
+    setFlags,
+    setGeneratedSoap,
+    setPatientSummary,
+    stop,
+    stopRecording,
+  ]);
+
   const toggleMainRecording = () => {
     if (!isSupported) return;
 
@@ -135,76 +222,29 @@ export function ConsultationWorkspace({
   };
 
   useEffect(() => {
-    if (liveTranscription.length === 0) return;
-    const last = liveTranscription[liveTranscription.length - 1];
-    const normalized = last.text.toLowerCase();
-    const alreadyDetected = (type: "return" | "exam" | "prescription") =>
-      detectedItems.some(
-        (item) => item.type === type && item.sourceQuote === last.text,
-      );
+    if (lines.length === 0) return;
+    const last = lines[lines.length - 1];
+    if (!last.isFinal) return;
 
-    if ((normalized.includes("retorno") || normalized.includes("volte")) && !alreadyDetected("return")) {
-      setDetectedItems([
-        ...detectedItems,
-        {
-          type: "return",
-          text: "Retorno mencionado",
-          sourceQuote: last.text,
-        },
-      ]);
-    } else if (
-      (normalized.includes("exame") ||
-        normalized.includes("hemograma") ||
-        normalized.includes("ultrassom")) &&
-      !alreadyDetected("exam")
-    ) {
-      setDetectedItems([
-        ...detectedItems,
-        {
-          type: "exam",
-          text: "Pedido de exames detectado",
-          sourceQuote: last.text,
-        },
-      ]);
-    } else if (
-      (normalized.includes("mg") ||
-        normalized.includes("miligram") ||
-        normalized.includes("tomar")) &&
-      !alreadyDetected("prescription")
-    ) {
-      setDetectedItems([
-        ...detectedItems,
-        {
-          type: "prescription",
-          text: "Receituário detectado",
-          sourceQuote: last.text,
-        },
-      ]);
-    }
-  }, [detectedItems, liveTranscription, setDetectedItems]);
+    const previous = lines.slice(-6, -1).map((l) => l.text);
+    void analyze(last.text, previous);
+  }, [lines, analyze]);
 
   useEffect(() => {
-    if ((recordingSeconds < 30 && liveTranscription.length === 0) || suggestedCids.length > 0) {
-      return;
-    }
-    const quote = liveTranscription.at(-1)?.text ?? "Trecho clínico identificado na fala.";
-    setSuggestedCids([
-      {
-        code: "I10",
-        name: "Hipertensão essencial (primária)",
-        confidence: 0.91,
-        sourceQuote: quote,
-        confirmed: false,
-      },
-      {
-        code: "E78.5",
-        name: "Hiperlipidemia não especificada",
-        confidence: 0.78,
-        sourceQuote: quote,
-        confirmed: false,
-      },
-    ]);
-  }, [liveTranscription, recordingSeconds, setSuggestedCids, suggestedCids.length]);
+    if (lines.length === 0) return;
+    const last = lines[lines.length - 1];
+    if (!last.isFinal) return;
+
+    const allTexts = lines.filter((l) => l.isFinal).map((l) => l.text);
+    void analyzeCids(allTexts);
+  }, [lines, analyzeCids]);
+
+  const displayCids =
+    cidSuggestions.length > 0
+      ? cidSuggestions
+      : !isAnalyzing
+        ? (patient?.consultations.at(-1)?.confirmedCids ?? [])
+        : [];
 
   if (!patient) {
     return (
@@ -217,7 +257,21 @@ export function ConsultationWorkspace({
   }
 
   return (
-    <div className="mt-6 grid gap-5 pb-24 lg:grid-cols-12">
+    <div className="relative mt-6 grid gap-5 pb-24 lg:grid-cols-12">
+      {isGenerating && (
+        <div
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-hiro-text/40 px-6 backdrop-blur-sm"
+          role="alertdialog"
+          aria-busy="true"
+          aria-label="Gerando prontuário"
+        >
+          <Loader2 className="h-10 w-10 animate-spin text-white" />
+          <p className="text-center font-medium text-white">Gerando prontuário...</p>
+          <p className="max-w-sm text-center text-sm text-white/85">
+            A IA está analisando a transcrição
+          </p>
+        </div>
+      )}
       <section className="space-y-5 lg:col-span-7">
         <CardHiro className="rounded-2xl p-5">
           <div className="flex items-center justify-between gap-3">
@@ -370,10 +424,19 @@ export function ConsultationWorkspace({
         <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
           <OverlineLabel>CID-10 DETECTADO</OverlineLabel>
           <div className="space-y-2">
-            {(suggestedCids.length
-              ? suggestedCids
-              : patient.consultations.at(-1)?.confirmedCids ?? []
-            ).map((cid) => (
+            {isAnalyzing && cidSuggestions.length === 0 && (
+              <p className="rounded-xl border border-black/10 bg-hiro-bg px-3 py-3 text-sm text-hiro-muted">
+                Analisando...
+              </p>
+            )}
+            {!isAnalyzing &&
+              cidSuggestions.length === 0 &&
+              displayCids.length === 0 && (
+                <p className="rounded-xl border border-black/10 bg-hiro-bg px-3 py-3 text-sm text-hiro-muted">
+                  Sugestões aparecerão conforme o contexto clínico se forma...
+                </p>
+              )}
+            {displayCids.map((cid) => (
               <div
                 key={cid.code}
                 className={`rounded-xl border p-3 ${
@@ -397,7 +460,7 @@ export function ConsultationWorkspace({
                     expandedCid === cid.code ? "" : "line-clamp-2"
                   }`}
                 >
-                  "{cid.sourceQuote}"
+                  {cid.sourceQuote}
                 </p>
                 <button
                   type="button"
@@ -421,7 +484,7 @@ export function ConsultationWorkspace({
         <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
           <OverlineLabel>DETECTADO NA FALA</OverlineLabel>
           <div className="space-y-2">
-            {detectedItems.map((item, index) => {
+            {detectedItems.map((item) => {
               const badgeClass =
                 item.type === "prescription"
                   ? "bg-[#FAEEDA] text-[#854F0B]"
@@ -429,7 +492,11 @@ export function ConsultationWorkspace({
                     ? "bg-[#E1F5EE] text-[#0F6E56]"
                     : item.type === "return"
                       ? "bg-[#E6F1FB] text-[#185FA5]"
-                      : "bg-[#F1EFE8] text-[#5F5E5A]";
+                      : item.type === "certificate"
+                        ? "bg-[#F5F0E6] text-[#6B5B2E]"
+                        : item.type === "referral"
+                          ? "bg-[#EDEAF5] text-[#4A3D7A]"
+                          : "bg-[#F1EFE8] text-[#5F5E5A]";
 
               const typeLabel =
                 item.type === "prescription"
@@ -438,20 +505,23 @@ export function ConsultationWorkspace({
                     ? "Pedido de exames"
                     : item.type === "return"
                       ? "Retorno"
-                      : "Atestado";
+                      : item.type === "certificate"
+                        ? "Atestado"
+                        : item.type === "referral"
+                          ? "Encaminhamento"
+                          : "Detectado";
 
               return (
                 <div
-                  key={`${item.type}-${index}`}
-                  className="flex items-start justify-between gap-2 rounded-xl border border-black/10 bg-hiro-bg px-3 py-2"
+                  key={item.id}
+                  className="flex flex-col gap-2 rounded-xl border border-black/10 bg-hiro-bg px-3 py-2"
                 >
-                  <div>
-                    <p className="text-sm text-hiro-text">{item.text}</p>
-                    <p className="text-xs italic text-hiro-muted">{item.sourceQuote}</p>
-                  </div>
-                  <span className={`rounded-md px-2 py-1 text-[11px] ${badgeClass}`}>
-                    {typeLabel}
+                  <span
+                    className={`inline-flex w-fit max-w-full rounded-md px-2 py-1 text-[11px] font-medium leading-snug ${badgeClass}`}
+                  >
+                    {typeLabel} — {item.text}
                   </span>
+                  <p className="text-xs italic text-hiro-muted">{item.sourceQuote}</p>
                 </div>
               );
             })}
@@ -490,11 +560,21 @@ export function ConsultationWorkspace({
       <div className="sticky bottom-0 z-30 border-t border-black/[0.08] bg-hiro-bg px-6 py-3 lg:col-span-12">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
           <ButtonHiro variant="secondary">Cancelar consulta</ButtonHiro>
-          <Link href={`/consulta/${consultationId}/resumo`}>
-            <ButtonHiro disabled={recordingSeconds < 30}>
-              Parar e gerar prontuário
-            </ButtonHiro>
-          </Link>
+          <ButtonHiro
+            type="button"
+            disabled={recordingSeconds < 30 || isGenerating}
+            onClick={() => void handleStopAndGenerate()}
+            className="inline-flex items-center justify-center gap-2"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                Gerando prontuário...
+              </>
+            ) : (
+              "Parar e gerar prontuário"
+            )}
+          </ButtonHiro>
         </div>
       </div>
     </div>

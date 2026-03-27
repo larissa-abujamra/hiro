@@ -66,14 +66,18 @@ export const brunoFerreiraPatient: Patient = {
       ],
       detectedItems: [
         {
+          id: "det-bruno-2025-10-15-1",
           type: "prescription",
           text: "Anlodipino 5 mg 1x/dia",
           sourceQuote: "Vamos adicionar um segundo anti-hipertensivo.",
+          details: {},
         },
         {
+          id: "det-bruno-2025-10-15-2",
           type: "return",
           text: "Retorno em 8 semanas com diario de PA",
           sourceQuote: "Quero ver seus registros no proximo retorno.",
+          details: {},
         },
       ],
       documents: [
@@ -121,9 +125,11 @@ export const brunoFerreiraPatient: Patient = {
       ],
       detectedItems: [
         {
+          id: "det-bruno-2025-11-26-1",
           type: "return",
           text: "Retorno em 6 semanas",
           sourceQuote: "Vamos reavaliar em janeiro.",
+          details: {},
         },
       ],
       documents: [
@@ -171,9 +177,11 @@ export const brunoFerreiraPatient: Patient = {
       ],
       detectedItems: [
         {
+          id: "det-bruno-2026-01-14-1",
           type: "exam",
           text: "Perfil lipidico + funcao renal",
           sourceQuote: "Vou pedir exames para o proximo retorno.",
+          details: {},
         },
       ],
       documents: [
@@ -221,9 +229,11 @@ export const brunoFerreiraPatient: Patient = {
       ],
       detectedItems: [
         {
+          id: "det-bruno-2026-02-18-1",
           type: "return",
           text: "Retorno em 4 semanas",
           sourceQuote: "Quero reavaliar em um mes.",
+          details: {},
         },
       ],
       documents: [
@@ -271,9 +281,11 @@ export const brunoFerreiraPatient: Patient = {
       ],
       detectedItems: [
         {
+          id: "det-bruno-2026-03-10-1",
           type: "return",
           text: "Retorno em 3 meses",
           sourceQuote: "Proximo acompanhamento pode ser trimestral.",
+          details: {},
         },
       ],
       documents: [

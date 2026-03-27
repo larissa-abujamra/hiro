@@ -35,12 +35,23 @@ export interface TranscriptionLine {
 }
 
 export interface DetectedItem {
+  id: string;
   type: "prescription" | "exam" | "return" | "certificate" | "referral";
   text: string;
   sourceQuote: string;
+  details: Record<string, unknown>;
 }
 
 export interface CidCode {
+  code: string;
+  name: string;
+  confidence: number;
+  sourceQuote: string;
+  confirmed: boolean;
+}
+
+/** Sugestões CID-10 em tempo real durante a consulta (confiança 0–1 no UI). */
+export interface CidSuggestion {
   code: string;
   name: string;
   confidence: number;

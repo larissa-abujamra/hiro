@@ -39,6 +39,20 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
   const [exams, setExams] = useState<Exam[]>(patient?.exams ?? []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const filteredData = useMemo(() => {
+    if (!patient) return [];
+    if (period === "Tudo") return patient.metrics;
+    const monthMap = { "3m": 3, "6m": 6, "1a": 12, Tudo: 1000 };
+    const now = new Date();
+    return patient.metrics.filter((item) => {
+      const date = new Date(item.date);
+      const monthsDiff =
+        (now.getFullYear() - date.getFullYear()) * 12 +
+        (now.getMonth() - date.getMonth());
+      return monthsDiff <= monthMap[period];
+    });
+  }, [patient, period]);
+
   if (!patient) {
     return (
       <CardHiro className="rounded-2xl p-6">
@@ -67,19 +81,6 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
     }
     return { label: "Obesidade", className: "bg-[#FAECE7] text-[#993C1D]" };
   })();
-
-  const filteredData = useMemo(() => {
-    if (period === "Tudo") return patient.metrics;
-    const monthMap = { "3m": 3, "6m": 6, "1a": 12, Tudo: 1000 };
-    const now = new Date();
-    return patient.metrics.filter((item) => {
-      const date = new Date(item.date);
-      const monthsDiff =
-        (now.getFullYear() - date.getFullYear()) * 12 +
-        (now.getMonth() - date.getMonth());
-      return monthsDiff <= monthMap[period];
-    });
-  }, [patient.metrics, period]);
 
   const activeMedications = patient.medications.filter((med) => med.status === "active");
   const hasInteraction = (medName: string) =>

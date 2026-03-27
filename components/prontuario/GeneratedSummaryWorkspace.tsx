@@ -31,8 +31,12 @@ export function GeneratedSummaryWorkspace({
   const consultationReason = useConsultationStore((state) => state.consultationReason);
   const recordingSeconds = useConsultationStore((state) => state.recordingSeconds);
   const liveTranscription = useConsultationStore((state) => state.liveTranscription);
-  const suggestedCids = useConsultationStore((state) => state.suggestedCids);
+  const cidSuggestions = useConsultationStore((state) => state.cidSuggestions);
   const detectedItems = useConsultationStore((state) => state.detectedItems);
+  const generatedSoap = useConsultationStore((state) => state.generatedSoap);
+  const setGeneratedSoap = useConsultationStore((state) => state.setGeneratedSoap);
+  const patientSummary = useConsultationStore((state) => state.patientSummary);
+  const flags = useConsultationStore((state) => state.flags);
   const saveSummary = useConsultationStore((state) => state.saveSummary);
   const saveConsultationToPatient = useConsultationStore(
     (state) => state.saveConsultationToPatient,
@@ -46,12 +50,23 @@ export function GeneratedSummaryWorkspace({
 
   const doctorName = "Dra. Larissa Oliveira";
   const [toast, setToast] = useState<string | null>(null);
-  const [soap, setSoap] = useState({
-    s: "Paciente refere melhora clínica e boa adesão ao tratamento.",
-    o: "PA em queda progressiva; sem intercorrências na consulta.",
-    a: "Hipertensão controlada em evolução favorável.",
-    p: "Manter conduta, retorno em 30 dias, reforço de orientação alimentar.",
-  });
+
+  const soap = useMemo(
+    () => ({
+      s: generatedSoap?.s ?? "",
+      o: generatedSoap?.o ?? "",
+      a: generatedSoap?.a ?? "",
+      p: generatedSoap?.p ?? "",
+    }),
+    [generatedSoap],
+  );
+
+  const updateSoap = (key: "s" | "o" | "a" | "p", value: string) => {
+    setGeneratedSoap({
+      ...soap,
+      [key]: value,
+    });
+  };
 
   const generatedDocs = useMemo<
     Array<{
@@ -81,9 +96,11 @@ export function GeneratedSummaryWorkspace({
   );
 
   const detectedReturn = detectedItems.find((item) => item.type === "return") ?? null;
-  const suggestedReturnDate = new Date(
-    Date.now() + 30 * 24 * 60 * 60 * 1000,
-  ).toLocaleDateString("pt-BR");
+  const suggestedReturnDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toLocaleDateString("pt-BR");
+  }, []);
 
   const docLabels: Record<GeneratedDocument["type"], string> = {
     prescription: "Receituário",
@@ -114,9 +131,6 @@ export function GeneratedSummaryWorkspace({
     setTimeout(() => setToast(null), 1800);
   };
 
-  const updateSoap = (key: "s" | "o" | "a" | "p", value: string) =>
-    setSoap((prev) => ({ ...prev, [key]: value }));
-
   const persistConsultation = () => {
     if (!patient) return;
     saveConsultationToPatient({
@@ -127,7 +141,7 @@ export function GeneratedSummaryWorkspace({
       duration: Math.max(1, Math.round(recordingSeconds / 60)),
       transcription: liveTranscription,
       soap,
-      confirmedCids: suggestedCids,
+      confirmedCids: cidSuggestions,
       detectedItems,
       documents: generatedDocs.map((doc) => ({
         type: doc.type,
@@ -200,6 +214,24 @@ export function GeneratedSummaryWorkspace({
           </div>
         </CardHiro>
 
+        {patientSummary ? (
+          <CardHiro className="rounded-2xl border border-black/[0.06] bg-hiro-bg p-5">
+            <OverlineLabel tone="muted">RESUMO PARA O PACIENTE</OverlineLabel>
+            <p className="mt-2 text-[14px] leading-relaxed text-hiro-text">{patientSummary}</p>
+          </CardHiro>
+        ) : null}
+
+        {flags.length > 0 && (
+          <CardHiro className="rounded-2xl border border-hiro-amber/35 bg-[#FAEEDA]/50 p-5">
+            <OverlineLabel>ALERTAS</OverlineLabel>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] text-hiro-text">
+              {flags.map((flag, index) => (
+                <li key={`${index}-${flag.slice(0, 48)}`}>{flag}</li>
+              ))}
+            </ul>
+          </CardHiro>
+        )}
+
         <CardHiro className="rounded-2xl p-5">
           <div className="flex flex-col gap-4">
             {(["s", "o", "a", "p"] as const).map((key) => (
@@ -261,7 +293,7 @@ export function GeneratedSummaryWorkspace({
       <aside className="flex flex-col gap-4 lg:col-span-4">
         <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
           <OverlineLabel>CID-10 CONFIRMADO</OverlineLabel>
-          {(suggestedCids.length ? suggestedCids : patient.consultations.at(-1)?.confirmedCids ?? []).map(
+          {(cidSuggestions.length ? cidSuggestions : patient.consultations.at(-1)?.confirmedCids ?? []).map(
             (cid) => (
               <div
                 key={cid.code}
@@ -285,7 +317,7 @@ export function GeneratedSummaryWorkspace({
             <OverlineLabel>RETORNO DETECTADO</OverlineLabel>
             <p className="text-[13px] text-hiro-muted">
               Detectado:{" "}
-              <span className="font-medium text-hiro-text">"{detectedReturn.sourceQuote}"</span>
+              <span className="font-medium text-hiro-text">{detectedReturn.sourceQuote}</span>
             </p>
             <div className="rounded-lg bg-[#E1F5EE] px-4 py-2.5 text-[13px] font-medium text-[#0F6E56]">
               {suggestedReturnDate}

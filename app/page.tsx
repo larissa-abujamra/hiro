@@ -47,7 +47,7 @@ export default function Home() {
 
       <section className="mt-6 rounded-2xl bg-hiro-card p-6">
         <OverlineLabel tone="success">Ações rápidas</OverlineLabel>
-        <h1 className="mt-2 font-serif text-2xl text-hiro-text">Bem-vinda</h1>
+        <h1 className="mt-2 font-serif text-2xl text-hiro-text">Bem-vindo</h1>
         <p className="mt-2 text-sm text-hiro-muted">
           Inicie os fluxos clínicos diretamente pelo painel.
         </p>

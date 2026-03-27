@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { mockPatients } from "@/lib/mockData";
 import type {
-  CidCode,
+  CidSuggestion,
   Consultation,
   DetectedItem,
   Patient,
@@ -38,9 +38,11 @@ interface ConsultationState {
   isRecording: boolean;
   recordingSeconds: number;
   liveTranscription: TranscriptionLine[];
-  suggestedCids: CidCode[];
+  cidSuggestions: CidSuggestion[];
   detectedItems: DetectedItem[];
   generatedSoap: Consultation["soap"] | null;
+  patientSummary: string;
+  flags: string[];
   savedSummaries: SavedSummaryEntry[];
   newPatientDraft: NewPatientDraft;
   setIntakeMode: (mode: IntakeMode) => void;
@@ -54,9 +56,12 @@ interface ConsultationState {
   tickRecording: () => void;
   addTranscriptionLine: (line: TranscriptionLine) => void;
   setTranscriptionLines: (lines: TranscriptionLine[]) => void;
-  setSuggestedCids: (cids: CidCode[]) => void;
+  setCidSuggestions: (suggestions: CidSuggestion[]) => void;
   setDetectedItems: (items: DetectedItem[]) => void;
+  addDetectedItem: (item: DetectedItem) => void;
   setGeneratedSoap: (soap: Consultation["soap"]) => void;
+  setPatientSummary: (summary: string) => void;
+  setFlags: (flags: string[]) => void;
   saveSummary: (entry: SavedSummaryEntry) => void;
   saveConsultationToPatient: (consultation: Consultation) => void;
   resetConsultation: () => void;
@@ -71,9 +76,11 @@ const initialState = {
   isRecording: false,
   recordingSeconds: 0,
   liveTranscription: [],
-  suggestedCids: [],
+  cidSuggestions: [],
   detectedItems: [],
   generatedSoap: null,
+  patientSummary: "",
+  flags: [],
   savedSummaries: [],
   newPatientDraft: {
     name: "",
@@ -129,9 +136,19 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
   addTranscriptionLine: (line) =>
     set((state) => ({ liveTranscription: [...state.liveTranscription, line] })),
   setTranscriptionLines: (lines) => set({ liveTranscription: lines }),
-  setSuggestedCids: (cids) => set({ suggestedCids: cids }),
+  setCidSuggestions: (suggestions) => set({ cidSuggestions: suggestions }),
   setDetectedItems: (items) => set({ detectedItems: items }),
+  addDetectedItem: (item) =>
+    set((state) => {
+      const duplicate = state.detectedItems.some(
+        (d) => d.type === item.type && d.sourceQuote === item.sourceQuote,
+      );
+      if (duplicate) return state;
+      return { detectedItems: [...state.detectedItems, item] };
+    }),
   setGeneratedSoap: (soap) => set({ generatedSoap: soap }),
+  setPatientSummary: (summary) => set({ patientSummary: summary }),
+  setFlags: (flags) => set({ flags }),
   saveSummary: (entry) =>
     set((state) => ({
       savedSummaries: [
@@ -182,9 +199,11 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
       isRecording: false,
       recordingSeconds: 0,
       liveTranscription: [],
-      suggestedCids: [],
+      cidSuggestions: [],
       detectedItems: [],
       generatedSoap: null,
+      patientSummary: "",
+      flags: [],
       newPatientDraft: {
         name: "",
         dateOfBirth: "",
