@@ -100,15 +100,18 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
   const appendFiles = (files: FileList | null) => {
     if (!files) return;
     const list = Array.from(files);
-    setExams((prev) => [
-      ...list.map((file, index) => ({
+    const uploaded: Exam[] = list.map((file, index) => {
+      const type: Exam["type"] = file.type.includes("image")
+        ? "imaging"
+        : "report";
+      return {
         id: `uploaded-${Date.now()}-${index}`,
         fileName: file.name,
         date: new Date().toISOString().slice(0, 10),
-        type: file.type.includes("image") ? "imaging" : "report",
-      })),
-      ...prev,
-    ]);
+        type,
+      };
+    });
+    setExams((prev) => [...uploaded, ...prev]);
   };
 
   const handleDrop: React.DragEventHandler<HTMLDivElement> = (e) => {
