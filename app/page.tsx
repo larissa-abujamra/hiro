@@ -1,20 +1,66 @@
 import Link from "next/link";
+import {
+  UpcomingPatientsSection,
+  type UpcomingPatient,
+} from "@/components/dashboard/UpcomingPatientsSection";
+import { DailyMetricsCard } from "@/components/dashboard/DailyMetricsCard";
 import { BadgeStatus } from "@/components/ui/BadgeStatus";
-import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
-import { mockPatients } from "@/lib/mockData";
+
+const upcomingPatients: UpcomingPatient[] = [
+  {
+    id: "patient-ana-clara-ribeiro",
+    name: "Ana Clara Ribeiro",
+    initials: "AC",
+    age: 34,
+    reason: "Consulta de rotina",
+    time: "14:30",
+    status: "confirmed",
+    avatarColor: { bg: "#E1F5EE", text: "#0F6E56" },
+  },
+  {
+    id: "patient-cintia-souza",
+    name: "Cíntia Souza",
+    initials: "CS",
+    age: 42,
+    reason: "Diabetes — retorno",
+    time: "15:00",
+    status: "waiting",
+    avatarColor: { bg: "#E6F1FB", text: "#185FA5" },
+  },
+  {
+    id: "patient-bruno-ferreira",
+    name: "Bruno Ferreira",
+    initials: "BF",
+    age: 58,
+    reason: "Pressão alta",
+    time: "15:30",
+    status: "confirmed",
+    avatarColor: { bg: "#FAEEDA", text: "#854F0B" },
+  },
+  {
+    id: "patient-elaine-prado",
+    name: "Elaine Prado",
+    initials: "EP",
+    age: 61,
+    reason: "Cardiologia",
+    time: "16:00",
+    status: "confirmed",
+    avatarColor: { bg: "#E8E4DC", text: "#5F5E5A" },
+  },
+  {
+    id: "patient-rodrigo-mendes",
+    name: "Rodrigo Mendes",
+    initials: "RM",
+    age: 47,
+    reason: "Dor lombar",
+    time: "16:30",
+    status: "waiting",
+    avatarColor: { bg: "#FAECE7", text: "#993C1D" },
+  },
+];
 
 export default function Home() {
-  const totalPatients = mockPatients.length;
-  const totalConsultations = mockPatients.reduce(
-    (acc, patient) => acc + patient.consultations.length,
-    0,
-  );
-  const latestConsultationDate = mockPatients
-    .flatMap((p) => p.consultations.map((c) => c.date))
-    .sort()
-    .at(-1);
-
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col bg-hiro-bg px-4 py-4 md:px-6 md:py-6">
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -29,38 +75,9 @@ export default function Home() {
         <BadgeStatus label="Protótipo ativo" status="ready" />
       </header>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <CardHiro
-          className="animate-fade-up hiro-shadow-card"
-          style={{ animationDelay: "0ms" }}
-        >
-          <OverlineLabel tone="muted">Pacientes</OverlineLabel>
-          <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-hiro-text">
-            {totalPatients}
-          </p>
-          <p className="mt-2 text-sm text-hiro-muted">cadastros ativos</p>
-        </CardHiro>
-        <CardHiro
-          className="animate-fade-up hiro-shadow-card"
-          style={{ animationDelay: "60ms" }}
-        >
-          <OverlineLabel tone="muted">Consultas</OverlineLabel>
-          <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-hiro-text">
-            {totalConsultations}
-          </p>
-          <p className="mt-2 text-sm text-hiro-muted">atendimentos registrados</p>
-        </CardHiro>
-        <CardHiro
-          className="animate-fade-up hiro-shadow-card"
-          style={{ animationDelay: "120ms" }}
-        >
-          <OverlineLabel tone="muted">Último retorno</OverlineLabel>
-          <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-hiro-text">
-            {latestConsultationDate ?? "--"}
-          </p>
-          <p className="mt-2 text-sm text-hiro-muted">data da consulta mais recente</p>
-        </CardHiro>
-      </section>
+      <DailyMetricsCard />
+
+      <UpcomingPatientsSection patients={upcomingPatients} />
 
       <section className="mt-6 rounded-2xl bg-hiro-card p-6 hiro-shadow-card">
         <OverlineLabel tone="success">Ações rápidas</OverlineLabel>
