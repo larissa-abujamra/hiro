@@ -24,7 +24,6 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [showOptional, setShowOptional] = useState(false);
-  const [showContext, setShowContext] = useState(true);
   const patientsInStore = useConsultationStore((state) => state.patients);
   const intakeMode = useConsultationStore((state) => state.intakeMode);
   const selectedPatientId = useConsultationStore((state) => state.selectedPatientId);
@@ -51,11 +50,6 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
         patient.name.toLowerCase().includes(query.toLowerCase()),
       ),
     [query, sourcePatients],
-  );
-
-  const selectedPatient = useMemo(
-    () => sourcePatients.find((patient) => patient.id === selectedPatientId) ?? null,
-    [selectedPatientId, sourcePatients],
   );
 
   const canStart =
@@ -109,38 +103,29 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
                 key={patient.id}
                 type="button"
                 onClick={() => selectPatient(patient.id)}
-                className={`w-full rounded-xl border px-3 py-2 text-left text-sm ${
+                className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
                   selectedPatientId === patient.id
-                    ? "border-hiro-green bg-hiro-badge-ok-bg text-hiro-text"
-                    : "border-black/10 bg-white/60 text-hiro-text"
+                    ? intakeMode === "existing"
+                      ? "border-white bg-white text-hiro-text shadow-[0_2px_14px_rgba(0,0,0,0.18)] ring-1 ring-white/90"
+                      : "border-hiro-green bg-hiro-badge-ok-bg text-hiro-text"
+                    : intakeMode === "existing"
+                      ? "border-white/25 bg-white/15 text-white hover:bg-white/25"
+                      : "border-black/10 bg-white/60 text-hiro-text"
                 }`}
               >
                 <p>{patient.name}</p>
-                <p className="text-xs text-hiro-muted">{patient.dateOfBirth}</p>
+                <p
+                  className={`text-xs ${
+                    intakeMode === "existing" && selectedPatientId !== patient.id
+                      ? "text-white/70"
+                      : "text-hiro-muted"
+                  }`}
+                >
+                  {patient.dateOfBirth}
+                </p>
               </button>
             ))}
           </div>
-          {selectedPatient && (
-            <div className="mt-3 rounded-xl bg-white/55 p-3">
-              <button
-                type="button"
-                onClick={() => setShowContext((prev) => !prev)}
-                className="text-xs font-medium text-hiro-muted"
-              >
-                Contexto carregado {showContext ? "▲" : "▼"}
-              </button>
-              {showContext && (
-                <div className="mt-2 space-y-1 text-xs text-hiro-text">
-                  <p>Última consulta: {selectedPatient.consultations.at(-1)?.date}</p>
-                  <p>
-                    Medicamentos ativos:{" "}
-                    {selectedPatient.medications.filter((m) => m.status === "active").length}
-                  </p>
-                  <p>CIDs anteriores: {selectedPatient.cids.map((cid) => cid.code).join(", ")}</p>
-                </div>
-              )}
-            </div>
-          )}
         </CardHiro>
 
         <CardHiro
