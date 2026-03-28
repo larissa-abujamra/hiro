@@ -13,6 +13,7 @@ import {
 import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { BadgeStatus } from "@/components/ui/BadgeStatus";
+import { generateProntuarioPDF } from "@/lib/generatePdf";
 import { useConsultationStore } from "@/lib/store";
 import type { GeneratedDocument, Patient } from "@/lib/types";
 
@@ -35,7 +36,6 @@ export function GeneratedSummaryWorkspace({
   const detectedItems = useConsultationStore((state) => state.detectedItems);
   const generatedSoap = useConsultationStore((state) => state.generatedSoap);
   const setGeneratedSoap = useConsultationStore((state) => state.setGeneratedSoap);
-  const patientSummary = useConsultationStore((state) => state.patientSummary);
   const flags = useConsultationStore((state) => state.flags);
   const saveSummary = useConsultationStore((state) => state.saveSummary);
   const saveConsultationToPatient = useConsultationStore(
@@ -151,29 +151,27 @@ export function GeneratedSummaryWorkspace({
     });
   };
 
-  const exportPdf = () => {
+  const handleSavePDF = () => {
     if (!patient) return;
     persistConsultation();
-    const w = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
-    if (!w) return;
-    const html = `
-      <html>
-        <head><title>Resumo clínico - ${patient.name}</title></head>
-        <body style="font-family: Arial, sans-serif; padding:24px;">
-          <h1>Resumo clínico - ${patient.name}</h1>
-          <p>Data: ${new Date().toLocaleDateString("pt-BR")}</p>
-          <h3>S - Subjetivo</h3><p>${soap.s}</p>
-          <h3>O - Objetivo</h3><p>${soap.o}</p>
-          <h3>A - Avaliação</h3><p>${soap.a}</p>
-          <h3>P - Plano</h3><p>${soap.p}</p>
-        </body>
-      </html>
-    `;
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    w.print();
+    const dateStr = new Date().toLocaleDateString("pt-BR");
+    const confirmedForPdf = (
+      cidSuggestions.length ? cidSuggestions : patient.consultations.at(-1)?.confirmedCids ?? []
+    ).map((c) => ({ code: c.code, name: c.name }));
+    const patientAge = Math.max(
+      0,
+      new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear(),
+    );
+    generateProntuarioPDF({
+      patientName: patient.name,
+      patientAge,
+      date: dateStr,
+      doctorName,
+      duration: Math.max(1, Math.round(recordingSeconds / 60)),
+      soap: { s: soap.s, o: soap.o, a: soap.a, p: soap.p },
+      confirmedCids: confirmedForPdf,
+      medications: patient.medications.map((m) => `${m.name} (${m.dose})`),
+    });
     showToast("PDF preparado para salvar");
   };
 
@@ -218,15 +216,6 @@ export function GeneratedSummaryWorkspace({
           </div>
         </CardHiro>
 
-        {patientSummary ? (
-          <CardHiro className="rounded-2xl border border-black/[0.06] bg-hiro-bg p-5">
-            <OverlineLabel tone="muted">RESUMO PARA O PACIENTE</OverlineLabel>
-            <p className="mt-2 max-w-[65ch] text-[14px] leading-relaxed text-hiro-text">
-              {patientSummary}
-            </p>
-          </CardHiro>
-        ) : null}
-
         {flags.length > 0 && (
           <CardHiro className="rounded-2xl border border-hiro-amber/35 bg-[#FAEEDA]/50 p-5">
             <OverlineLabel>ALERTAS</OverlineLabel>
@@ -240,17 +229,19 @@ export function GeneratedSummaryWorkspace({
 
         <CardHiro className="hiro-surface-glow rounded-2xl p-5">
           <div className="flex flex-col gap-4">
-            {(["s", "o", "a", "p"] as const).map((key) => (
+            {(["s", "o", "a", "p"] as const).map((key) => {
+              const soapHeading =
+                key === "s"
+                  ? { title: "Subjetivo", hint: "Relato do paciente" }
+                  : key === "o"
+                    ? { title: "Objetivo", hint: "Exames e medidas" }
+                    : key === "a"
+                      ? { title: "Avaliação", hint: "Diagnóstico / raciocínio" }
+                      : { title: "Plano", hint: "Conduta" };
+              return (
               <div key={key} className="flex flex-col gap-2">
-                <OverlineLabel>
-                  {key === "s"
-                    ? "S — SUBJETIVO"
-                    : key === "o"
-                      ? "O — OBJETIVO"
-                      : key === "a"
-                        ? "A — AVALIAÇÃO"
-                        : "P — PLANO"}
-                </OverlineLabel>
+                <OverlineLabel>{soapHeading.title.toUpperCase()}</OverlineLabel>
+                <p className="text-[12px] leading-snug text-hiro-muted">{soapHeading.hint}</p>
                 <textarea
                   value={soap[key]}
                   onChange={(e) => updateSoap(key, e.target.value)}
@@ -263,36 +254,9 @@ export function GeneratedSummaryWorkspace({
                   }}
                 />
               </div>
-            ))}
+              );
+            })}
           </div>
-
-          <hr className="my-6 border-black/[0.08]" />
-          <OverlineLabel>DOCUMENTOS GERADOS</OverlineLabel>
-          <div className="mt-3 flex flex-col gap-2">
-            {generatedDocs.map((doc) => (
-              <div
-                key={doc.type}
-                className="flex cursor-pointer items-center gap-3 rounded-xl border border-black/[0.06] bg-hiro-card p-4 transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.03] active:scale-[0.995]"
-              >
-                <div
-                  className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${iconBg[doc.type]}`}
-                >
-                  <DocIcon type={doc.type} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-medium text-hiro-text">{docLabels[doc.type]}</p>
-                  <p className="truncate text-[12px] text-hiro-muted">{doc.summary}</p>
-                </div>
-                <BadgeStatus
-                  label={doc.status === "ready" ? "Pronto" : "Pendente"}
-                  status={doc.status}
-                />
-              </div>
-            ))}
-          </div>
-          <button className="mt-4 w-full rounded-full border border-black/15 px-5 py-2.5 text-[13px] text-hiro-muted">
-            Assinar em lote — em breve
-          </button>
         </CardHiro>
       </section>
 
@@ -341,7 +305,8 @@ export function GeneratedSummaryWorkspace({
               Exportar resumo clínico
             </summary>
             <button
-              onClick={exportPdf}
+              type="button"
+              onClick={handleSavePDF}
               className="mt-3 w-full rounded-full bg-hiro-text px-5 py-2.5 text-[13px] font-medium text-white"
             >
               Salvar PDF do laudo
@@ -355,6 +320,35 @@ export function GeneratedSummaryWorkspace({
             className="mt-1 w-full rounded-full border border-black/15 px-4 py-2.5 text-[13px] text-hiro-muted"
           >
             Salvar consulta
+          </button>
+        </CardHiro>
+
+        <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
+          <OverlineLabel>DOCUMENTOS GERADOS</OverlineLabel>
+          <div className="flex flex-col gap-2">
+            {generatedDocs.map((doc) => (
+              <div
+                key={doc.type}
+                className="flex cursor-pointer items-center gap-3 rounded-xl border border-black/[0.06] bg-hiro-card p-4 transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.03] active:scale-[0.995]"
+              >
+                <div
+                  className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${iconBg[doc.type]}`}
+                >
+                  <DocIcon type={doc.type} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-medium text-hiro-text">{docLabels[doc.type]}</p>
+                  <p className="truncate text-[12px] text-hiro-muted">{doc.summary}</p>
+                </div>
+                <BadgeStatus
+                  label={doc.status === "ready" ? "Pronto" : "Pendente"}
+                  status={doc.status}
+                />
+              </div>
+            ))}
+          </div>
+          <button className="mt-1 w-full rounded-full border border-black/15 px-5 py-2.5 text-[13px] text-hiro-muted">
+            Assinar em lote — em breve
           </button>
         </CardHiro>
 

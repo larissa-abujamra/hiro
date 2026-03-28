@@ -3,16 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  Mic,
-  Play,
-  Search,
-  Square,
-} from "lucide-react";
-import { PatientContext } from "@/components/consulta/PatientContext";
+import { Loader2, Mic, Play, Square } from "lucide-react";
 import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { AvatarInitials } from "@/components/ui/AvatarInitials";
@@ -21,7 +12,37 @@ import { useCidSuggestions } from "@/hooks/useCidSuggestions";
 import { useDetection } from "@/hooks/useDetection";
 import { useTranscription } from "@/hooks/useTranscription";
 import { useConsultationStore } from "@/lib/store";
-import type { Patient } from "@/lib/types";
+import type { DetectedItem, Patient } from "@/lib/types";
+
+function detectedItemMeta(item: DetectedItem) {
+  const badgeClass =
+    item.type === "prescription"
+      ? "bg-[#FAEEDA] text-[#854F0B]"
+      : item.type === "exam"
+        ? "bg-[#E1F5EE] text-[#0F6E56]"
+        : item.type === "return"
+          ? "bg-[#E6F1FB] text-[#185FA5]"
+          : item.type === "certificate"
+            ? "bg-[#F5F0E6] text-[#6B5B2E]"
+            : item.type === "referral"
+              ? "bg-[#EDEAF5] text-[#4A3D7A]"
+              : "bg-[#F1EFE8] text-[#5F5E5A]";
+
+  const typeLabel =
+    item.type === "prescription"
+      ? "Receituário"
+      : item.type === "exam"
+        ? "Pedido de exames"
+        : item.type === "return"
+          ? "Retorno"
+          : item.type === "certificate"
+            ? "Atestado"
+            : item.type === "referral"
+              ? "Encaminhamento"
+              : "Detectado";
+
+  return { badgeClass, typeLabel };
+}
 
 interface ConsultationWorkspaceProps {
   consultationId: string;
@@ -39,7 +60,6 @@ export function ConsultationWorkspace({
   );
   const reason = useConsultationStore((state) => state.consultationReason);
   const recordingSeconds = useConsultationStore((state) => state.recordingSeconds);
-  const cidSuggestions = useConsultationStore((state) => state.cidSuggestions);
   const detectedItems = useConsultationStore((state) => state.detectedItems);
   const setActiveConsultation = useConsultationStore(
     (state) => state.setActiveConsultation,
@@ -55,8 +75,6 @@ export function ConsultationWorkspace({
   const setFlags = useConsultationStore((state) => state.setFlags);
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [expandedCid, setExpandedCid] = useState<string | null>(null);
-  const [showContext, setShowContext] = useState(true);
   const [recordingPhase, setRecordingPhase] = useState<"idle" | "recording" | "paused">(
     "idle",
   );
@@ -72,7 +90,7 @@ export function ConsultationWorkspace({
   } = useTranscription();
 
   const { analyze } = useDetection(consultationId);
-  const { analyze: analyzeCids, isAnalyzing } = useCidSuggestions(consultationId);
+  const { analyze: analyzeCids } = useCidSuggestions(consultationId);
 
   useEffect(() => {
     if (activeConsultationId !== consultationId) {
@@ -239,12 +257,15 @@ Medicamentos ativos: ${sp.medications
     void analyzeCids(allTexts);
   }, [lines, analyzeCids]);
 
-  const displayCids =
-    cidSuggestions.length > 0
-      ? cidSuggestions
-      : !isAnalyzing
-        ? (patient?.consultations.at(-1)?.confirmedCids ?? [])
-        : [];
+  const lastConsultation = patient?.consultations.at(-1) ?? null;
+
+  const detectedByTypes = useMemo(() => {
+    const exam = detectedItems.filter((i) => i.type === "exam");
+    const plano = detectedItems.filter((i) =>
+      ["prescription", "return", "certificate", "referral"].includes(i.type),
+    );
+    return { exam, plano };
+  }, [detectedItems]);
 
   if (!patient) {
     return (
@@ -322,17 +343,26 @@ Medicamentos ativos: ${sp.medications
             </button>
 
             {isRecordingActive && (
-              <div className="flex items-end gap-1">
-                {[0, 0.1, 0.2, 0.15, 0.05, 0.12, 0.08].map((delay, i) => (
-                  <div
-                    key={i}
-                    className="w-1.5 rounded-full bg-hiro-green"
-                    style={{
-                      animation: "waveBar 1s ease-in-out infinite",
-                      animationDelay: `${delay}s`,
-                    }}
-                  />
-                ))}
+              <div
+                className="flex w-full max-w-[220px] flex-col items-center gap-2 rounded-xl border border-[#8B1A1A]/30 bg-[#FAECE7]/50 px-4 py-3"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="flex h-9 items-end justify-center gap-0.5">
+                  {[0, 0.1, 0.2, 0.15, 0.05, 0.12, 0.08, 0.03].map((delay, i) => (
+                    <div
+                      key={i}
+                      className="w-1.5 rounded-full bg-[#8B1A1A]"
+                      style={{
+                        animation: "waveBar 1s ease-in-out infinite",
+                        animationDelay: `${delay}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8B1A1A]">
+                  Gravando
+                </p>
               </div>
             )}
 
@@ -343,7 +373,7 @@ Medicamentos ativos: ${sp.medications
             >
               {timerLabel}
             </p>
-            <p className="text-[13px] text-hiro-muted">
+            <p className="text-center text-[13px] text-hiro-muted">
               {recordingPhase === "idle"
                 ? "Toque para iniciar a gravação"
                 : recordingPhase === "recording"
@@ -419,142 +449,162 @@ Medicamentos ativos: ${sp.medications
       </section>
 
       <aside className="space-y-5 lg:col-span-5">
-        <div className="glass-warm flex flex-col gap-3 rounded-2xl p-5">
-          <OverlineLabel>CID-10 DETECTADO</OverlineLabel>
-          <div className="space-y-2">
-            {isAnalyzing && cidSuggestions.length === 0 && (
-              <p className="rounded-xl border border-black/10 bg-hiro-bg px-3 py-3 text-sm text-hiro-muted">
-                Analisando...
+        <div className="glass-warm flex flex-col gap-4 rounded-2xl p-5">
+          <OverlineLabel>CONTEXTO PRÉVIO</OverlineLabel>
+          <p className="text-xs leading-relaxed text-hiro-muted">
+            Dados do prontuário e da última anamnese úteis para esta consulta.
+          </p>
+          <div className="space-y-3 text-sm">
+            <div className="rounded-xl border border-black/[0.06] bg-hiro-bg/80 p-3">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-hiro-muted">
+                Motivo desta consulta
               </p>
-            )}
-            {!isAnalyzing &&
-              cidSuggestions.length === 0 &&
-              displayCids.length === 0 && (
-                <p className="rounded-xl border border-black/10 bg-hiro-bg px-3 py-3 text-sm text-hiro-muted">
-                  Sugestões aparecerão conforme o contexto clínico se forma...
+              <p className="mt-1 text-[13px] text-hiro-text">
+                {reason?.trim() ? reason : "—"}
+              </p>
+            </div>
+            {(patient.conditions?.length ?? 0) > 0 && (
+              <div className="rounded-xl border border-black/[0.06] bg-hiro-bg/80 p-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-hiro-muted">
+                  Condições / histórico
                 </p>
-              )}
-            {displayCids.map((cid, cidIndex) => (
-              <div
-                key={cid.code}
-                style={{ animationDelay: `${cidIndex * 40}ms` }}
-                className={`animate-fade-up rounded-xl border p-3 ${
-                  cid.confirmed
-                    ? "border-hiro-green/30 bg-[#D6E8DC]"
-                    : "border-black/10 bg-hiro-bg"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="rounded-md bg-[#E6F1FB] px-2 py-0.5 text-xs text-[#185FA5]">
-                    {cid.code}
-                  </span>
-                  <div className="flex items-center gap-2 text-xs text-hiro-muted">
-                    {Math.round(cid.confidence * 100)}%
-                    {cid.confirmed && <span className="text-hiro-green">✓</span>}
-                  </div>
-                </div>
-                <p className="mt-2 text-sm font-medium text-hiro-text">{cid.name}</p>
-                <p
-                  className={`mt-1 text-xs italic text-hiro-muted ${
-                    expandedCid === cid.code ? "" : "line-clamp-2"
-                  }`}
-                >
-                  {cid.sourceQuote}
+                <p className="mt-1 text-[13px] leading-relaxed text-hiro-text">
+                  {(patient.conditions ?? []).join(" · ")}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setExpandedCid(expandedCid === cid.code ? null : cid.code)}
-                  className="mt-2 text-xs text-hiro-green"
-                >
-                  {expandedCid === cid.code ? "ver menos" : "ver trecho completo"}
-                </button>
               </div>
-            ))}
-          </div>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hiro-muted" />
-            <input
-              placeholder="Buscar outro CID..."
-              className="w-full rounded-full border border-black/15 bg-white/40 py-2 pl-9 pr-3 text-sm text-hiro-text outline-none transition-colors duration-150 focus:border-hiro-active/30"
-            />
-          </div>
-        </div>
-
-        <div className="glass-warm flex flex-col gap-3 rounded-2xl p-5">
-          <OverlineLabel>DETECTADO NA FALA</OverlineLabel>
-          <div className="space-y-2">
-            {detectedItems.map((item, itemIndex) => {
-              const badgeClass =
-                item.type === "prescription"
-                  ? "bg-[#FAEEDA] text-[#854F0B]"
-                  : item.type === "exam"
-                    ? "bg-[#E1F5EE] text-[#0F6E56]"
-                    : item.type === "return"
-                      ? "bg-[#E6F1FB] text-[#185FA5]"
-                      : item.type === "certificate"
-                        ? "bg-[#F5F0E6] text-[#6B5B2E]"
-                        : item.type === "referral"
-                          ? "bg-[#EDEAF5] text-[#4A3D7A]"
-                          : "bg-[#F1EFE8] text-[#5F5E5A]";
-
-              const typeLabel =
-                item.type === "prescription"
-                  ? "Receituário"
-                  : item.type === "exam"
-                    ? "Pedido de exames"
-                    : item.type === "return"
-                      ? "Retorno"
-                      : item.type === "certificate"
-                        ? "Atestado"
-                        : item.type === "referral"
-                          ? "Encaminhamento"
-                          : "Detectado";
-
-              return (
-                <div
-                  key={item.id}
-                  className="animate-fade-up flex flex-col gap-2 rounded-xl border border-black/10 bg-white/30 px-3 py-2"
-                  style={{ animationDelay: `${itemIndex * 40}ms` }}
-                >
-                  <span
-                    className={`inline-flex w-fit max-w-full rounded-md px-2 py-1 text-[11px] font-medium leading-snug ${badgeClass}`}
-                  >
-                    {typeLabel} — {item.text}
-                  </span>
-                  <p className="text-xs italic text-hiro-muted">{item.sourceQuote}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {patient.consultations.length > 0 && (
-          <div className="glass-warm flex flex-col gap-3 rounded-2xl p-5">
-            <button
-              type="button"
-              onClick={() => setShowContext((prev) => !prev)}
-              className="flex items-center justify-between"
-            >
-              <OverlineLabel>CONTEXTO DO PACIENTE</OverlineLabel>
-              {showContext ? (
-                <ChevronUp className="h-4 w-4 text-hiro-muted" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-hiro-muted" />
-              )}
-            </button>
-            {showContext && (
-              <div className="space-y-2 text-sm">
-                <div className="rounded-xl bg-hiro-bg p-3">
-                  <p className="text-xs text-hiro-muted">Última consulta</p>
-                  <p className="text-sm text-hiro-text">
-                    há 5 dias — {patient.consultations.at(-1)?.reason ?? "Sem descrição"}
+            )}
+            {patient.medications.filter((m) => m.status === "active").length > 0 && (
+              <div className="rounded-xl border border-black/[0.06] bg-hiro-bg/80 p-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-hiro-muted">
+                  Medicamentos ativos
+                </p>
+                <ul className="mt-1 list-inside list-disc space-y-0.5 text-[13px] text-hiro-text">
+                  {patient.medications
+                    .filter((m) => m.status === "active")
+                    .map((m) => (
+                      <li key={m.name}>
+                        {m.name} — {m.dose}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+            {patient.cids.length > 0 && (
+              <div className="rounded-xl border border-black/[0.06] bg-hiro-bg/80 p-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-hiro-muted">
+                  CID registrados anteriormente
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-hiro-text">
+                  {patient.cids.map((c) => `${c.code} (${c.name})`).join(" · ")}
+                </p>
+              </div>
+            )}
+            {lastConsultation && (
+              <div className="rounded-xl border border-black/[0.06] bg-hiro-bg/80 p-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-hiro-muted">
+                  Última consulta ({lastConsultation.date})
+                </p>
+                <p className="mt-1 text-[13px] text-hiro-text">{lastConsultation.reason}</p>
+                {lastConsultation.soap?.s ? (
+                  <p className="mt-2 border-t border-black/[0.06] pt-2 text-[12px] leading-relaxed text-hiro-muted">
+                    <span className="font-medium text-hiro-text">S: </span>
+                    {lastConsultation.soap.s}
                   </p>
-                </div>
-                <PatientContext patient={patient} />
+                ) : null}
               </div>
             )}
           </div>
-        )}
+        </div>
+
+        <div className="glass-warm flex flex-col gap-4 rounded-2xl p-5">
+          <OverlineLabel>DETECTADO NA FALA</OverlineLabel>
+          <p className="text-xs leading-relaxed text-hiro-muted">
+            Sintomas, histórico relatado, achados de exame e itens de conduta extraídos da conversa.
+            Os CID sugeridos ficam no prontuário (tela seguinte).
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-hiro-muted">
+                Sintomas e queixas
+              </p>
+              <p className="mt-1.5 rounded-xl border border-dashed border-black/10 bg-white/20 px-3 py-2 text-xs italic text-hiro-muted">
+                Trechos serão destacados automaticamente quando a IA identificar queixas na fala.
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-hiro-muted">
+                Histórico relatado nesta sessão
+              </p>
+              <p className="mt-1.5 rounded-xl border border-dashed border-black/10 bg-white/20 px-3 py-2 text-xs italic text-hiro-muted">
+                Evoluções e antecedentes mencionados pelo paciente aparecerão aqui.
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-hiro-muted">
+                Exame clínico / solicitações
+              </p>
+              <div className="mt-1.5 space-y-2">
+                {detectedByTypes.exam.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-black/10 bg-white/20 px-3 py-2 text-xs italic text-hiro-muted">
+                    Nenhum pedido de exame detectado ainda.
+                  </p>
+                ) : (
+                  detectedByTypes.exam.map((item, itemIndex) => {
+                    const { badgeClass, typeLabel } = detectedItemMeta(item);
+                    return (
+                      <div
+                        key={item.id}
+                        className="animate-fade-up flex flex-col gap-2 rounded-xl border border-black/10 bg-white/30 px-3 py-2"
+                        style={{ animationDelay: `${itemIndex * 40}ms` }}
+                      >
+                        <span
+                          className={`inline-flex w-fit max-w-full rounded-md px-2 py-1 text-[11px] font-medium leading-snug ${badgeClass}`}
+                        >
+                          {typeLabel} — {item.text}
+                        </span>
+                        <p className="text-xs italic text-hiro-muted">{item.sourceQuote}</p>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-hiro-muted">
+                Plano, retorno e documentos
+              </p>
+              <div className="mt-1.5 space-y-2">
+                {detectedByTypes.plano.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-black/10 bg-white/20 px-3 py-2 text-xs italic text-hiro-muted">
+                    Nenhum item de conduta detectado ainda.
+                  </p>
+                ) : (
+                  detectedByTypes.plano.map((item, itemIndex) => {
+                    const { badgeClass, typeLabel } = detectedItemMeta(item);
+                    return (
+                      <div
+                        key={item.id}
+                        className="animate-fade-up flex flex-col gap-2 rounded-xl border border-black/10 bg-white/30 px-3 py-2"
+                        style={{ animationDelay: `${itemIndex * 40}ms` }}
+                      >
+                        <span
+                          className={`inline-flex w-fit max-w-full rounded-md px-2 py-1 text-[11px] font-medium leading-snug ${badgeClass}`}
+                        >
+                          {typeLabel} — {item.text}
+                        </span>
+                        <p className="text-xs italic text-hiro-muted">{item.sourceQuote}</p>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </aside>
 
       <div className="glass-warm sticky bottom-0 z-30 border-t border-black/10 px-6 py-3 lg:col-span-12">
