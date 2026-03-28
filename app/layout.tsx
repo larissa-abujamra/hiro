@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Playfair_Display } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SidebarDesktopShell } from "@/components/layout/SidebarDesktopShell";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -26,9 +23,10 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${inter.variable} ${playfair.variable} h-full antialiased`}
+      className={`${GeistSans.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full font-sans bg-hiro-bg text-hiro-text">
+        <SidebarDesktopShell />
         <Sidebar />
         <main className="min-h-full lg:pl-[220px]">{children}</main>
       </body>

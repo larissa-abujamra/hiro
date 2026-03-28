@@ -19,7 +19,7 @@ export function OverlineLabel({
 }: OverlineLabelProps) {
   return (
     <span
-      className={`text-[11px] font-medium uppercase tracking-[0.08em] ${toneClasses[tone]} ${className}`.trim()}
+      className={`text-[11px] font-medium tracking-[0.06em] ${toneClasses[tone]} ${className}`.trim()}
     >
       {children}
     </span>

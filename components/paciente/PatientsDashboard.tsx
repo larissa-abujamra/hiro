@@ -11,24 +11,32 @@ export function PatientsDashboard() {
 
   return (
     <section className="mt-6 grid gap-4">
-      {patients.map((patient) => (
-        <CardHiro key={patient.id} className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <AvatarInitials name={patient.name} />
-            <div>
-              <p className="font-medium text-hiro-text">{patient.name}</p>
-              <p className="text-xs text-hiro-muted">
-                {patient.consultations.length} consultas • {patient.medications.length} medicações
+      {patients.map((patient, index) => (
+        <Link
+          key={patient.id}
+          href={`/pacientes/${patient.id}`}
+          className="animate-fade-up block transition-transform duration-150 active:scale-[0.995]"
+          style={{ animationDelay: `${index * 40}ms` }}
+        >
+          <CardHiro className="flex cursor-pointer items-center justify-between gap-3 transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.02] hiro-shadow-card">
+            <div className="flex items-center gap-3">
+              <AvatarInitials name={patient.name} />
+              <div>
+                <p className="font-medium text-hiro-text">{patient.name}</p>
+                <p className="text-xs tabular-nums text-hiro-muted">
+                  {patient.consultations.length} consultas · {patient.medications.length} medicações
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <OverlineLabel>Perfil</OverlineLabel>
+              <p className="link-arrow ml-auto mt-0.5 inline-flex text-sm font-medium text-hiro-green">
+                <span>Ver paciente</span>
+                <span aria-hidden>→</span>
               </p>
             </div>
-          </div>
-          <div className="text-right">
-            <OverlineLabel>Perfil</OverlineLabel>
-            <Link href={`/pacientes/${patient.id}`} className="block text-sm underline">
-              Ver paciente
-            </Link>
-          </div>
-        </CardHiro>
+          </CardHiro>
+        </Link>
       ))}
     </section>
   );

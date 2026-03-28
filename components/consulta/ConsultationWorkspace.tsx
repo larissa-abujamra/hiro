@@ -260,14 +260,14 @@ Medicamentos ativos: ${sp.medications
     <div className="relative mt-6 grid gap-5 pb-24 lg:grid-cols-12">
       {isGenerating && (
         <div
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-hiro-text/40 px-6 backdrop-blur-sm"
+          className="glass-loading-overlay fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 px-6"
           role="alertdialog"
           aria-busy="true"
           aria-label="Gerando prontuário"
         >
-          <Loader2 className="h-10 w-10 animate-spin text-white" />
-          <p className="text-center font-medium text-white">Gerando prontuário...</p>
-          <p className="max-w-sm text-center text-sm text-white/85">
+          <Loader2 className="h-10 w-10 animate-spin text-hiro-active" aria-hidden />
+          <p className="text-center font-medium text-hiro-text">Gerando prontuário</p>
+          <p className="max-w-[65ch] text-center text-sm leading-relaxed text-hiro-muted">
             A IA está analisando a transcrição
           </p>
         </div>
@@ -290,30 +290,28 @@ Medicamentos ativos: ${sp.medications
               </span>
               <Link
                 href={`/pacientes/${patient.id}`}
-                className="text-[12px] text-hiro-green underline-offset-2 hover:underline"
+                className="link-arrow text-[12px] font-medium text-hiro-green underline-offset-2 hover:underline"
               >
-                Ver perfil →
+                <span>Ver perfil</span>
+                <span aria-hidden>→</span>
               </Link>
             </div>
           </div>
         </CardHiro>
 
-        <CardHiro className="rounded-2xl p-8">
+        <CardHiro className="hiro-surface-glow rounded-2xl p-8">
           <div className="flex flex-col items-center gap-5">
             <button
               type="button"
               onClick={toggleMainRecording}
-              className={`relative flex h-20 w-20 items-center justify-center rounded-full transition-colors duration-150 ${
+              className={`relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hiro-active/50 focus-visible:ring-offset-2 active:scale-[0.97] ${
                 isRecordingActive
-                  ? "bg-[#8B1A1A] text-white"
+                  ? "bg-[#8B1A1A] text-white rec-ring"
                   : isPaused
                     ? "border-2 border-hiro-active bg-hiro-card text-hiro-active"
                     : "bg-hiro-active text-white"
               }`}
             >
-              {isRecordingActive && (
-                <span className="absolute inset-0 animate-ping rounded-full bg-[#8B1A1A] opacity-30" />
-              )}
               {isRecordingActive ? (
                 <Square className="relative h-6 w-6" />
               ) : isPaused ? (
@@ -421,7 +419,7 @@ Medicamentos ativos: ${sp.medications
       </section>
 
       <aside className="space-y-5 lg:col-span-5">
-        <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
+        <div className="glass-warm flex flex-col gap-3 rounded-2xl p-5">
           <OverlineLabel>CID-10 DETECTADO</OverlineLabel>
           <div className="space-y-2">
             {isAnalyzing && cidSuggestions.length === 0 && (
@@ -436,10 +434,11 @@ Medicamentos ativos: ${sp.medications
                   Sugestões aparecerão conforme o contexto clínico se forma...
                 </p>
               )}
-            {displayCids.map((cid) => (
+            {displayCids.map((cid, cidIndex) => (
               <div
                 key={cid.code}
-                className={`rounded-xl border p-3 ${
+                style={{ animationDelay: `${cidIndex * 40}ms` }}
+                className={`animate-fade-up rounded-xl border p-3 ${
                   cid.confirmed
                     ? "border-hiro-green/30 bg-[#D6E8DC]"
                     : "border-black/10 bg-hiro-bg"
@@ -476,15 +475,15 @@ Medicamentos ativos: ${sp.medications
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hiro-muted" />
             <input
               placeholder="Buscar outro CID..."
-              className="w-full rounded-full border border-black/15 bg-transparent py-2 pl-9 pr-3 text-sm text-hiro-text outline-none"
+              className="w-full rounded-full border border-black/15 bg-white/40 py-2 pl-9 pr-3 text-sm text-hiro-text outline-none transition-colors duration-150 focus:border-hiro-active/30"
             />
           </div>
-        </CardHiro>
+        </div>
 
-        <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
+        <div className="glass-warm flex flex-col gap-3 rounded-2xl p-5">
           <OverlineLabel>DETECTADO NA FALA</OverlineLabel>
           <div className="space-y-2">
-            {detectedItems.map((item) => {
+            {detectedItems.map((item, itemIndex) => {
               const badgeClass =
                 item.type === "prescription"
                   ? "bg-[#FAEEDA] text-[#854F0B]"
@@ -514,7 +513,8 @@ Medicamentos ativos: ${sp.medications
               return (
                 <div
                   key={item.id}
-                  className="flex flex-col gap-2 rounded-xl border border-black/10 bg-hiro-bg px-3 py-2"
+                  className="animate-fade-up flex flex-col gap-2 rounded-xl border border-black/10 bg-white/30 px-3 py-2"
+                  style={{ animationDelay: `${itemIndex * 40}ms` }}
                 >
                   <span
                     className={`inline-flex w-fit max-w-full rounded-md px-2 py-1 text-[11px] font-medium leading-snug ${badgeClass}`}
@@ -526,10 +526,10 @@ Medicamentos ativos: ${sp.medications
               );
             })}
           </div>
-        </CardHiro>
+        </div>
 
         {patient.consultations.length > 0 && (
-          <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
+          <div className="glass-warm flex flex-col gap-3 rounded-2xl p-5">
             <button
               type="button"
               onClick={() => setShowContext((prev) => !prev)}
@@ -553,11 +553,11 @@ Medicamentos ativos: ${sp.medications
                 <PatientContext patient={patient} />
               </div>
             )}
-          </CardHiro>
+          </div>
         )}
       </aside>
 
-      <div className="sticky bottom-0 z-30 border-t border-black/[0.08] bg-hiro-bg px-6 py-3 lg:col-span-12">
+      <div className="glass-warm sticky bottom-0 z-30 border-t border-black/10 px-6 py-3 lg:col-span-12">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
           <ButtonHiro variant="secondary">Cancelar consulta</ButtonHiro>
           <ButtonHiro

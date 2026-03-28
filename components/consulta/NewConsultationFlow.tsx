@@ -9,7 +9,8 @@ import { useConsultationStore } from "@/lib/store";
 import type { Patient } from "@/lib/types";
 
 interface NewConsultationFlowProps {
-  patients: Patient[];
+  /** Fallback when o store ainda não tem pacientes (ex.: SSR inicial). */
+  patients?: Patient[];
 }
 
 const REASONS = [
@@ -19,7 +20,7 @@ const REASONS = [
   "Renovação de receituário",
 ];
 
-export function NewConsultationFlow({ patients }: NewConsultationFlowProps) {
+export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {}) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [showOptional, setShowOptional] = useState(false);
@@ -42,7 +43,7 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps) {
     (state) => state.createPatientFromDraft,
   );
   const resetConsultation = useConsultationStore((state) => state.resetConsultation);
-  const sourcePatients = patientsInStore.length ? patientsInStore : patients;
+  const sourcePatients = patientsInStore.length ? patientsInStore : (patients ?? []);
 
   const filteredPatients = useMemo(
     () =>
@@ -239,10 +240,7 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps) {
       </CardHiro>
 
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-black/8 bg-hiro-bg/95 p-4 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
-          <p className="text-sm text-hiro-muted">
-            {canStart ? "Pronto para iniciar atendimento" : "Selecione/cadastre paciente e motivo"}
-          </p>
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-end gap-3">
           <ButtonHiro onClick={handleStartConsultation} disabled={!canStart}>
             Iniciar consulta
           </ButtonHiro>

@@ -159,7 +159,11 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
           </div>
 
           <div className="flex flex-col gap-2">
-            <Link href={`/consulta/nova?patientId=${patient.id}`} className="w-full">
+            <Link
+              href={`/consulta/nova?patientId=${patient.id}`}
+              prefetch={false}
+              className="w-full"
+            >
               <ButtonHiro className="w-full">Nova consulta</ButtonHiro>
             </Link>
             <ButtonHiro variant="secondary" className="w-full">
@@ -262,8 +266,12 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
                         <p className="mt-1 line-clamp-2 text-[12px] text-hiro-muted">
                           {consultation.soap.p}
                         </p>
-                        <button className="mt-1.5 text-[12px] text-hiro-green underline-offset-2 hover:underline">
-                          Ver prontuário completo →
+                        <button
+                          type="button"
+                          className="link-arrow mt-1.5 text-[12px] font-medium text-hiro-green underline-offset-2 hover:underline"
+                        >
+                          <span>Ver prontuário completo</span>
+                          <span aria-hidden>→</span>
                         </button>
                       </div>
                     </div>

@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
-  Award,
   Check,
   FileText,
   FlaskConical,
   Grid2x2,
+  Sparkles,
 } from "lucide-react";
 import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
@@ -122,7 +122,7 @@ export function GeneratedSummaryWorkspace({
     if (type === "prescription") return <FileText className="h-4 w-4 text-hiro-green" />;
     if (type === "exam-request") return <FlaskConical className="h-4 w-4 text-[#185FA5]" />;
     if (type === "tiss") return <Grid2x2 className="h-4 w-4 text-[#854F0B]" />;
-    if (type === "certificate") return <Award className="h-4 w-4 text-[#5F5E5A]" />;
+    if (type === "certificate") return <Sparkles className="h-4 w-4 text-[#5F5E5A]" />;
     return <ArrowUpRight className="h-4 w-4 text-[#5E4BA3]" />;
   };
 
@@ -174,7 +174,7 @@ export function GeneratedSummaryWorkspace({
     w.document.close();
     w.focus();
     w.print();
-    showToast("Resumo clínico pronto para salvar em PDF.");
+    showToast("PDF preparado para salvar");
   };
 
   const handleSaveWithoutSign = () => {
@@ -202,22 +202,28 @@ export function GeneratedSummaryWorkspace({
         <CardHiro className="rounded-2xl p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="font-serif text-3xl font-normal text-hiro-text">
+              <h1 className="font-serif text-3xl font-normal tracking-tight text-balance text-hiro-text">
                 Prontuário — {patient.name}
               </h1>
-              <p className="mt-1 text-[13px] text-hiro-muted">
+              <p className="mt-1 max-w-[65ch] text-[13px] leading-relaxed text-hiro-muted">
                 {new Date().toLocaleDateString("pt-BR")} · {doctorName} ·{" "}
-                {Math.max(1, Math.round(recordingSeconds / 60))} min de gravação
+                <span className="tabular-nums">
+                  {Math.max(1, Math.round(recordingSeconds / 60))} min de gravação
+                </span>
               </p>
             </div>
-            <BadgeStatus label="Gerado pela IA — revise antes de salvar" status="pending" />
+            <span className="glass-ia-badge inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-medium text-hiro-text">
+              Gerado pela IA — revise antes de salvar
+            </span>
           </div>
         </CardHiro>
 
         {patientSummary ? (
           <CardHiro className="rounded-2xl border border-black/[0.06] bg-hiro-bg p-5">
             <OverlineLabel tone="muted">RESUMO PARA O PACIENTE</OverlineLabel>
-            <p className="mt-2 text-[14px] leading-relaxed text-hiro-text">{patientSummary}</p>
+            <p className="mt-2 max-w-[65ch] text-[14px] leading-relaxed text-hiro-text">
+              {patientSummary}
+            </p>
           </CardHiro>
         ) : null}
 
@@ -232,7 +238,7 @@ export function GeneratedSummaryWorkspace({
           </CardHiro>
         )}
 
-        <CardHiro className="rounded-2xl p-5">
+        <CardHiro className="hiro-surface-glow rounded-2xl p-5">
           <div className="flex flex-col gap-4">
             {(["s", "o", "a", "p"] as const).map((key) => (
               <div key={key} className="flex flex-col gap-2">
@@ -266,7 +272,7 @@ export function GeneratedSummaryWorkspace({
             {generatedDocs.map((doc) => (
               <div
                 key={doc.type}
-                className="flex cursor-pointer items-center gap-3 rounded-xl border border-black/[0.06] bg-hiro-card p-4 transition-colors hover:bg-[#DDD9D1]"
+                className="flex cursor-pointer items-center gap-3 rounded-xl border border-black/[0.06] bg-hiro-card p-4 transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.03] active:scale-[0.995]"
               >
                 <div
                   className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${iconBg[doc.type]}`}

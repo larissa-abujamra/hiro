@@ -6,7 +6,7 @@ export const brunoFerreiraPatient: Patient = {
   dateOfBirth: "1968-09-17",
   sex: "M",
   height: 176,
-  weight: 92,
+  weight: 91.8,
   phone: "+55 11 98888-1122",
   conditions: ["Hipertensao arterial sistemica", "Dislipidemia"],
   medications: [
@@ -51,7 +51,7 @@ export const brunoFerreiraPatient: Patient = {
       ],
       soap: {
         s: "Paciente refere picos pressoricos no periodo noturno.",
-        o: "PA consultorio 156/98 mmHg, FC 82 bpm, peso 92 kg.",
+        o: "PA consultorio 158/98 mmHg, FC 82 bpm, peso 91,8 kg.",
         a: "HAS estagio 2 com controle parcial.",
         p: "Manter losartana e iniciar anlodipino 5 mg; retorno em 8 semanas.",
       },
@@ -110,7 +110,7 @@ export const brunoFerreiraPatient: Patient = {
       ],
       soap: {
         s: "Boa adesao a atividade fisica e dieta hipossodica.",
-        o: "PA 149/94 mmHg, peso 90.5 kg, glicemia capilar 122 mg/dL.",
+        o: "PA 151/93 mmHg, peso 90,7 kg, glicemia capilar 119 mg/dL.",
         a: "Melhora inicial de controle pressorico.",
         p: "Manter esquema atual e reforcar perda ponderal gradual.",
       },
@@ -162,7 +162,7 @@ export const brunoFerreiraPatient: Patient = {
       ],
       soap: {
         s: "Sem cefaleia, sem dor toracica, boa tolerancia medicamentosa.",
-        o: "PA 142/90 mmHg, peso 89.1 kg, glicemia 116 mg/dL.",
+        o: "PA 144/91 mmHg, peso 89,3 kg, glicemia 112 mg/dL.",
         a: "HAS em melhora progressiva; risco cardio-metabolico moderado.",
         p: "Solicitado perfil lipidico, creatinina e microalbuminuria.",
       },
@@ -214,7 +214,7 @@ export const brunoFerreiraPatient: Patient = {
       ],
       soap: {
         s: "Paciente assintomatico, rotina de exercicios mantida.",
-        o: "PA 136/86 mmHg, peso 87.8 kg, glicemia 109 mg/dL.",
+        o: "PA 137/85 mmHg, peso 87,9 kg, glicemia 107 mg/dL.",
         a: "Controle pressorico quase na meta; boa resposta clinica.",
         p: "Manter doses atuais e revisar em 1 mes com nova media domiciliar.",
       },
@@ -266,7 +266,7 @@ export const brunoFerreiraPatient: Patient = {
       ],
       soap: {
         s: "Refere bem-estar, sem eventos adversos das medicações.",
-        o: "PA 130/82 mmHg, peso 86.9 kg, glicemia 102 mg/dL.",
+        o: "PA 131/81 mmHg, peso 86,4 kg, glicemia 102,5 mg/dL.",
         a: "HAS controlada com melhora sustentada de parametros metabolicos.",
         p: "Manter tratamento atual; retorno trimestral.",
       },
@@ -314,30 +314,242 @@ export const brunoFerreiraPatient: Patient = {
     },
   ],
   metrics: [
-    { date: "2025-10-15", systolic: 156, diastolic: 98, weight: 92, glucose: 128 },
+    {
+      date: "2025-10-15",
+      systolic: 158,
+      diastolic: 98,
+      weight: 91.8,
+      glucose: 128,
+    },
     {
       date: "2025-11-26",
-      systolic: 149,
-      diastolic: 94,
-      weight: 90.5,
-      glucose: 122,
+      systolic: 151,
+      diastolic: 93,
+      weight: 90.7,
+      glucose: 119,
     },
     {
       date: "2026-01-14",
-      systolic: 142,
-      diastolic: 90,
-      weight: 89.1,
-      glucose: 116,
+      systolic: 144,
+      diastolic: 91,
+      weight: 89.3,
+      glucose: 112,
     },
     {
       date: "2026-02-18",
-      systolic: 136,
-      diastolic: 86,
-      weight: 87.8,
-      glucose: 109,
+      systolic: 137,
+      diastolic: 85,
+      weight: 87.9,
+      glucose: 107,
     },
-    { date: "2026-03-10", systolic: 130, diastolic: 82, weight: 86.9, glucose: 102 },
+    {
+      date: "2026-03-10",
+      systolic: 131,
+      diastolic: 81,
+      weight: 86.4,
+      glucose: 102.5,
+    },
   ],
 };
 
-export const mockPatients: Patient[] = [brunoFerreiraPatient];
+const anaClaraRibeiroPatient: Patient = {
+  id: "patient-ana-clara-ribeiro",
+  name: "Ana Clara Ribeiro",
+  dateOfBirth: "1992-04-11",
+  sex: "F",
+  height: 162,
+  weight: 58.7,
+  phone: "+55 21 97733-4401",
+  conditions: ["Rinite alérgica sazonal"],
+  medications: [
+    { name: "Loratadina", dose: "10 mg se necessário", status: "active" },
+  ],
+  cids: [
+    {
+      code: "J30.4",
+      name: "Rinite alérgica não especificada",
+      firstSeen: "2025-08-20",
+      lastSeen: "2025-12-03",
+    },
+  ],
+  consultations: [],
+  exams: [],
+  metrics: [
+    {
+      date: "2025-08-20",
+      systolic: 118,
+      diastolic: 74,
+      weight: 59.2,
+      glucose: 89,
+    },
+    {
+      date: "2025-12-03",
+      systolic: 116,
+      diastolic: 72,
+      weight: 58.7,
+      glucose: 91,
+    },
+  ],
+};
+
+const rodrigoMendesPatient: Patient = {
+  id: "patient-rodrigo-mendes",
+  name: "Rodrigo Mendes",
+  dateOfBirth: "1979-12-02",
+  sex: "M",
+  height: 178,
+  weight: 88.3,
+  phone: "+55 11 96541-8820",
+  conditions: ["Pré-diabetes", "Sobrepeso"],
+  medications: [
+    { name: "Metformina", dose: "500 mg 2x/dia", status: "active" },
+  ],
+  cids: [
+    {
+      code: "R73.0",
+      name: "Hiperglicemia de jejum",
+      firstSeen: "2025-11-18",
+      lastSeen: "2025-11-18",
+    },
+  ],
+  consultations: [
+    {
+      id: "cons-rodrigo-2025-11-18",
+      patientId: "patient-rodrigo-mendes",
+      date: "2025-11-18",
+      reason: "Investigação de glicemia de jejum alterada",
+      duration: 32,
+      transcription: [
+        {
+          speaker: "patient",
+          text: "O exame de rotina veio com glicemia 108 e o laboratório marcou como alterado.",
+          timestamp: 28,
+          isFinal: true,
+        },
+        {
+          speaker: "doctor",
+          text: "Vamos repetir com TOTG e orientar dieta com baixa carga glicêmica; retorno com resultado em 3 semanas.",
+          timestamp: 76,
+          isFinal: true,
+        },
+      ],
+      soap: {
+        s: "Assintomático; refere sede leve vespertina nos últimos 15 dias.",
+        o: "IMC 27,8; PA 128/82 mmHg; abdome sem visceromegalias palpáveis.",
+        a: "Hiperglicemia de jejum leve; síndrome metabrólica provável.",
+        p: "TOTG + perfil lipídico; metformina 500 mg 12/12 h; nutrição em 20 dias.",
+      },
+      confirmedCids: [
+        {
+          code: "R73.0",
+          name: "Hiperglicemia de jejum",
+          confidence: 0.88,
+          sourceQuote: "Glicemia de jejum elevada no screening.",
+          confirmed: true,
+        },
+      ],
+      detectedItems: [
+        {
+          id: "det-rodrigo-1",
+          type: "exam",
+          text: "TOTG + perfil lipídico",
+          sourceQuote: "Solicito curva glicêmica e lipídios de jejum.",
+          details: {},
+        },
+      ],
+      documents: [
+        {
+          type: "exam-request",
+          status: "ready",
+          content: "Pedido: TOTG + colesterol total e frações.",
+        },
+      ],
+    },
+  ],
+  exams: [],
+  metrics: [
+    {
+      date: "2025-11-18",
+      systolic: 128,
+      diastolic: 82,
+      weight: 88.3,
+      glucose: 108,
+    },
+  ],
+};
+
+const cintiaSouzaPatient: Patient = {
+  id: "patient-cintia-souza",
+  name: "Cíntia Souza",
+  dateOfBirth: "1985-07-26",
+  sex: "F",
+  height: 168,
+  weight: 71.4,
+  phone: "+55 31 98422-1193",
+  conditions: ["Enxaqueca episódica"],
+  medications: [
+    { name: "Sumatriptana", dose: "50 mg nas crises", status: "active" },
+    { name: "Magnésio", dose: "400 mg à noite", status: "active" },
+  ],
+  cids: [
+    {
+      code: "G43.1",
+      name: "Enxaqueia com aura",
+      firstSeen: "2026-01-07",
+      lastSeen: "2026-01-07",
+    },
+  ],
+  consultations: [],
+  exams: [],
+  metrics: [
+    {
+      date: "2026-01-07",
+      systolic: 122,
+      diastolic: 78,
+      weight: 71.4,
+      glucose: 94,
+    },
+  ],
+};
+
+const elainePradoPatient: Patient = {
+  id: "patient-elaine-prado",
+  name: "Elaine Prado",
+  dateOfBirth: "1963-03-14",
+  sex: "F",
+  height: 159,
+  weight: 64.2,
+  phone: "+55 47 99102-6634",
+  conditions: ["Osteopenia", "Hipotireoidismo subclínico"],
+  medications: [
+    { name: "Levotiroxina", dose: "37,5 mcg em jejum", status: "active" },
+    { name: "Cálcio + D3", dose: "1 comp à noite", status: "active" },
+  ],
+  cids: [
+    {
+      code: "M85.8",
+      name: "Outras osteoporoses",
+      firstSeen: "2025-09-09",
+      lastSeen: "2025-09-09",
+    },
+  ],
+  consultations: [],
+  exams: [],
+  metrics: [
+    {
+      date: "2025-09-09",
+      systolic: 132,
+      diastolic: 79,
+      weight: 64.2,
+      glucose: 99,
+    },
+  ],
+};
+
+export const mockPatients: Patient[] = [
+  brunoFerreiraPatient,
+  anaClaraRibeiroPatient,
+  rodrigoMendesPatient,
+  cintiaSouzaPatient,
+  elainePradoPatient,
+];

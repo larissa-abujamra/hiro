@@ -11,8 +11,8 @@ export default async function ResumoConsultaPage({
   const { id } = await params;
 
   return (
-    <main className="mx-auto w-full max-w-6xl bg-hiro-bg px-6 py-6">
+    <div className="mx-auto w-full max-w-6xl bg-hiro-bg px-6 py-6">
       <GeneratedSummaryWorkspace consultationId={id} patients={mockPatients} />
-    </main>
+    </div>
   );
 }
