@@ -89,9 +89,6 @@ export function DailyMetricsCard() {
             </span>
             <span className="text-lg font-medium text-hiro-muted">min</span>
           </div>
-          <p className="mt-2 text-sm text-hiro-muted">
-            meta: {m.metaTempo} min por consulta
-          </p>
           <div className="mt-auto pt-5">
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/[0.06]">
               <div
