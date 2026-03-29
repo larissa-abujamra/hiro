@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
+import { Mic, Users } from "lucide-react";
 
 interface NavItemProps {
   href: string;
   label: string;
-  icon: string;
+  icon: ReactNode;
   onClick?: () => void;
   prefetch?: boolean;
 }
@@ -29,7 +31,10 @@ function NavItem({ href, label, icon, onClick, prefetch }: NavItemProps) {
           : "border-transparent text-hiro-muted hover:bg-black/[0.04] hover:text-hiro-text"
       }`}
     >
-      <span aria-hidden className="opacity-80">
+      <span
+        aria-hidden
+        className="flex h-4 w-4 shrink-0 items-center justify-center opacity-80 [&_svg]:h-4 [&_svg]:w-4"
+      >
         {icon}
       </span>
       <span>{label}</span>
@@ -45,17 +50,17 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 space-y-0.5 px-3 py-4">
-        <NavItem href="/" icon="◻" label="Início" onClick={onNavigate} />
+        <NavItem href="/" icon={<span className="text-[13px] leading-none">◻</span>} label="Início" onClick={onNavigate} />
         <NavItem
           href="/consulta/nova"
-          icon="●"
+          icon={<Mic strokeWidth={1.75} />}
           label="Nova consulta"
           prefetch={false}
           onClick={onNavigate}
         />
         <NavItem
           href="/pacientes"
-          icon="◯"
+          icon={<Users strokeWidth={1.75} />}
           label="Pacientes"
           onClick={onNavigate}
         />

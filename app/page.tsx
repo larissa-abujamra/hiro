@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Calendar, FileText, Mic, Users } from "lucide-react";
+import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import {
   UpcomingPatientsSection,
   type UpcomingPatient,
@@ -60,35 +61,36 @@ const upcomingPatients: UpcomingPatient[] = [
 ];
 
 export default function Home() {
-  const todayLabel = new Date().toLocaleDateString("pt-BR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-4 md:px-6 md:py-6">
       <header className="mb-8">
         <h1 className="font-serif text-4xl font-normal tracking-tight text-balance text-hiro-text">
-          Bem-vindo ao Hiro
+          Bem-vinda,{" "}
+          <span className="italic text-hiro-green">Dra. Larissa.</span>
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-hiro-muted">{todayLabel}</p>
+        <p className="mt-2 text-sm leading-relaxed text-hiro-muted">
+          {new Date().toLocaleDateString("pt-BR", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
+        </p>
       </header>
 
       <DailyMetricsCard />
 
-      <div className="mt-6 grid grid-cols-1 items-start gap-5 md:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 items-start gap-5 overflow-visible md:grid-cols-2">
         <div className="min-w-0 [&>section]:mt-0">
           <UpcomingPatientsSection patients={upcomingPatients} />
         </div>
 
-        <section className="glass-card min-w-0 rounded-2xl p-6">
+        <section className="glass-card min-w-0 overflow-visible rounded-2xl p-6">
           <h2 className="font-serif text-2xl font-normal tracking-tight text-hiro-text">
             Ações rápidas
           </h2>
 
-          <div className="mt-4 flex flex-col gap-3">
+          <div className="mt-4 flex flex-col gap-3 overflow-visible">
             <Link
               href="/consulta/nova"
               prefetch={false}
@@ -110,7 +112,7 @@ export default function Home() {
               className="flex w-full items-center gap-3 rounded-xl border border-black/[0.08] p-4 text-left text-hiro-text transition-all duration-150 hover:bg-black/[0.03] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hiro-active/35 focus-visible:ring-offset-2 focus-visible:ring-offset-hiro-card"
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/[0.05]">
-                <Users className="h-5 w-5 text-hiro-text" strokeWidth={1.75} aria-hidden />
+                <Users className="h-5 w-5 text-hiro-green" strokeWidth={1.75} aria-hidden />
               </span>
               <span className="min-w-0">
                 <span className="block font-medium">Lista de pacientes</span>
@@ -136,7 +138,10 @@ export default function Home() {
               aria-label="Registos recentes"
             >
               <li className="flex gap-3 py-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D6E8DC]/80 text-hiro-active">
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-hiro-active"
+                  style={iconCircleGlassOnLightCard}
+                >
                   <FileText className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                 </span>
                 <div className="min-w-0 pt-0.5">
@@ -149,7 +154,10 @@ export default function Home() {
                 </div>
               </li>
               <li className="flex gap-3 py-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FAEEDA]/90 text-[#854F0B]">
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#854F0B]"
+                  style={iconCircleGlassOnLightCard}
+                >
                   <Calendar className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                 </span>
                 <div className="min-w-0 pt-0.5">

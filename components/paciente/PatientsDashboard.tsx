@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { AvatarInitials } from "@/components/ui/AvatarInitials";
 import { CardHiro } from "@/components/ui/CardHiro";
-import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { useConsultationStore } from "@/lib/store";
 
 export function PatientsDashboard() {
@@ -29,8 +28,7 @@ export function PatientsDashboard() {
               </div>
             </div>
             <div className="text-right">
-              <OverlineLabel>Perfil</OverlineLabel>
-              <p className="link-arrow ml-auto mt-0.5 inline-flex text-sm font-medium text-hiro-green">
+              <p className="link-arrow ml-auto inline-flex text-sm font-medium text-hiro-green">
                 <span>Ver paciente</span>
                 <span aria-hidden>→</span>
               </p>

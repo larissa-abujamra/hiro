@@ -14,6 +14,7 @@ import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { BadgeStatus } from "@/components/ui/BadgeStatus";
 import { generateProntuarioPDF } from "@/lib/generatePdf";
+import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { useConsultationStore } from "@/lib/store";
 import type { GeneratedDocument, Patient } from "@/lib/types";
 
@@ -108,14 +109,6 @@ export function GeneratedSummaryWorkspace({
     tiss: "Guia TISS",
     certificate: "Atestado médico",
     referral: "Encaminhamento",
-  };
-
-  const iconBg: Record<GeneratedDocument["type"], string> = {
-    prescription: "bg-[#E1F5EE]",
-    "exam-request": "bg-[#E6F1FB]",
-    tiss: "bg-[#FAEEDA]",
-    certificate: "bg-[#F1EFE8]",
-    referral: "bg-[#EEEDFE]",
   };
 
   const DocIcon = ({ type }: { type: GeneratedDocument["type"] }) => {
@@ -332,7 +325,8 @@ export function GeneratedSummaryWorkspace({
                 className="glass-card-input flex cursor-pointer items-center gap-3 rounded-xl p-4 transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.03] active:scale-[0.995]"
               >
                 <div
-                  className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${iconBg[doc.type]}`}
+                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
+                  style={iconCircleGlassOnLightCard}
                 >
                   <DocIcon type={doc.type} />
                 </div>

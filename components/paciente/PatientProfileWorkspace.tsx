@@ -22,6 +22,7 @@ import { ButtonHiro } from "@/components/ui/ButtonHiro";
 import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { BadgeStatus } from "@/components/ui/BadgeStatus";
+import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { useConsultationStore } from "@/lib/store";
 import type { Exam } from "@/lib/types";
 
@@ -423,9 +424,8 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
                   className="glass-card-input mt-3 flex items-center gap-3 rounded-xl p-4"
                 >
                   <div
-                    className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${
-                      exam.type === "lab" ? "bg-[#E1F5EE]" : "bg-[#E6F1FB]"
-                    }`}
+                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
+                    style={iconCircleGlassOnLightCard}
                   >
                     <FileText className="h-4 w-4" />
                   </div>

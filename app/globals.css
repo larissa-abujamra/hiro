@@ -68,6 +68,7 @@ main {
 
 /* Glass padrão — todos os cards (exceto sidebar, que usa .liquid-glass-surface) */
 .glass-card {
+  overflow: visible;
   background: rgba(255, 255, 255, 0.35) !important;
   backdrop-filter: blur(24px) saturate(190%);
   -webkit-backdrop-filter: blur(24px) saturate(190%);

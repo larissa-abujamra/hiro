@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 
 export type UpcomingPatient = {
   id: string;
@@ -33,7 +34,7 @@ function PatientRow({ patient, index }: { patient: UpcomingPatient; index: numbe
       <div
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
         style={{
-          backgroundColor: patient.avatarColor.bg,
+          ...iconCircleGlassOnLightCard,
           color: patient.avatarColor.text,
         }}
       >
