@@ -11,7 +11,7 @@ const variantClasses: Record<NonNullable<ButtonHiroProps["variant"]>, string> = 
   secondary:
     "border border-black/15 bg-transparent text-hiro-text transition-all duration-200 hover:bg-black/[0.04] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hiro-active/35 focus-visible:ring-offset-2 focus-visible:ring-offset-hiro-bg",
   ghost:
-    "bg-transparent text-hiro-text transition-colors duration-150 hover:bg-hiro-card/70 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hiro-active/30 focus-visible:ring-offset-2",
+    "bg-transparent text-hiro-text transition-colors duration-150 hover:bg-white/30 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hiro-active/30 focus-visible:ring-offset-2",
   danger:
     "bg-hiro-red text-white transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(217,79,79,0.25)] hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hiro-red/50 focus-visible:ring-offset-2",
 };

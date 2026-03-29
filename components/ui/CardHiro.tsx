@@ -13,10 +13,10 @@ export function CardHiro({
 }: CardHiroProps) {
   return (
     <div
-      className={`rounded-2xl border p-5 transition-colors ${
+      className={`rounded-2xl p-5 transition-colors ${
         active
-          ? "border-hiro-active bg-hiro-active text-white"
-          : "border-black/8 bg-hiro-card text-hiro-text"
+          ? "border border-hiro-active bg-hiro-active text-white"
+          : "glass-card text-hiro-text"
       } ${className}`.trim()}
       {...props}
     >

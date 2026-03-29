@@ -25,22 +25,22 @@ body {
   position: relative;
 }
 
-body::before {
+body::after {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 0;
   pointer-events: none;
-  opacity: 0.025;
+  z-index: 2;
+  opacity: 0.028;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-size: 256px 256px;
+  background-size: 200px 200px;
 }
 
 /* Não aplicar position:relative a todos os filhos do body: isso anula position:fixed
    da sidebar e a coloca no fluxo, empurrando o <main> para baixo e “encurtando” a barra lateral. */
 main {
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 
 /* Liquid glass — superfícies */
@@ -64,6 +64,38 @@ main {
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     inset 0 -1px 0 rgba(0, 0, 0, 0.04),
     0 8px 32px rgba(45, 92, 63, 0.06);
+}
+
+/* Glass padrão — todos os cards (exceto sidebar, que usa .liquid-glass-surface) */
+.glass-card {
+  background: rgba(255, 255, 255, 0.35) !important;
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.55) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.03),
+    0 4px 24px rgba(45, 92, 63, 0.07),
+    0 1px 4px rgba(45, 92, 63, 0.04) !important;
+}
+
+/* Campos dentro de cards glass */
+.glass-card-input {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Liquid glass — sidebar (não unificar com glass-card) */
+.liquid-glass-surface {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(32px) saturate(185%);
+  -webkit-backdrop-filter: blur(32px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+    inset 1px 0 0 rgba(255, 255, 255, 0.22),
+    0 8px 32px rgba(45, 92, 63, 0.08);
 }
 
 .glass-green {

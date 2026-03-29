@@ -68,7 +68,7 @@ export default function Home() {
   });
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col bg-hiro-bg px-4 py-4 md:px-6 md:py-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-4 md:px-6 md:py-6">
       <header className="mb-8">
         <h1 className="font-serif text-4xl font-normal tracking-tight text-balance text-hiro-text">
           Bem-vindo ao Hiro
@@ -83,7 +83,7 @@ export default function Home() {
           <UpcomingPatientsSection patients={upcomingPatients} />
         </div>
 
-        <section className="min-w-0 rounded-2xl bg-hiro-card p-6 hiro-shadow-card">
+        <section className="glass-card min-w-0 rounded-2xl p-6">
           <h2 className="font-serif text-2xl font-normal tracking-tight text-hiro-text">
             Ações rápidas
           </h2>

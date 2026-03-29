@@ -26,7 +26,7 @@ export function EvolutionCharts({ data }: EvolutionChartsProps) {
 
   if (filteredData.length < 2) {
     return (
-      <section className="rounded-2xl border border-black/7 bg-hiro-card p-4">
+      <section className="glass-card rounded-2xl p-4">
         <OverlineLabel>Gráficos de evolução</OverlineLabel>
         <p className="mt-3 text-sm text-hiro-muted">
           Os dados aparecerão após 2 consultas.
@@ -36,7 +36,7 @@ export function EvolutionCharts({ data }: EvolutionChartsProps) {
   }
 
   return (
-    <section className="rounded-2xl border border-black/7 bg-hiro-card p-4">
+    <section className="glass-card rounded-2xl p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <OverlineLabel>Gráficos de evolução</OverlineLabel>
         <div className="flex flex-wrap gap-1">

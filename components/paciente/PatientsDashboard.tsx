@@ -18,7 +18,7 @@ export function PatientsDashboard() {
           className="animate-fade-up block transition-transform duration-150 active:scale-[0.995]"
           style={{ animationDelay: `${index * 40}ms` }}
         >
-          <CardHiro className="flex cursor-pointer items-center justify-between gap-3 transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.02] hiro-shadow-card">
+          <CardHiro className="flex cursor-pointer items-center justify-between gap-3 transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.02]">
             <div className="flex items-center gap-3">
               <AvatarInitials name={patient.name} />
               <div>

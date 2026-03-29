@@ -95,7 +95,7 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Buscar paciente..."
-            className="mt-4 w-full rounded-xl border border-black/10 bg-white/80 px-3 py-2 text-sm text-hiro-text outline-none"
+            className="glass-card-input mt-4 w-full rounded-xl px-3 py-2 text-sm text-hiro-text outline-none"
           />
           <div className="mt-3 max-h-40 space-y-2 overflow-auto">
             {filteredPatients.map((patient) => (
@@ -110,7 +110,7 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
                       : "border-hiro-green bg-hiro-badge-ok-bg text-hiro-text"
                     : intakeMode === "existing"
                       ? "border-white/25 bg-white/15 text-white hover:bg-white/25"
-                      : "border-black/10 bg-white/60 text-hiro-text"
+                      : "glass-card-input text-hiro-text"
                 }`}
               >
                 <p>{patient.name}</p>
@@ -142,20 +142,20 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
               value={newPatientDraft.name}
               onChange={(event) => setNewPatientDraft({ name: event.target.value })}
               placeholder="Nome completo"
-              className="rounded-xl border border-black/10 bg-white/80 px-3 py-2 text-sm text-hiro-text outline-none"
+              className="glass-card-input rounded-xl px-3 py-2 text-sm text-hiro-text outline-none"
             />
             <input
               value={newPatientDraft.dateOfBirth}
               onChange={(event) => setNewPatientDraft({ dateOfBirth: event.target.value })}
               type="date"
-              className="rounded-xl border border-black/10 bg-white/80 px-3 py-2 text-sm text-hiro-text outline-none"
+              className="glass-card-input rounded-xl px-3 py-2 text-sm text-hiro-text outline-none"
             />
             <select
               value={newPatientDraft.sex}
               onChange={(event) =>
                 setNewPatientDraft({ sex: event.target.value as "M" | "F" | "Other" })
               }
-              className="rounded-xl border border-black/10 bg-white/80 px-3 py-2 text-sm text-hiro-text outline-none"
+              className="glass-card-input rounded-xl px-3 py-2 text-sm text-hiro-text outline-none"
             >
               <option value="M">Masculino</option>
               <option value="F">Feminino</option>
@@ -176,24 +176,24 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
                 onChange={(event) =>
                   setNewPatientDraft({ height: Number(event.target.value) || undefined })
                 }
-                className="rounded-xl border border-black/10 bg-white/80 px-3 py-2 text-sm text-hiro-text outline-none"
+                className="glass-card-input rounded-xl px-3 py-2 text-sm text-hiro-text outline-none"
               />
               <input
                 placeholder="Peso (kg)"
                 onChange={(event) =>
                   setNewPatientDraft({ weight: Number(event.target.value) || undefined })
                 }
-                className="rounded-xl border border-black/10 bg-white/80 px-3 py-2 text-sm text-hiro-text outline-none"
+                className="glass-card-input rounded-xl px-3 py-2 text-sm text-hiro-text outline-none"
               />
               <input
                 placeholder="Telefone"
                 onChange={(event) => setNewPatientDraft({ phone: event.target.value })}
-                className="rounded-xl border border-black/10 bg-white/80 px-3 py-2 text-sm text-hiro-text outline-none"
+                className="glass-card-input rounded-xl px-3 py-2 text-sm text-hiro-text outline-none"
               />
               <input
                 placeholder="Condição principal conhecida"
                 onChange={(event) => setNewPatientDraft({ condition: event.target.value })}
-                className="rounded-xl border border-black/10 bg-white/80 px-3 py-2 text-sm text-hiro-text outline-none"
+                className="glass-card-input rounded-xl px-3 py-2 text-sm text-hiro-text outline-none"
               />
             </div>
           )}
@@ -206,7 +206,7 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
           <select
             value={REASONS.includes(consultationReason) ? consultationReason : ""}
             onChange={(event) => setConsultationReason(event.target.value)}
-            className="rounded-xl border border-black/10 bg-white/80 px-3 py-2 text-sm text-hiro-text outline-none"
+            className="glass-card-input rounded-xl px-3 py-2 text-sm text-hiro-text outline-none"
           >
             <option value="">Selecionar motivo</option>
             {REASONS.map((reason) => (
@@ -219,7 +219,7 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
             value={consultationReason}
             onChange={(event) => setConsultationReason(event.target.value)}
             placeholder="Ou descreva em texto livre"
-            className="rounded-xl border border-black/10 bg-white/80 px-3 py-2 text-sm text-hiro-text outline-none"
+            className="glass-card-input rounded-xl px-3 py-2 text-sm text-hiro-text outline-none"
           />
         </div>
       </CardHiro>

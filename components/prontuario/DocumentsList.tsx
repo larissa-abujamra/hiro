@@ -6,7 +6,7 @@ interface DocumentsListProps {
 
 export function DocumentsList({ documents }: DocumentsListProps) {
   return (
-    <section className="rounded-2xl border border-black/8 bg-hiro-card p-5">
+    <section className="glass-card rounded-2xl p-5">
       <p className="text-sm font-medium text-hiro-text">Documentos</p>
       <ul className="mt-3 space-y-2">
         {documents.map((doc, index) => (

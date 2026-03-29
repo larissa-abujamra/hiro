@@ -191,7 +191,7 @@ export function GeneratedSummaryWorkspace({
   return (
     <div className="relative mt-6 grid gap-5 lg:grid-cols-12">
       {toast && (
-        <div className="fixed right-6 top-6 z-50 rounded-xl border border-black/10 bg-hiro-card px-4 py-2 text-sm text-hiro-text">
+        <div className="glass-card fixed right-6 top-6 z-50 rounded-xl px-4 py-2 text-sm text-hiro-text">
           {toast}
         </div>
       )}
@@ -245,7 +245,7 @@ export function GeneratedSummaryWorkspace({
                 <textarea
                   value={soap[key]}
                   onChange={(e) => updateSoap(key, e.target.value)}
-                  className="min-h-[80px] w-full resize-none rounded-xl border border-black/[0.08] bg-white/70 px-4 py-3 text-[13px] leading-relaxed text-hiro-text focus:border-hiro-green/40 focus:outline-none"
+                  className="glass-card-input min-h-[80px] w-full resize-none rounded-xl px-4 py-3 text-[13px] leading-relaxed text-hiro-text focus:outline-none focus:ring-2 focus:ring-hiro-green/30"
                   style={{ height: "auto" }}
                   onInput={(e) => {
                     const t = e.currentTarget;
@@ -329,7 +329,7 @@ export function GeneratedSummaryWorkspace({
             {generatedDocs.map((doc) => (
               <div
                 key={doc.type}
-                className="flex cursor-pointer items-center gap-3 rounded-xl border border-black/[0.06] bg-hiro-card p-4 transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.03] active:scale-[0.995]"
+                className="glass-card-input flex cursor-pointer items-center gap-3 rounded-xl p-4 transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.03] active:scale-[0.995]"
               >
                 <div
                   className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${iconBg[doc.type]}`}

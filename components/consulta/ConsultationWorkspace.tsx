@@ -269,7 +269,7 @@ Medicamentos ativos: ${sp.medications
 
   if (!patient) {
     return (
-      <section className="rounded-2xl border border-black/8 bg-hiro-card p-6">
+      <section className="glass-card rounded-2xl p-6">
         <p className="text-sm text-hiro-muted">
           Nenhum paciente disponível para iniciar consulta.
         </p>
@@ -329,7 +329,7 @@ Medicamentos ativos: ${sp.medications
                 isRecordingActive
                   ? "bg-[#8B1A1A] text-white rec-ring"
                   : isPaused
-                    ? "border-2 border-hiro-active bg-hiro-card text-hiro-active"
+                    ? "border-2 border-hiro-active bg-white/35 text-hiro-active backdrop-blur-xl"
                     : "bg-hiro-active text-white"
               }`}
             >

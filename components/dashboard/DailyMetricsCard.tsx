@@ -24,12 +24,14 @@ export function DailyMetricsCard() {
 
   return (
     <section
-      className="animate-fade-up hiro-shadow-card overflow-hidden rounded-2xl bg-hiro-card"
+      className="glass-card animate-fade-up overflow-hidden rounded-2xl"
       aria-label="Métricas do dia"
     >
       <div className="grid grid-cols-1 md:grid-cols-3">
         {/* Célula 1 — Consultas hoje */}
-        <div className="flex flex-col border-b border-black/[0.07] px-5 py-5 md:border-b-0 md:border-r md:px-6 md:py-6">
+        <div
+          className="flex flex-col border-b border-black/[0.07] px-5 py-5 md:border-b-0 md:border-r md:[border-right-color:rgba(255,255,255,0.35)] md:px-6 md:py-6"
+        >
           <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-hiro-muted">
             Consultas hoje
           </span>
@@ -55,7 +57,9 @@ export function DailyMetricsCard() {
         </div>
 
         {/* Célula 2 — Documentadas pela IA */}
-        <div className="flex flex-col border-b border-black/[0.07] px-5 py-5 md:border-b-0 md:border-r md:px-6 md:py-6">
+        <div
+          className="flex flex-col border-b border-black/[0.07] px-5 py-5 md:border-b-0 md:border-r md:[border-right-color:rgba(255,255,255,0.35)] md:px-6 md:py-6"
+        >
           <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-hiro-muted">
             Documentadas pela IA
           </span>

@@ -2,9 +2,9 @@ import { OverlineLabel } from "@/components/ui/OverlineLabel";
 
 export function ExamUpload() {
   return (
-    <section className="rounded-2xl border border-black/7 bg-hiro-card p-4">
+    <section className="glass-card rounded-2xl p-4">
       <OverlineLabel>Upload de exames</OverlineLabel>
-      <div className="mt-3 rounded-xl border border-dashed border-black/25 bg-white/45 p-5 text-center">
+      <div className="mt-3 rounded-xl border border-dashed border-white/50 bg-[rgba(255,255,255,0.6)] p-5 text-center">
         <p className="text-sm text-hiro-text">Arraste PDF/JPG/PNG ou clique para adicionar</p>
         <button
           type="button"

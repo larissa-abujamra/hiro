@@ -137,15 +137,15 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-xl bg-white/50 p-3 text-center">
+            <div className="glass-card-input rounded-xl p-3 text-center">
               <p className="mb-1 text-[11px] text-hiro-muted">Altura</p>
               <p className="text-[15px] font-medium text-hiro-text">{patient.height} cm</p>
             </div>
-            <div className="rounded-xl bg-white/50 p-3 text-center">
+            <div className="glass-card-input rounded-xl p-3 text-center">
               <p className="mb-1 text-[11px] text-hiro-muted">Peso</p>
               <p className="text-[15px] font-medium text-hiro-text">{patient.weight} kg</p>
             </div>
-            <div className="rounded-xl bg-white/50 p-3 text-center">
+            <div className="glass-card-input rounded-xl p-3 text-center">
               <p className="mb-1 text-[11px] text-hiro-muted">IMC</p>
               <p className="text-[15px] font-medium text-hiro-text">{bmi}</p>
               {bmiBadge && (
@@ -291,7 +291,7 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
                   className={`rounded-full px-3.5 py-1.5 text-[12px] font-medium transition-colors ${
                     period === p
                       ? "bg-hiro-active text-white"
-                      : "bg-hiro-card text-hiro-muted hover:bg-[#DDD9D1]"
+                      : "glass-card text-hiro-muted hover:opacity-90"
                   }`}
                 >
                   {p}
@@ -420,7 +420,7 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
               exams.map((exam) => (
                 <div
                   key={exam.id}
-                  className="mt-3 flex items-center gap-3 rounded-xl border border-black/[0.06] bg-hiro-card p-4"
+                  className="glass-card-input mt-3 flex items-center gap-3 rounded-xl p-4"
                 >
                   <div
                     className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${

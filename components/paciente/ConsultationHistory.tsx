@@ -12,13 +12,13 @@ export function ConsultationHistory({
   patientId,
 }: ConsultationHistoryProps) {
   return (
-    <section className="rounded-2xl border border-black/7 bg-hiro-card p-4">
+    <section className="glass-card rounded-2xl p-4">
       <OverlineLabel>Histórico de consultas</OverlineLabel>
       <ul className="mt-3 space-y-2">
         {[...consultations].reverse().map((consultation) => (
           <li
             key={consultation.id}
-            className="rounded-xl border border-black/10 bg-white/55 p-3 text-sm text-hiro-text"
+            className="glass-card-input rounded-xl p-3 text-sm text-hiro-text"
           >
             <p className="font-medium">
               {consultation.date} • {consultation.reason}

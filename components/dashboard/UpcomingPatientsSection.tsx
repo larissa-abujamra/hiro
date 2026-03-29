@@ -64,7 +64,7 @@ export function UpcomingPatientsSection({ patients }: { patients: UpcomingPatien
   const list = patients;
 
   return (
-    <section className="mt-6 rounded-2xl bg-hiro-card p-6 hiro-shadow-card">
+    <section className="glass-card mt-6 rounded-2xl p-6">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
         <h2 className="font-serif text-2xl font-normal tracking-tight text-hiro-text">
           Próximos pacientes

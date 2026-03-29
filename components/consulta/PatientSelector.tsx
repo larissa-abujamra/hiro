@@ -18,10 +18,10 @@ export function PatientSelector({
           key={patient.id}
           type="button"
           onClick={() => onSelectPatient?.(patient.id)}
-          className={`w-full rounded-xl border px-4 py-3 text-left text-sm ${
+          className={`w-full rounded-xl px-4 py-3 text-left text-sm ${
             selectedPatientId === patient.id
-              ? "border-hiro-green bg-hiro-badge-bg"
-              : "border-black/8 bg-hiro-card"
+              ? "border border-hiro-green bg-hiro-badge-bg"
+              : "glass-card"
           }`}
         >
           <p className="font-medium text-hiro-text">{patient.name}</p>

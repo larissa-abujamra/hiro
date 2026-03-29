@@ -6,7 +6,7 @@ interface DetectedItemsProps {
 
 export function DetectedItems({ items }: DetectedItemsProps) {
   return (
-    <section className="rounded-2xl border border-black/8 bg-hiro-card p-5">
+    <section className="glass-card rounded-2xl p-5">
       <p className="text-sm font-medium text-hiro-text">Itens detectados</p>
       <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-hiro-text">
         {items.map((item) => (
