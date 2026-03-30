@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import { useScribe } from "@elevenlabs/react";
 
 export type TranscriptionLine = {
   id: string;
@@ -9,157 +10,71 @@ export type TranscriptionLine = {
   timestamp: number;
 };
 
-type SpeechRecognitionAlternativeLike = {
-  transcript: string;
-};
-
-type SpeechRecognitionResultLike = {
-  isFinal: boolean;
-  0: SpeechRecognitionAlternativeLike;
-};
-
-type SpeechRecognitionEventLike = {
-  resultIndex: number;
-  results: SpeechRecognitionResultLike[];
-};
-
-type SpeechRecognitionErrorEventLike = {
-  error: string;
-};
-
-type SpeechRecognitionLike = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onstart: (() => void) | null;
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-};
-
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
-
-declare global {
-  interface Window {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  }
-}
-
 export function useTranscription() {
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const isListeningRef = useRef(false);
-  const [lines, setLines] = useState<TranscriptionLine[]>([]);
-  const [interimText, setInterimText] = useState("");
-  const [isListening, setIsListening] = useState(false);
-  const [isSupported, setIsSupported] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    connect,
+    disconnect,
+    clearTranscripts,
+    committedTranscripts,
+    partialTranscript,
+    isConnected,
+    error,
+  } = useScribe({
+    modelId: "scribe_v2_realtime",
+    languageCode: "pt",
+  });
 
-  const start = useCallback((): boolean => {
-    const SpeechRecognition =
-      window.SpeechRecognition ?? window.webkitSpeechRecognition;
+  // Disconnect and release mic on unmount
+  useEffect(() => {
+    return () => {
+      disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    if (!SpeechRecognition) {
-      setIsSupported(false);
-      setError(
-        "Reconhecimento de voz não suportado neste navegador. Use Chrome ou Edge.",
-      );
+  // Map ElevenLabs TranscriptSegment → our TranscriptionLine shape
+  const lines = useMemo<TranscriptionLine[]>(
+    () =>
+      committedTranscripts.map((seg) => ({
+        id: seg.id,
+        text: seg.text,
+        isFinal: true,
+        timestamp: seg.timestamp,
+      })),
+    [committedTranscripts],
+  );
+
+  // Fetch a single-use token from our backend, then open the Scribe WebSocket
+  const start = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/scribe-token");
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `Token fetch failed (${res.status})`);
+      }
+      const { token } = (await res.json()) as { token: string };
+      await connect({
+        token,
+        microphone: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+      return true;
+    } catch (err) {
+      console.error("Scribe connect error:", err);
       return false;
     }
-
-    if (recognitionRef.current) {
-      return true;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "pt-BR";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      isListeningRef.current = true;
-      setIsListening(true);
-      setError(null);
-    };
-
-    recognition.onresult = (event) => {
-      let interim = "";
-
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const result = event.results[i];
-        const transcript = result?.[0]?.transcript?.trim() ?? "";
-        if (!transcript) continue;
-
-        if (result.isFinal) {
-          setLines((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              text: transcript,
-              isFinal: true,
-              timestamp: Date.now(),
-            },
-          ]);
-          setInterimText("");
-        } else {
-          interim = transcript;
-        }
-      }
-
-      if (interim) setInterimText(interim);
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error === "no-speech") return;
-
-      if (event.error === "not-allowed") {
-        setError(
-          "Permissão de microfone negada. Permita o acesso nas configurações do navegador.",
-        );
-        isListeningRef.current = false;
-        setIsListening(false);
-        return;
-      }
-
-      if (event.error === "network") {
-        setError("Sem conexão. A transcrição requer internet neste navegador.");
-        return;
-      }
-
-      setError(`Erro: ${event.error}`);
-    };
-
-    recognition.onend = () => {
-      if (recognitionRef.current && isListeningRef.current) {
-        recognition.start();
-      } else {
-        setIsListening(false);
-      }
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    return true;
-  }, []);
+  }, [connect]);
 
   const stop = useCallback(() => {
-    isListeningRef.current = false;
-    recognitionRef.current?.stop();
-    recognitionRef.current = null;
-    setIsListening(false);
-    setInterimText("");
-  }, []);
+    disconnect();
+  }, [disconnect]);
 
   const reset = useCallback(() => {
-    stop();
-    setLines([]);
-    setInterimText("");
-    setError(null);
-  }, [stop]);
+    disconnect();
+    clearTranscripts();
+  }, [disconnect, clearTranscripts]);
 
   const wordCount = useMemo(
     () =>
@@ -170,12 +85,14 @@ export function useTranscription() {
     [lines],
   );
 
+  const errorMessage = error ?? null;
+
   return {
     lines,
-    interimText,
-    isListening,
-    isSupported,
-    error,
+    interimText: partialTranscript,
+    isListening: isConnected,
+    isSupported: true,
+    error: errorMessage,
     start,
     stop,
     reset,

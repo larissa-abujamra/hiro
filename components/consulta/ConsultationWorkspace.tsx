@@ -258,11 +258,11 @@ Medicamentos ativos: ${sp.medications
     router.push("/consulta/nova");
   }, [isGenerating, resetConsultation, router, stop, stopRecording]);
 
-  const toggleMainRecording = () => {
+  const toggleMainRecording = async () => {
     if (!isSupported) return;
 
     if (recordingPhase === "idle") {
-      const ok = start();
+      const ok = await start();
       if (!ok) return;
       startRecording();
       setRecordingPhase("recording");
@@ -274,7 +274,7 @@ Medicamentos ativos: ${sp.medications
       stopRecording();
       return;
     }
-    const ok = start();
+    const ok = await start();
     if (!ok) return;
     startRecording();
     setRecordingPhase("recording");
@@ -366,7 +366,7 @@ Medicamentos ativos: ${sp.medications
           <div className="flex flex-col items-center gap-5">
             <button
               type="button"
-              onClick={toggleMainRecording}
+              onClick={() => void toggleMainRecording()}
               className={`relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hiro-active/50 focus-visible:ring-offset-2 active:scale-[0.97] ${
                 isRecordingActive
                   ? "bg-[#8B1A1A] text-white rec-ring"
@@ -426,13 +426,13 @@ Medicamentos ativos: ${sp.medications
             {recordingPhase !== "idle" && (
               <ButtonHiro
                 variant="secondary"
-                onClick={() => {
+                onClick={async () => {
                   if (isRecordingActive) {
                     setRecordingPhase("paused");
                     stop();
                     stopRecording();
                   } else {
-                    const ok = start();
+                    const ok = await start();
                     if (!ok) return;
                     setRecordingPhase("recording");
                     startRecording();
