@@ -66,7 +66,7 @@ main {
     0 8px 32px rgba(45, 92, 63, 0.06);
 }
 
-/* Glass padrão — todos os cards (exceto sidebar, que usa .liquid-glass-surface) */
+/* Glass padrão — cards; a sidebar usa fundo opaco (bg-hiro-card) */
 .glass-card {
   overflow: visible;
   background: rgba(255, 255, 255, 0.35) !important;
@@ -86,7 +86,7 @@ main {
   border: 1px solid rgba(255, 255, 255, 0.5) !important;
 }
 
-/* Liquid glass — sidebar (não unificar com glass-card) */
+/* Liquid glass — reservado / legado (sidebar agora é opaca) */
 .liquid-glass-surface {
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(32px) saturate(185%);
