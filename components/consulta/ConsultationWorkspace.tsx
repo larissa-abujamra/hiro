@@ -73,6 +73,7 @@ export function ConsultationWorkspace({
   const setGeneratedSoap = useConsultationStore((state) => state.setGeneratedSoap);
   const setPatientSummary = useConsultationStore((state) => state.setPatientSummary);
   const setFlags = useConsultationStore((state) => state.setFlags);
+  const resetConsultation = useConsultationStore((state) => state.resetConsultation);
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [recordingPhase, setRecordingPhase] = useState<"idle" | "recording" | "paused">(
@@ -217,6 +218,15 @@ Medicamentos ativos: ${sp.medications
     stopRecording,
   ]);
 
+  const handleCancelConsultation = useCallback(() => {
+    if (isGenerating) return;
+    stop();
+    stopRecording();
+    setRecordingPhase("idle");
+    resetConsultation();
+    router.push("/consulta/nova");
+  }, [isGenerating, resetConsultation, router, stop, stopRecording]);
+
   const toggleMainRecording = () => {
     if (!isSupported) return;
 
@@ -278,7 +288,7 @@ Medicamentos ativos: ${sp.medications
   }
 
   return (
-    <div className="relative mt-6 grid gap-5 pb-24 lg:grid-cols-12">
+    <div className="relative mt-6 pb-24">
       {isGenerating && (
         <div
           className="glass-loading-overlay fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 px-6"
@@ -293,6 +303,7 @@ Medicamentos ativos: ${sp.medications
           </p>
         </div>
       )}
+      <div className="grid gap-5 lg:grid-cols-12">
       <section className="space-y-5 lg:col-span-7">
         <CardHiro className="rounded-2xl p-5">
           <div className="flex items-center justify-between gap-3">
@@ -606,10 +617,18 @@ Medicamentos ativos: ${sp.medications
           </div>
         </div>
       </aside>
+      </div>
 
-      <div className="glass-warm sticky bottom-0 z-30 border-t border-black/10 px-6 py-3 lg:col-span-12">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
-          <ButtonHiro variant="secondary">Cancelar consulta</ButtonHiro>
+      <div className="glass-warm fixed bottom-0 left-0 right-0 z-30 border-t border-black/10 backdrop-blur lg:left-[220px]">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+          <ButtonHiro
+            type="button"
+            variant="secondary"
+            disabled={isGenerating}
+            onClick={handleCancelConsultation}
+          >
+            Cancelar consulta
+          </ButtonHiro>
           <ButtonHiro
             type="button"
             disabled={recordingSeconds < 30 || isGenerating}
