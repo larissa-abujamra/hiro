@@ -76,6 +76,7 @@ export function ConsultationWorkspace({
   const resetConsultation = useConsultationStore((state) => state.resetConsultation);
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [recordingPhase, setRecordingPhase] = useState<"idle" | "recording" | "paused">(
     "idle",
   );
@@ -147,6 +148,19 @@ export function ConsultationWorkspace({
     stopRecording();
     setRecordingPhase("idle");
     setIsGenerating(true);
+    setGenerateError(null);
+
+    // Read `lines` directly from the hook — the authoritative source of truth.
+    // Do NOT read from store.liveTranscription: that value is populated via a
+    // React useEffect which runs after the render cycle. Reading the store
+    // synchronously here (before any await) would capture stale data because
+    // the final onresult events fired by recognition.stop() haven't been
+    // rendered / effected into the store yet.
+    const transcriptText = lines
+      .filter((l) => l.isFinal)
+      .map((l) => l.text)
+      .join(" ")
+      .trim();
 
     try {
       const store = useConsultationStore.getState();
@@ -154,11 +168,6 @@ export function ConsultationWorkspace({
       const sp = store.selectedPatientId
         ? list.find((p) => p.id === store.selectedPatientId) ?? null
         : null;
-
-      const transcriptText = store.liveTranscription
-        .map((l) => l.text)
-        .join(" ")
-        .trim();
 
       const patientContext = sp
         ? `${sp.name}, ${new Date().getFullYear() - new Date(sp.dateOfBirth).getFullYear()} anos.
@@ -168,6 +177,14 @@ Medicamentos ativos: ${sp.medications
             .map((m) => `${m.name} ${m.dose}`)
             .join(", ") || "nenhum"}.`
         : null;
+
+      if (!transcriptText || transcriptText.length < 20) {
+        setGenerateError(
+          "Transcrição muito curta ou vazia. Grave mais a consulta antes de gerar o prontuário.",
+        );
+        setIsGenerating(false);
+        return;
+      }
 
       const res = await fetch("/api/prontuario", {
         method: "POST",
@@ -180,11 +197,20 @@ Medicamentos ativos: ${sp.medications
         }),
       });
 
+      if (!res.ok) {
+        throw new Error(`Erro ${res.status}: ${res.statusText}`);
+      }
+
       const data = (await res.json()) as {
         soap?: { s?: string; o?: string; a?: string; p?: string };
         summary?: string;
         flags?: unknown[];
+        error?: string;
       };
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       const soap = data.soap ?? {};
       setGeneratedSoap({
@@ -203,12 +229,17 @@ Medicamentos ativos: ${sp.medications
       router.push(`/consulta/${consultationId}/resumo`);
     } catch (err) {
       console.error("Prontuário error:", err);
-      router.push(`/consulta/${consultationId}/resumo`);
+      setGenerateError(
+        err instanceof Error
+          ? err.message
+          : "Erro ao gerar prontuário. Verifique sua conexão e tente novamente.",
+      );
     } finally {
       setIsGenerating(false);
     }
   }, [
     consultationId,
+    lines,
     recordingSeconds,
     router,
     setFlags,
@@ -620,6 +651,11 @@ Medicamentos ativos: ${sp.medications
       </div>
 
       <div className="glass-warm fixed bottom-0 left-0 right-0 z-30 border-t border-black/10 backdrop-blur lg:left-[220px]">
+        {generateError && (
+          <div className="border-b border-hiro-red/20 bg-[#FAECE7] px-4 py-2.5 text-sm text-hiro-red sm:px-6">
+            {generateError}
+          </div>
+        )}
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <ButtonHiro
             type="button"
