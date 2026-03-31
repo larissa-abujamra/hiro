@@ -17,6 +17,7 @@ import { generateProntuarioPDF } from "@/lib/generatePdf";
 import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { useConsultationStore } from "@/lib/store";
 import type { GeneratedDocument, Patient } from "@/lib/types";
+import { MemedPrescription } from "@/components/prontuario/MemedPrescription";
 
 interface GeneratedSummaryWorkspaceProps {
   consultationId: string;
@@ -290,6 +291,17 @@ export function GeneratedSummaryWorkspace({
             </button>
           </CardHiro>
         )}
+
+        <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
+          <OverlineLabel>PRESCRIÇÃO DIGITAL</OverlineLabel>
+          <p className="text-[12px] leading-relaxed text-hiro-muted">
+            Prescreva digitalmente via Memed com assinatura integrada.
+          </p>
+          <MemedPrescription
+            planText={soap.p}
+            prescriptionItems={detectedItems.filter((i) => i.type === "prescription")}
+          />
+        </CardHiro>
 
         <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
           <OverlineLabel>ASSINAR E FINALIZAR</OverlineLabel>

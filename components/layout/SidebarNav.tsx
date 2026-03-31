@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Mic, Users } from "lucide-react";
+import { useDoctorStore } from "@/lib/doctorStore";
 
 interface NavItemProps {
   href: string;
@@ -43,6 +44,16 @@ function NavItem({ href, label, icon, onClick, prefetch }: NavItemProps) {
 }
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const profile = useDoctorStore((s) => s.profile);
+  const isComplete = useDoctorStore((s) => s.isProfileComplete)();
+
+  const displayName =
+    profile.nome || profile.sobrenome
+      ? `${profile.sexo === "M" ? "Dr." : "Dra."} ${profile.nome} ${profile.sobrenome}`.trim()
+      : "Meu perfil";
+
+  const specialty = profile.especialidade || "Configure seu perfil";
+
   return (
     <>
       <div className="border-b border-black/10 px-5 py-5">
@@ -67,8 +78,19 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="border-t border-black/10 px-5 py-4">
-        <p className="text-sm font-medium text-hiro-text">Dra. Larissa Oliveira</p>
-        <p className="text-xs text-hiro-muted">Clínico geral</p>
+        <Link
+          href="/perfil"
+          onClick={onNavigate}
+          className="group flex flex-col gap-0.5 rounded-xl p-1.5 -mx-1.5 transition-colors hover:bg-black/[0.04]"
+        >
+          <span className="flex items-center gap-1.5 text-sm font-medium text-hiro-text group-hover:text-hiro-green transition-colors">
+            {displayName}
+            {!isComplete && (
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-hiro-amber shrink-0" title="Perfil incompleto" />
+            )}
+          </span>
+          <span className="text-xs text-hiro-muted">{specialty}</span>
+        </Link>
       </div>
     </>
   );
