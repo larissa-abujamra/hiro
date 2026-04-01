@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.80.0",
     "@elevenlabs/elevenlabs-js": "^2.41.0",
     "@elevenlabs/react": "^1.0.0",
+    "@vercel/analytics": "^2.0.1",
     "geist": "^1.7.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.7.0",

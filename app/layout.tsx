@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
+import { Analytics } from "@vercel/analytics/next";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { SidebarDesktopShell } from "@/components/layout/SidebarDesktopShell";
 import "./globals.css";
@@ -57,6 +58,7 @@ export default function RootLayout({
         <SidebarDesktopShell />
         <Sidebar />
         <main className="relative z-[3] min-h-full lg:pl-[220px]">{children}</main>
+        <Analytics />
       </body>
     </html>
   );

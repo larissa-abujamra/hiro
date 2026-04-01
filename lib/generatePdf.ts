@@ -16,126 +16,165 @@ export interface ProntuarioData {
   medications?: string[];
 }
 
+// ─── Colours ──────────────────────────────────────────────────────────────────
+const C = {
+  green:    [45, 92, 63]   as [number, number, number],
+  text:     [28, 43, 30]   as [number, number, number],
+  muted:    [107, 122, 109]as [number, number, number],
+  divider:  [210, 215, 210]as [number, number, number],
+  white:    [255, 255, 255]as [number, number, number],
+  lightBg:  [247, 249, 247]as [number, number, number],
+};
+
 export function generateProntuarioPDF(data: ProntuarioData): void {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc  = new jsPDF({ unit: "mm", format: "a4" });
+  const PW   = doc.internal.pageSize.getWidth();
+  const PH   = doc.internal.pageSize.getHeight();
+  const ML   = 22;          // left margin
+  const MR   = 22;          // right margin
+  const CW   = PW - ML - MR;
+  let y      = 0;
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 20;
-  const contentWidth = pageWidth - margin * 2;
-  let y = 20;
+  // ── helpers ──────────────────────────────────────────────────────────────
 
-  const addText = (
-    text: string,
+  const setStyle = (
     size: number,
-    bold = false,
-    color: [number, number, number] = [28, 43, 30],
+    weight: "normal" | "bold" | "italic" | "bolditalic" = "normal",
+    color: [number, number, number] = C.text,
   ) => {
     doc.setFontSize(size);
-    doc.setFont("helvetica", bold ? "bold" : "normal");
-    doc.setTextColor(color[0], color[1], color[2]);
-    const lines = doc.splitTextToSize(text, contentWidth);
-    doc.text(lines, margin, y);
-    y += lines.length * size * 0.4 + 2;
+    doc.setFont("helvetica", weight);
+    doc.setTextColor(...color);
   };
 
-  const addSpacer = (height = 6) => {
-    y += height;
+  /** Wrap + print text, return the height consumed (mm). */
+  const printText = (
+    text: string,
+    size: number,
+    weight: "normal" | "bold" | "italic" | "bolditalic" = "normal",
+    color: [number, number, number] = C.text,
+    lineHeightFactor = 1.55,
+    indent = 0,
+  ): number => {
+    setStyle(size, weight, color);
+    const maxW  = CW - indent;
+    const lines = doc.splitTextToSize(text, maxW) as string[];
+    const lh    = (size * 0.352778) * lineHeightFactor; // pt→mm * factor
+    lines.forEach((line, i) => {
+      checkBreak(lh + (i === 0 ? 0 : 0));
+      doc.text(line, ML + indent, y);
+      y += lh;
+    });
+    return lines.length * lh;
   };
 
-  const addDivider = () => {
-    doc.setDrawColor(200, 200, 195);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y, pageWidth - margin, y);
-    addSpacer(5);
+  const gap = (mm: number) => { y += mm; };
+
+  const hRule = (color: [number, number, number] = C.divider, lw = 0.25) => {
+    doc.setDrawColor(...color);
+    doc.setLineWidth(lw);
+    doc.line(ML, y, PW - MR, y);
+    gap(4);
   };
 
-  const checkPageBreak = (needed = 20) => {
-    if (y + needed > doc.internal.pageSize.getHeight() - 20) {
+  const checkBreak = (needed = 18) => {
+    if (y + needed > PH - 18) {
       doc.addPage();
-      y = 20;
+      y = 22;
     }
   };
 
-  doc.setFillColor(45, 92, 63);
-  doc.rect(0, 0, pageWidth, 16, "F");
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
-  doc.text("hiro.", margin, 10.5);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.text("AI Medical Scribe", margin + 14, 10.5);
+  // ── Green header banner ───────────────────────────────────────────────────
+  doc.setFillColor(...C.green);
+  doc.rect(0, 0, PW, 15, "F");
 
-  y = 26;
+  setStyle(12, "bold", C.white);
+  doc.text("hiro.", ML, 10);
+  setStyle(8, "normal", [180, 210, 190] as [number, number, number]);
+  doc.text("AI Medical Scribe", ML + 15, 10);
 
-  addText(`Prontuário — ${data.patientName}`, 16, true);
-  addSpacer(2);
-  addText(
-    `${data.date}  ·  ${data.doctorName}  ·  ${data.duration} min de gravação`,
-    9,
-    false,
-    [107, 122, 109],
+  // right-aligned date
+  setStyle(8, "normal", [180, 210, 190] as [number, number, number]);
+  doc.text(data.date, PW - MR, 10, { align: "right" });
+
+  y = 23;
+
+  // ── Document title ────────────────────────────────────────────────────────
+  printText("Relatório Clínico", 18, "normal", C.green);
+  gap(1);
+  printText(data.patientName, 14, "bold", C.text);
+  gap(1);
+  printText(
+    `${data.doctorName}  ·  ${data.date}  ·  ${data.duration} min`,
+    8.5,
+    "normal",
+    C.muted,
   );
-  addSpacer(4);
-  addDivider();
+  gap(5);
+  hRule(C.divider, 0.4);
 
-  addText("Dados do paciente", 10, true, [107, 122, 109]);
-  addSpacer(3);
-  addText(`${data.patientName}  ·  ${data.patientAge} anos`, 11);
+  // ── Patient summary strip ─────────────────────────────────────────────────
+  const stripH = 16;
+  doc.setFillColor(...C.lightBg);
+  doc.roundedRect(ML, y - 1, CW, stripH, 2, 2, "F");
+  y += 3;
+
+  printText(`Paciente: ${data.patientName}, ${data.patientAge} anos`, 9, "bold", C.text);
+  gap(-1);
 
   if (data.confirmedCids.length > 0) {
-    addSpacer(2);
-    addText(
-      `CIDs: ${data.confirmedCids.map((c) => `${c.code} — ${c.name}`).join("  ·  ")}`,
-      10,
-      false,
-      [107, 122, 109],
-    );
+    const cidStr = data.confirmedCids.map((c) => `${c.code} — ${c.name}`).join("  ·  ");
+    printText(`CID-10: ${cidStr}`, 8.5, "normal", C.muted);
+    gap(-1);
   }
 
   if (data.medications && data.medications.length > 0) {
-    addSpacer(2);
-    addText(`Medicamentos em uso: ${data.medications.join("; ")}`, 10, false, [107, 122, 109]);
+    printText(`Em uso: ${data.medications.join(", ")}`, 8.5, "normal", C.muted);
   }
 
-  addSpacer(4);
-  addDivider();
+  gap(9);
+  hRule(C.divider, 0.25);
 
-  const soapSections: { key: keyof ProntuarioData["soap"]; label: string }[] = [
-    { key: "s", label: "S — Subjetivo" },
-    { key: "o", label: "O — Objetivo" },
-    { key: "a", label: "A — Avaliação" },
-    { key: "p", label: "P — Plano" },
+  // ── Narrative body ────────────────────────────────────────────────────────
+  // Each SOAP block is printed as a soft labelled paragraph — no heavy
+  // dividers, text flows naturally like a clinical report.
+
+  const sections: { label: string; text: string }[] = [
+    { label: "Queixa e história",         text: data.soap.s },
+    { label: "Achados clínicos",          text: data.soap.o },
+    { label: "Impressão diagnóstica",     text: data.soap.a },
+    { label: "Conduta e orientações",     text: data.soap.p },
   ];
 
-  for (const section of soapSections) {
-    checkPageBreak(30);
-    addText(section.label, 10, true, [107, 122, 109]);
-    addSpacer(2);
-    addText(data.soap[section.key]?.trim() ? data.soap[section.key] : "—", 11);
-    addSpacer(6);
+  for (const { label, text } of sections) {
+    if (!text?.trim()) continue;
+    checkBreak(28);
+
+    // Section label — small caps style, muted green
+    printText(label.toUpperCase(), 7.5, "bold", C.green, 1.3);
+    gap(1.5);
+
+    // Body paragraph
+    printText(text.trim(), 10.5, "normal", C.text, 1.6);
+    gap(7);
   }
 
-  addDivider();
+  hRule(C.divider, 0.25);
 
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
+  // ── Footer on every page ──────────────────────────────────────────────────
+  const total = doc.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(107, 122, 109);
+    setStyle(7.5, "normal", C.muted);
     doc.text(
-      `Gerado pelo Hiro AI Medical Scribe  ·  ${data.date}`,
-      margin,
-      doc.internal.pageSize.getHeight() - 10,
+      `Gerado pelo Hiro AI Medical Scribe  ·  Documento de uso clínico`,
+      ML,
+      PH - 10,
     );
-    doc.text(
-      `${i} / ${totalPages}`,
-      pageWidth - margin,
-      doc.internal.pageSize.getHeight() - 10,
-      { align: "right" },
-    );
+    doc.text(`${i} / ${total}`, PW - MR, PH - 10, { align: "right" });
   }
 
+  // ── Save ──────────────────────────────────────────────────────────────────
   const safeName = data.patientName
     .toLowerCase()
     .normalize("NFD")
@@ -143,6 +182,5 @@ export function generateProntuarioPDF(data: ProntuarioData): void {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
   const safeDate = data.date.replace(/\//g, "-");
-  const fileName = `prontuario-${safeName || "paciente"}-${safeDate}.pdf`;
-  doc.save(fileName);
+  doc.save(`relatorio-${safeName || "paciente"}-${safeDate}.pdf`);
 }
