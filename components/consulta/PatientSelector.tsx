@@ -1,4 +1,5 @@
 import type { Patient } from "@/lib/types";
+import { formatDateBR } from "@/lib/formatDate";
 
 interface PatientSelectorProps {
   patients: Patient[];
@@ -25,7 +26,7 @@ export function PatientSelector({
           }`}
         >
           <p className="font-medium text-hiro-text">{patient.name}</p>
-          <p className="text-xs text-hiro-muted">{patient.dateOfBirth}</p>
+          <p className="text-xs text-hiro-muted">{formatDateBR(patient.dateOfBirth)}</p>
         </button>
       ))}
     </div>

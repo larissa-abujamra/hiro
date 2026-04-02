@@ -7,6 +7,7 @@ import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { useConsultationStore } from "@/lib/store";
 import type { Patient } from "@/lib/types";
+import { formatDateBR } from "@/lib/formatDate";
 
 interface NewConsultationFlowProps {
   /** Fallback when o store ainda não tem pacientes (ex.: SSR inicial). */
@@ -128,7 +129,7 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
                       : "text-hiro-muted"
                   }`}
                 >
-                  {patient.dateOfBirth}
+                  {formatDateBR(patient.dateOfBirth)}
                 </p>
               </button>
             ))}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
+import { formatDateBR } from "@/lib/formatDate";
 import type { Consultation } from "@/lib/types";
 
 interface ConsultationHistoryProps {
@@ -21,7 +22,7 @@ export function ConsultationHistory({
             className="glass-card-input rounded-xl p-3 text-sm text-hiro-text"
           >
             <p className="font-medium">
-              {consultation.date} • {consultation.reason}
+              {formatDateBR(consultation.date)} • {consultation.reason}
             </p>
             <p className="text-xs text-hiro-muted">
               CID principal: {consultation.confirmedCids[0]?.code ?? "—"} • Médico:

@@ -30,8 +30,12 @@ interface PatientProfileWorkspaceProps {
   patientId: string;
 }
 
+const inputClass =
+  "glass-card-input w-full rounded-xl px-3 py-2 text-[13px] text-hiro-text outline-none focus:ring-2 focus:ring-hiro-green/30";
+
 export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspaceProps) {
   const patients = useConsultationStore((state) => state.patients);
+  const updatePatient = useConsultationStore((state) => state.updatePatient);
   const patient = patients.find((item) => item.id === patientId) ?? patients[0];
   const [activeTab, setActiveTab] = useState<"Histórico" | "Evolução" | "Exames">(
     "Histórico",
@@ -39,6 +43,40 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
   const [period, setPeriod] = useState<"3m" | "6m" | "1a" | "Tudo">("Tudo");
   const [exams, setExams] = useState<Exam[]>(patient?.exams ?? []);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState({
+    name: "",
+    height: "",
+    weight: "",
+    phone: "",
+    conditions: "",
+  });
+
+  const startEditing = () => {
+    setEditDraft({
+      name: patient?.name ?? "",
+      height: patient?.height?.toString() ?? "",
+      weight: patient?.weight?.toString() ?? "",
+      phone: patient?.phone ?? "",
+      conditions: patient?.conditions?.join(", ") ?? "",
+    });
+    setIsEditing(true);
+  };
+
+  const saveEdits = () => {
+    if (!patient) return;
+    updatePatient(patient.id, {
+      name: editDraft.name.trim() || patient.name,
+      height: editDraft.height ? Number(editDraft.height) : patient.height,
+      weight: editDraft.weight ? Number(editDraft.weight) : patient.weight,
+      phone: editDraft.phone.trim() || patient.phone,
+      conditions: editDraft.conditions
+        ? editDraft.conditions.split(",").map((s) => s.trim()).filter(Boolean)
+        : patient.conditions,
+    });
+    setIsEditing(false);
+  };
 
   const filteredData = useMemo(() => {
     if (!patient) return [];
@@ -137,40 +175,97 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <div className="glass-card-input rounded-xl p-3 text-center">
-              <p className="mb-1 text-[11px] text-hiro-muted">Altura</p>
-              <p className="text-[15px] font-medium text-hiro-text">{patient.height} cm</p>
+          {isEditing ? (
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-hiro-muted">Nome</p>
+                <input
+                  className={inputClass}
+                  value={editDraft.name}
+                  onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-hiro-muted">Altura (cm)</p>
+                  <input
+                    className={inputClass}
+                    type="number"
+                    value={editDraft.height}
+                    onChange={(e) => setEditDraft((d) => ({ ...d, height: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-hiro-muted">Peso (kg)</p>
+                  <input
+                    className={inputClass}
+                    type="number"
+                    value={editDraft.weight}
+                    onChange={(e) => setEditDraft((d) => ({ ...d, weight: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-hiro-muted">Telefone</p>
+                <input
+                  className={inputClass}
+                  value={editDraft.phone}
+                  onChange={(e) => setEditDraft((d) => ({ ...d, phone: e.target.value }))}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+              <div>
+                <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-hiro-muted">Condições (separadas por vírgula)</p>
+                <input
+                  className={inputClass}
+                  value={editDraft.conditions}
+                  onChange={(e) => setEditDraft((d) => ({ ...d, conditions: e.target.value }))}
+                  placeholder="Hipertensão, Diabetes tipo 2"
+                />
+              </div>
+              <div className="flex gap-2">
+                <ButtonHiro className="flex-1" onClick={saveEdits}>Salvar</ButtonHiro>
+                <ButtonHiro variant="secondary" className="flex-1" onClick={() => setIsEditing(false)}>Cancelar</ButtonHiro>
+              </div>
             </div>
-            <div className="glass-card-input rounded-xl p-3 text-center">
-              <p className="mb-1 text-[11px] text-hiro-muted">Peso</p>
-              <p className="text-[15px] font-medium text-hiro-text">{patient.weight} kg</p>
-            </div>
-            <div className="glass-card-input rounded-xl p-3 text-center">
-              <p className="mb-1 text-[11px] text-hiro-muted">IMC</p>
-              <p className="text-[15px] font-medium text-hiro-text">{bmi}</p>
-              {bmiBadge && (
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${bmiBadge.className}`}
-                >
-                  {bmiBadge.label}
-                </span>
-              )}
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="glass-card-input rounded-xl p-3 text-center">
+                  <p className="mb-1 text-[11px] text-hiro-muted">Altura</p>
+                  <p className="text-[15px] font-medium text-hiro-text">{patient.height ?? "—"} cm</p>
+                </div>
+                <div className="glass-card-input rounded-xl p-3 text-center">
+                  <p className="mb-1 text-[11px] text-hiro-muted">Peso</p>
+                  <p className="text-[15px] font-medium text-hiro-text">{patient.weight ?? "—"} kg</p>
+                </div>
+                <div className="glass-card-input rounded-xl p-3 text-center">
+                  <p className="mb-1 text-[11px] text-hiro-muted">IMC</p>
+                  <p className="text-[15px] font-medium text-hiro-text">{bmi}</p>
+                  {bmiBadge && (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${bmiBadge.className}`}
+                    >
+                      {bmiBadge.label}
+                    </span>
+                  )}
+                </div>
+              </div>
 
-          <div className="flex flex-col gap-2">
-            <Link
-              href={`/consulta/nova?patientId=${patient.id}`}
-              prefetch={false}
-              className="w-full"
-            >
-              <ButtonHiro className="w-full">Nova consulta</ButtonHiro>
-            </Link>
-            <ButtonHiro variant="secondary" className="w-full">
-              Editar dados
-            </ButtonHiro>
-          </div>
+              <div className="flex flex-col gap-2">
+                <Link
+                  href={`/consulta/nova?patientId=${patient.id}`}
+                  prefetch={false}
+                  className="w-full"
+                >
+                  <ButtonHiro className="w-full">Nova consulta</ButtonHiro>
+                </Link>
+                <ButtonHiro variant="secondary" className="w-full" onClick={startEditing}>
+                  Editar dados
+                </ButtonHiro>
+              </div>
+            </>
+          )}
 
           <div>
             <OverlineLabel>MEDICAMENTOS ATIVOS</OverlineLabel>
@@ -267,13 +362,13 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
                         <p className="mt-1 line-clamp-2 text-[12px] text-hiro-muted">
                           {consultation.soap.p}
                         </p>
-                        <button
-                          type="button"
+                        <Link
+                          href={`/consulta/${consultation.id}/resumo?patient=${patientId}`}
                           className="link-arrow mt-1.5 text-[12px] font-medium text-hiro-green underline-offset-2 hover:underline"
                         >
                           <span>Ver prontuário completo</span>
                           <span aria-hidden>→</span>
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   );

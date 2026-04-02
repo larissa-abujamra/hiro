@@ -59,6 +59,7 @@ interface ConsultationState {
   flags: string[];
   savedSummaries: SavedSummaryEntry[];
   newPatientDraft: NewPatientDraft;
+  updatePatient: (patientId: string, updates: Partial<Patient>) => void;
   initializePatients: (isDemo: boolean, userId: string) => void;
   setIntakeMode: (mode: IntakeMode) => void;
   selectPatient: (patientId: string) => void;
@@ -110,6 +111,12 @@ const initialState = {
 
 export const useConsultationStore = create<ConsultationState>((set) => ({
   ...initialState,
+  updatePatient: (patientId, updates) =>
+    set((state) => ({
+      patients: state.patients.map((p) =>
+        p.id === patientId ? { ...p, ...updates } : p
+      ),
+    })),
   initializePatients: (isDemo: boolean, userId: string) =>
     set({ patients: isDemo ? mockPatients : [], initialized: true, initializedForUser: userId }),
   createPatientFromDraft: () => {

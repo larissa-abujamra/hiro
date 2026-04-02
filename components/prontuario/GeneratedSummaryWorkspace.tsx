@@ -29,6 +29,11 @@ export function GeneratedSummaryWorkspace({
   patients,
 }: GeneratedSummaryWorkspaceProps) {
   const router = useRouter();
+  const searchParams = new URLSearchParams(
+    typeof window !== "undefined" ? window.location.search : ""
+  );
+  const patientIdFromUrl = searchParams.get("patient");
+
   const patientsInStore = useConsultationStore((state) => state.patients);
   const selectedPatientId = useConsultationStore((state) => state.selectedPatientId);
   const consultationReason = useConsultationStore((state) => state.consultationReason);
@@ -46,22 +51,34 @@ export function GeneratedSummaryWorkspace({
   const addActivity = useConsultationStore((state) => state.addActivity);
 
   const sourcePatients = patientsInStore.length ? patientsInStore : patients;
+
+  // Find patient: from store selection, from URL param, or first available
+  const resolvedPatientId = selectedPatientId ?? patientIdFromUrl;
   const patient =
-    sourcePatients.find((item) => item.id === selectedPatientId) ??
+    (resolvedPatientId
+      ? sourcePatients.find((item) => item.id === resolvedPatientId)
+      : null) ??
     sourcePatients[0] ??
     null;
+
+  // If viewing a saved consultation from history, load its data
+  const savedConsultation = patient?.consultations.find(
+    (c) => c.id === consultationId
+  ) ?? null;
+  const isReviewMode = !generatedSoap && !!savedConsultation;
 
   const doctorName = "Dra. Larissa Oliveira";
   const [toast, setToast] = useState<string | null>(null);
 
+  const soapSource = generatedSoap ?? savedConsultation?.soap ?? null;
   const soap = useMemo(
     () => ({
-      s: generatedSoap?.s ?? "",
-      o: generatedSoap?.o ?? "",
-      a: generatedSoap?.a ?? "",
-      p: generatedSoap?.p ?? "",
+      s: soapSource?.s ?? "",
+      o: soapSource?.o ?? "",
+      a: soapSource?.a ?? "",
+      p: soapSource?.p ?? "",
     }),
-    [generatedSoap],
+    [soapSource],
   );
 
   const updateSoap = (key: "s" | "o" | "a" | "p", value: string) => {
@@ -98,7 +115,21 @@ export function GeneratedSummaryWorkspace({
     [],
   );
 
-  const detectedReturn = detectedItems.find((item) => item.type === "return") ?? null;
+  const resolvedCids = cidSuggestions.length > 0
+    ? cidSuggestions
+    : savedConsultation?.confirmedCids ?? [];
+  const resolvedDetectedItems = detectedItems.length > 0
+    ? detectedItems
+    : savedConsultation?.detectedItems ?? [];
+  const resolvedTranscription = liveTranscription.length > 0
+    ? liveTranscription
+    : savedConsultation?.transcription ?? [];
+  const resolvedReason = consultationReason || savedConsultation?.reason || "Atendimento clínico";
+  const resolvedDuration = recordingSeconds > 0
+    ? Math.max(1, Math.round(recordingSeconds / 60))
+    : savedConsultation?.duration ?? 0;
+
+  const detectedReturn = resolvedDetectedItems.find((item) => item.type === "return") ?? null;
   const suggestedReturnDate = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);
@@ -131,13 +162,13 @@ export function GeneratedSummaryWorkspace({
     saveConsultationToPatient({
       id: consultationId,
       patientId: patient.id,
-      date: new Date().toISOString().slice(0, 10),
-      reason: consultationReason || "Atendimento clínico",
-      duration: Math.max(1, Math.round(recordingSeconds / 60)),
-      transcription: liveTranscription,
+      date: savedConsultation?.date ?? new Date().toISOString().slice(0, 10),
+      reason: resolvedReason,
+      duration: resolvedDuration,
+      transcription: resolvedTranscription,
       soap,
-      confirmedCids: cidSuggestions,
-      detectedItems,
+      confirmedCids: resolvedCids,
+      detectedItems: resolvedDetectedItems,
       documents: generatedDocs.map((doc) => ({
         type: doc.type,
         status: doc.status,
@@ -151,9 +182,7 @@ export function GeneratedSummaryWorkspace({
     persistConsultation();
     addActivity({ type: "prontuario_generated", patientName: patient.name });
     const dateStr = new Date().toLocaleDateString("pt-BR");
-    const confirmedForPdf = (
-      cidSuggestions.length ? cidSuggestions : patient.consultations.at(-1)?.confirmedCids ?? []
-    ).map((c) => ({ code: c.code, name: c.name }));
+    const confirmedForPdf = resolvedCids.map((c) => ({ code: c.code, name: c.name }));
     const patientAge = Math.max(
       0,
       new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear(),
@@ -163,7 +192,7 @@ export function GeneratedSummaryWorkspace({
       patientAge,
       date: dateStr,
       doctorName,
-      duration: Math.max(1, Math.round(recordingSeconds / 60)),
+      duration: resolvedDuration,
       soap: { s: soap.s, o: soap.o, a: soap.a, p: soap.p },
       confirmedCids: confirmedForPdf,
       medications: patient.medications.map((m) => `${m.name} (${m.dose})`),
@@ -203,7 +232,7 @@ export function GeneratedSummaryWorkspace({
               <p className="mt-1 max-w-[65ch] text-[13px] leading-relaxed text-hiro-muted">
                 {new Date().toLocaleDateString("pt-BR")} · {doctorName} ·{" "}
                 <span className="tabular-nums">
-                  {Math.max(1, Math.round(recordingSeconds / 60))} min de gravação
+                  {resolvedDuration > 0 ? `${resolvedDuration} min de gravação` : ""}
                 </span>
               </p>
             </div>
@@ -260,7 +289,7 @@ export function GeneratedSummaryWorkspace({
       <aside className="flex flex-col gap-4 lg:col-span-4">
         <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
           <OverlineLabel>CID-10 CONFIRMADO</OverlineLabel>
-          {(cidSuggestions.length ? cidSuggestions : patient.consultations.at(-1)?.confirmedCids ?? []).map(
+          {resolvedCids.map(
             (cid) => (
               <div
                 key={cid.code}
@@ -302,7 +331,7 @@ export function GeneratedSummaryWorkspace({
           </p>
           <MemedPrescription
             planText={soap.p}
-            prescriptionItems={detectedItems.filter((i) => i.type === "prescription")}
+            prescriptionItems={resolvedDetectedItems.filter((i) => i.type === "prescription")}
           />
         </CardHiro>
 
