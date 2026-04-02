@@ -3,42 +3,32 @@ import { Mic, Users } from "lucide-react";
 import { DailyMetricsCard } from "@/components/dashboard/DailyMetricsCard";
 import { CalendarWidget } from "@/components/calendar/CalendarWidget";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting";
 import { createClient } from "@/lib/supabase/server";
-
-function buildGreeting(fullName: string, sexo: string): { verb: string; title: string; firstName: string } {
-  const firstName = fullName.trim().split(" ")[0] ?? fullName;
-  if (sexo === "M") return { verb: "Bem-vindo", title: "Dr.", firstName };
-  if (sexo === "F") return { verb: "Bem-vinda", title: "Dra.", firstName };
-  return { verb: "Bem-vindo(a)", title: "Dr(a).", firstName };
-}
 
 export default async function Home() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const meta = user?.user_metadata ?? {};
-  const fullName: string = meta.full_name ?? "";
-  const sexo: string = meta.sexo ?? "O";
-  const { verb, title, firstName } = buildGreeting(fullName, sexo);
+
+  // Try profiles table for sexo
+  let profileSexo: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("sexo")
+      .eq("id", user.id)
+      .single();
+    profileSexo = profile?.sexo ?? null;
+  }
+
+  const serverName: string = meta.full_name ?? "";
+  const serverSexo: string = profileSexo ?? meta.sexo ?? "O";
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-4 md:px-6 md:py-6">
-      <header className="mb-8">
-        <h1 className="font-serif text-4xl font-normal tracking-tight text-balance text-hiro-text">
-          {verb},{" "}
-          <span className="italic text-hiro-green">
-            {firstName ? `${title} ${firstName}.` : "médico(a)."}
-          </span>
-        </h1>
-        <p className="mt-2 text-sm leading-relaxed text-hiro-muted">
-          {new Date().toLocaleDateString("pt-BR", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })}
-        </p>
-      </header>
+      <DashboardGreeting serverName={serverName} serverSexo={serverSexo} />
 
       <DailyMetricsCard />
 
