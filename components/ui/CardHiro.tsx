@@ -15,7 +15,7 @@ export function CardHiro({
     <div
       className={`rounded-2xl p-5 transition-colors ${
         active
-          ? "border border-hiro-active bg-hiro-active text-white"
+          ? "glass-card-active border border-white/15 text-white"
           : "glass-card text-hiro-text"
       } ${className}`.trim()}
       {...props}

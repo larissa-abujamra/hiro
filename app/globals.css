@@ -3,8 +3,8 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-playfair);
-  --color-hiro-bg: #f0ede6;
-  --color-hiro-card: #e8e4dc;
+  --color-hiro-bg: #dfdbd2;
+  --color-hiro-card: #d5d1c8;
   --color-hiro-active: #2d5c3f;
   --color-hiro-text: #1c2b1e;
   --color-hiro-muted: #6b7a6d;
@@ -20,7 +20,7 @@ html {
 }
 
 body {
-  background-color: #f0ede6;
+  background-color: #dfdbd2;
   color: #1c2b1e;
   position: relative;
 }
@@ -31,7 +31,7 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: 2;
-  opacity: 0.028;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   background-size: 200px 200px;
 }
@@ -69,21 +69,35 @@ main {
 /* Glass padrão — cards; a sidebar usa fundo opaco (bg-hiro-card) */
 .glass-card {
   overflow: visible;
-  background: rgba(255, 255, 255, 0.35) !important;
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.55) !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.42) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.03),
-    0 4px 24px rgba(45, 92, 63, 0.07),
-    0 1px 4px rgba(45, 92, 63, 0.04) !important;
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+    0 8px 32px rgba(28, 43, 30, 0.1),
+    0 2px 8px rgba(28, 43, 30, 0.05) !important;
+}
+
+/* Glass verde ativo — cards selecionados (ex: "Paciente existente") */
+.glass-card-active {
+  overflow: visible;
+  background: rgba(45, 92, 63, 0.6) !important;
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 8px 32px rgba(28, 43, 30, 0.18),
+    0 2px 8px rgba(28, 43, 30, 0.08) !important;
 }
 
 /* Campos dentro de cards glass */
 .glass-card-input {
-  background: rgba(255, 255, 255, 0.6) !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  background: rgba(255, 255, 255, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
 }
 
 /* Liquid glass — reservado / legado (sidebar agora é opaca) */
