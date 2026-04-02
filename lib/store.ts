@@ -2,6 +2,8 @@
 
 import { create } from "zustand";
 import { mockPatients } from "@/lib/mockData";
+
+const DEMO_EMAIL = "admin@hiro.com";
 import type {
   CidSuggestion,
   Consultation,
@@ -29,8 +31,11 @@ interface SavedSummaryEntry {
   soap: Consultation["soap"];
 }
 
+export { DEMO_EMAIL };
+
 interface ConsultationState {
   patients: Patient[];
+  initialized: boolean;
   intakeMode: IntakeMode;
   selectedPatientId: string | null;
   consultationReason: string;
@@ -45,6 +50,7 @@ interface ConsultationState {
   flags: string[];
   savedSummaries: SavedSummaryEntry[];
   newPatientDraft: NewPatientDraft;
+  initializePatients: (isDemo: boolean) => void;
   setIntakeMode: (mode: IntakeMode) => void;
   selectPatient: (patientId: string) => void;
   setConsultationReason: (reason: string) => void;
@@ -68,7 +74,8 @@ interface ConsultationState {
 }
 
 const initialState = {
-  patients: mockPatients,
+  patients: [] as Patient[],
+  initialized: false,
   intakeMode: "existing" as IntakeMode,
   selectedPatientId: null,
   consultationReason: "",
@@ -91,6 +98,8 @@ const initialState = {
 
 export const useConsultationStore = create<ConsultationState>((set) => ({
   ...initialState,
+  initializePatients: (isDemo: boolean) =>
+    set({ patients: isDemo ? mockPatients : [], initialized: true }),
   createPatientFromDraft: () => {
     let createdId: string | null = null;
     set((state) => {

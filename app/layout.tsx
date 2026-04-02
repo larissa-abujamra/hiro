@@ -4,6 +4,7 @@ import { GeistSans } from "geist/font/sans";
 import { Analytics } from "@vercel/analytics/next";
 import { ConditionalSidebar } from "@/components/layout/ConditionalSidebar";
 import { MainContent } from "@/components/layout/MainContent";
+import { StoreInitializer } from "@/components/StoreInitializer";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -55,6 +56,7 @@ export default function RootLayout({
           />
         </div>
 
+        <StoreInitializer />
         <ConditionalSidebar />
         <MainContent>{children}</MainContent>
         <Analytics />

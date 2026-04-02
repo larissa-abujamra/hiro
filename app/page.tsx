@@ -6,6 +6,14 @@ import {
   type UpcomingPatient,
 } from "@/components/dashboard/UpcomingPatientsSection";
 import { DailyMetricsCard } from "@/components/dashboard/DailyMetricsCard";
+import { createClient } from "@/lib/supabase/server";
+
+function buildGreeting(fullName: string, sexo: string): { verb: string; title: string; firstName: string } {
+  const firstName = fullName.trim().split(" ")[0] ?? fullName;
+  if (sexo === "M") return { verb: "Bem-vindo", title: "Dr.", firstName };
+  if (sexo === "F") return { verb: "Bem-vinda", title: "Dra.", firstName };
+  return { verb: "Bem-vindo(a)", title: "Dr(a).", firstName };
+}
 
 const upcomingPatients: UpcomingPatient[] = [
   {
@@ -60,13 +68,23 @@ const upcomingPatients: UpcomingPatient[] = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const meta = user?.user_metadata ?? {};
+  const fullName: string = meta.full_name ?? "";
+  const sexo: string = meta.sexo ?? "O";
+  const { verb, title, firstName } = buildGreeting(fullName, sexo);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-4 md:px-6 md:py-6">
       <header className="mb-8">
         <h1 className="font-serif text-4xl font-normal tracking-tight text-balance text-hiro-text">
-          Bem-vinda,{" "}
-          <span className="italic text-hiro-green">Dra. Larissa.</span>
+          {verb},{" "}
+          <span className="italic text-hiro-green">
+            {firstName ? `${title} ${firstName}.` : "médico(a)."}
+          </span>
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-hiro-muted">
           {new Date().toLocaleDateString("pt-BR", {

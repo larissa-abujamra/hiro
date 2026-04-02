@@ -16,7 +16,14 @@ const inputClass =
 const labelClass =
   "block text-[11px] font-semibold uppercase tracking-wide text-white/45 mb-1.5";
 
-/* Reusable dark background blobs — same as login */
+type Sexo = "F" | "M" | "O";
+
+const SEXO_OPTIONS: { value: Sexo; label: string }[] = [
+  { value: "F", label: "Feminino" },
+  { value: "M", label: "Masculino" },
+  { value: "O", label: "Outro" },
+];
+
 function AuthBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
@@ -88,6 +95,7 @@ export default function SignupPage() {
     nome: "",
     email: "",
     password: "",
+    sexo: "F" as Sexo,
     crm: "",
     uf: "",
     especialidade: "",
@@ -96,7 +104,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  function set(key: keyof typeof fields) {
+  function setField(key: keyof typeof fields) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setFields((prev) => ({ ...prev, [key]: e.target.value }));
   }
@@ -114,6 +122,7 @@ export default function SignupPage() {
       options: {
         data: {
           full_name: fields.nome,
+          sexo: fields.sexo,
           crm: fields.crm.replace(/\D/g, ""),
           uf: fields.uf,
           especialidade: fields.especialidade,
@@ -132,6 +141,7 @@ export default function SignupPage() {
       await supabase.from("profiles").upsert({
         id: data.user!.id,
         full_name: fields.nome,
+        sexo: fields.sexo,
         crm: fields.crm.replace(/\D/g, ""),
         uf: fields.uf,
         especialidade: fields.especialidade,
@@ -197,7 +207,6 @@ export default function SignupPage() {
       <AuthBackground />
 
       <div className="relative z-10 w-full max-w-md">
-        {/* Logo */}
         <div className="mb-8 text-center">
           <span className="font-serif text-4xl font-normal tracking-tight text-white/90">
             hiro.
@@ -223,10 +232,44 @@ export default function SignupPage() {
                 autoComplete="name"
                 required
                 className={inputClass}
-                placeholder="Dra. Larissa Oliveira"
+                placeholder="Larissa Oliveira"
                 value={fields.nome}
-                onChange={set("nome")}
+                onChange={setField("nome")}
               />
+            </div>
+
+            {/* Gender selector */}
+            <div>
+              <span className={labelClass}>Gênero</span>
+              <div className="flex gap-2">
+                {SEXO_OPTIONS.map(({ value, label }) => {
+                  const selected = fields.sexo === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setFields((prev) => ({ ...prev, sexo: value }))}
+                      className="flex-1 rounded-xl border py-2.5 text-[13px] font-medium transition-all duration-150"
+                      style={
+                        selected
+                          ? {
+                              background: "rgba(255,255,255,0.15)",
+                              borderColor: "rgba(255,255,255,0.3)",
+                              color: "rgba(255,255,255,0.92)",
+                              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18)",
+                            }
+                          : {
+                              background: "rgba(255,255,255,0.04)",
+                              borderColor: "rgba(255,255,255,0.09)",
+                              color: "rgba(255,255,255,0.38)",
+                            }
+                      }
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>
@@ -241,7 +284,7 @@ export default function SignupPage() {
                 className={inputClass}
                 placeholder="voce@clinica.com.br"
                 value={fields.email}
-                onChange={set("email")}
+                onChange={setField("email")}
               />
             </div>
 
@@ -258,7 +301,7 @@ export default function SignupPage() {
                 className={inputClass}
                 placeholder="Mínimo 8 caracteres"
                 value={fields.password}
-                onChange={set("password")}
+                onChange={setField("password")}
               />
             </div>
 
@@ -294,7 +337,7 @@ export default function SignupPage() {
                   required
                   className={inputClass}
                   value={fields.uf}
-                  onChange={set("uf")}
+                  onChange={setField("uf")}
                 >
                   <option value="">Estado</option>
                   {UF_LIST.map((uf) => (
@@ -316,7 +359,7 @@ export default function SignupPage() {
                 className={inputClass}
                 placeholder="Ex: Clínica Geral, Cardiologia…"
                 value={fields.especialidade}
-                onChange={set("especialidade")}
+                onChange={setField("especialidade")}
               />
             </div>
 
