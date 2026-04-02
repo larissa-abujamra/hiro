@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Calendar, FileText, Mic, Users } from "lucide-react";
-import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
+import { Mic, Users } from "lucide-react";
 import { DailyMetricsCard } from "@/components/dashboard/DailyMetricsCard";
 import { CalendarWidget } from "@/components/calendar/CalendarWidget";
+import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { createClient } from "@/lib/supabase/server";
 
 function buildGreeting(fullName: string, sexo: string): { verb: string; title: string; firstName: string } {
@@ -91,48 +91,7 @@ export default async function Home() {
             aria-hidden
           />
 
-          <div>
-            <h3 className="font-serif text-2xl font-normal tracking-tight text-hiro-text">
-              Última atividade
-            </h3>
-            <ul
-              className="mt-4 divide-y divide-black/[0.06]"
-              aria-label="Registos recentes"
-            >
-              <li className="flex gap-3 py-3">
-                <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-hiro-active"
-                  style={iconCircleGlassOnLightCard}
-                >
-                  <FileText className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-                </span>
-                <div className="min-w-0 pt-0.5">
-                  <p className="text-sm font-medium leading-snug text-hiro-text">
-                    Prontuário de Bruno Ferreira
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-hiro-muted">
-                    Gerado às 14h12
-                  </p>
-                </div>
-              </li>
-              <li className="flex gap-3 py-3">
-                <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#854F0B]"
-                  style={iconCircleGlassOnLightCard}
-                >
-                  <Calendar className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-                </span>
-                <div className="min-w-0 pt-0.5">
-                  <p className="text-sm font-medium leading-snug text-hiro-text">
-                    Cíntia Souza
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-hiro-muted">
-                    Retorno confirmado · 12 abr
-                  </p>
-                </div>
-              </li>
-            </ul>
-          </div>
+          <RecentActivity />
         </section>
       </div>
     </main>

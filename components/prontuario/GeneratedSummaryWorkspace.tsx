@@ -43,6 +43,7 @@ export function GeneratedSummaryWorkspace({
   const saveConsultationToPatient = useConsultationStore(
     (state) => state.saveConsultationToPatient,
   );
+  const addActivity = useConsultationStore((state) => state.addActivity);
 
   const sourcePatients = patientsInStore.length ? patientsInStore : patients;
   const patient =
@@ -148,6 +149,7 @@ export function GeneratedSummaryWorkspace({
   const handleSavePDF = () => {
     if (!patient) return;
     persistConsultation();
+    addActivity({ type: "prontuario_generated", patientName: patient.name });
     const dateStr = new Date().toLocaleDateString("pt-BR");
     const confirmedForPdf = (
       cidSuggestions.length ? cidSuggestions : patient.consultations.at(-1)?.confirmedCids ?? []
@@ -171,6 +173,7 @@ export function GeneratedSummaryWorkspace({
 
   const handleSaveWithoutSign = () => {
     persistConsultation();
+    addActivity({ type: "consultation_saved", patientName: patient?.name ?? "" });
     saveSummary({
       consultationId,
       patientId: patient?.id ?? "",

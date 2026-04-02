@@ -31,12 +31,20 @@ interface SavedSummaryEntry {
   soap: Consultation["soap"];
 }
 
+export interface ActivityEntry {
+  id: string;
+  type: "consultation_started" | "prontuario_generated" | "consultation_saved" | "patient_created";
+  patientName: string;
+  timestamp: string; // ISO string
+}
+
 export { DEMO_EMAIL };
 
 interface ConsultationState {
   patients: Patient[];
   initialized: boolean;
   initializedForUser: string | null;
+  activityLog: ActivityEntry[];
   intakeMode: IntakeMode;
   selectedPatientId: string | null;
   consultationReason: string;
@@ -71,6 +79,7 @@ interface ConsultationState {
   setFlags: (flags: string[]) => void;
   saveSummary: (entry: SavedSummaryEntry) => void;
   saveConsultationToPatient: (consultation: Consultation) => void;
+  addActivity: (entry: Omit<ActivityEntry, "id" | "timestamp">) => void;
   resetConsultation: () => void;
 }
 
@@ -78,6 +87,7 @@ const initialState = {
   patients: [] as Patient[],
   initialized: false,
   initializedForUser: null as string | null,
+  activityLog: [] as ActivityEntry[],
   intakeMode: "existing" as IntakeMode,
   selectedPatientId: null,
   consultationReason: "",
@@ -168,6 +178,13 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
         ),
         entry,
       ],
+    })),
+  addActivity: (entry) =>
+    set((state) => ({
+      activityLog: [
+        { ...entry, id: `act-${Date.now()}`, timestamp: new Date().toISOString() },
+        ...state.activityLog,
+      ].slice(0, 20), // keep last 20
     })),
   saveConsultationToPatient: (consultation) =>
     set((state) => {

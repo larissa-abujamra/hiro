@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, RefreshCw } from "lucide-react";
+import { Calendar, ExternalLink, RefreshCw } from "lucide-react";
 import { useCalendar } from "@/hooks/useCalendar";
 import type { CalendarAppointment } from "@/types/calendar";
 
@@ -205,13 +205,24 @@ function ConnectedView({
         </>
       )}
 
-      <button
-        type="button"
-        onClick={onDisconnect}
-        className="mt-4 text-[11px] text-hiro-muted/60 transition-colors hover:text-hiro-red"
-      >
-        Desconectar calendário
-      </button>
+      <div className="mt-4 flex items-center justify-between">
+        <a
+          href="https://calendar.google.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[11px] text-hiro-muted/60 transition-colors hover:text-hiro-green"
+        >
+          Ver agenda completa
+          <ExternalLink className="h-2.5 w-2.5" strokeWidth={2} />
+        </a>
+        <button
+          type="button"
+          onClick={onDisconnect}
+          className="text-[11px] text-hiro-muted/60 transition-colors hover:text-hiro-red"
+        >
+          Desconectar
+        </button>
+      </div>
     </>
   );
 }

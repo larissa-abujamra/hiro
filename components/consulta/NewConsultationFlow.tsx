@@ -41,6 +41,7 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
   const createPatientFromDraft = useConsultationStore(
     (state) => state.createPatientFromDraft,
   );
+  const addActivity = useConsultationStore((state) => state.addActivity);
   const resetConsultation = useConsultationStore((state) => state.resetConsultation);
   const sourcePatients = patientsInStore.length ? patientsInStore : (patients ?? []);
 
@@ -64,16 +65,22 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
 
     const consultationId = `cons-${Date.now()}`;
     let targetPatientId: string | null = null;
+    let patientName = "";
     if (intakeMode === "existing" && selectedPatientId) {
       targetPatientId = selectedPatientId;
+      patientName =
+        sourcePatients.find((p) => p.id === selectedPatientId)?.name ?? "";
     } else {
+      patientName = newPatientDraft.name.trim();
       targetPatientId = createPatientFromDraft();
       if (!targetPatientId) return;
+      addActivity({ type: "patient_created", patientName });
     }
     resetConsultation();
     selectPatient(targetPatientId);
     setActiveConsultation(consultationId);
     setConsultationReason(consultationReason);
+    addActivity({ type: "consultation_started", patientName });
     router.push(`/consulta/${consultationId}`);
   };
 
