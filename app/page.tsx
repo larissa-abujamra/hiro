@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { Calendar, FileText, Mic, Users } from "lucide-react";
 import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
-import {
-  UpcomingPatientsSection,
-  type UpcomingPatient,
-} from "@/components/dashboard/UpcomingPatientsSection";
 import { DailyMetricsCard } from "@/components/dashboard/DailyMetricsCard";
+import { CalendarWidget } from "@/components/calendar/CalendarWidget";
 import { createClient } from "@/lib/supabase/server";
 
 function buildGreeting(fullName: string, sexo: string): { verb: string; title: string; firstName: string } {
@@ -14,59 +11,6 @@ function buildGreeting(fullName: string, sexo: string): { verb: string; title: s
   if (sexo === "F") return { verb: "Bem-vinda", title: "Dra.", firstName };
   return { verb: "Bem-vindo(a)", title: "Dr(a).", firstName };
 }
-
-const upcomingPatients: UpcomingPatient[] = [
-  {
-    id: "patient-ana-clara-ribeiro",
-    name: "Ana Clara Ribeiro",
-    initials: "AC",
-    age: 34,
-    reason: "Consulta de rotina",
-    time: "14:30",
-    status: "confirmed",
-    avatarColor: { bg: "#E1F5EE", text: "#0F6E56" },
-  },
-  {
-    id: "patient-cintia-souza",
-    name: "Cíntia Souza",
-    initials: "CS",
-    age: 42,
-    reason: "Diabetes — retorno",
-    time: "15:00",
-    status: "waiting",
-    avatarColor: { bg: "#E6F1FB", text: "#185FA5" },
-  },
-  {
-    id: "patient-bruno-ferreira",
-    name: "Bruno Ferreira",
-    initials: "BF",
-    age: 58,
-    reason: "Pressão alta",
-    time: "15:30",
-    status: "confirmed",
-    avatarColor: { bg: "#FAEEDA", text: "#854F0B" },
-  },
-  {
-    id: "patient-elaine-prado",
-    name: "Elaine Prado",
-    initials: "EP",
-    age: 61,
-    reason: "Cardiologia",
-    time: "16:00",
-    status: "confirmed",
-    avatarColor: { bg: "#E8E4DC", text: "#5F5E5A" },
-  },
-  {
-    id: "patient-rodrigo-mendes",
-    name: "Rodrigo Mendes",
-    initials: "RM",
-    age: 47,
-    reason: "Dor lombar",
-    time: "16:30",
-    status: "waiting",
-    avatarColor: { bg: "#FAECE7", text: "#993C1D" },
-  },
-];
 
 export default async function Home() {
   const supabase = await createClient();
@@ -99,8 +43,8 @@ export default async function Home() {
       <DailyMetricsCard />
 
       <div className="mt-6 grid grid-cols-1 items-start gap-5 overflow-visible md:grid-cols-2">
-        <div className="min-w-0 [&>section]:mt-0">
-          <UpcomingPatientsSection patients={upcomingPatients} />
+        <div className="min-w-0">
+          <CalendarWidget />
         </div>
 
         <section className="glass-card min-w-0 overflow-visible rounded-2xl p-6">

@@ -36,6 +36,7 @@ export { DEMO_EMAIL };
 interface ConsultationState {
   patients: Patient[];
   initialized: boolean;
+  initializedForUser: string | null;
   intakeMode: IntakeMode;
   selectedPatientId: string | null;
   consultationReason: string;
@@ -50,7 +51,7 @@ interface ConsultationState {
   flags: string[];
   savedSummaries: SavedSummaryEntry[];
   newPatientDraft: NewPatientDraft;
-  initializePatients: (isDemo: boolean) => void;
+  initializePatients: (isDemo: boolean, userId: string) => void;
   setIntakeMode: (mode: IntakeMode) => void;
   selectPatient: (patientId: string) => void;
   setConsultationReason: (reason: string) => void;
@@ -76,6 +77,7 @@ interface ConsultationState {
 const initialState = {
   patients: [] as Patient[],
   initialized: false,
+  initializedForUser: null as string | null,
   intakeMode: "existing" as IntakeMode,
   selectedPatientId: null,
   consultationReason: "",
@@ -98,8 +100,8 @@ const initialState = {
 
 export const useConsultationStore = create<ConsultationState>((set) => ({
   ...initialState,
-  initializePatients: (isDemo: boolean) =>
-    set({ patients: isDemo ? mockPatients : [], initialized: true }),
+  initializePatients: (isDemo: boolean, userId: string) =>
+    set({ patients: isDemo ? mockPatients : [], initialized: true, initializedForUser: userId }),
   createPatientFromDraft: () => {
     let createdId: string | null = null;
     set((state) => {

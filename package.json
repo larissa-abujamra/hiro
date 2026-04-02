@@ -17,6 +17,8 @@
     "@vercel/analytics": "^2.0.1",
     "framer-motion": "^12.38.0",
     "geist": "^1.7.0",
+    "google-auth-library": "^10.6.2",
+    "googleapis": "^171.4.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.7.0",
     "memed-node": "^1.0.0",

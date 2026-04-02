@@ -35,7 +35,8 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute =
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
-    pathname.startsWith("/auth");
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/api/calendar");
 
   // Unauthenticated user trying to access a protected route → /login
   if (!user && !isAuthRoute) {
