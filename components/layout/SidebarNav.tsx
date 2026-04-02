@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { Mic, Users } from "lucide-react";
+import { Mic, Users, LogOut } from "lucide-react";
 import { useDoctorStore } from "@/lib/doctorStore";
+import { createClient } from "@/lib/supabase/client";
 
 interface NavItemProps {
   href: string;
@@ -44,8 +45,16 @@ function NavItem({ href, label, icon, onClick, prefetch }: NavItemProps) {
 }
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const router = useRouter();
   const profile = useDoctorStore((s) => s.profile);
   const isComplete = useDoctorStore((s) => s.isProfileComplete)();
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   const displayName =
     profile.nome || profile.sobrenome
@@ -91,6 +100,13 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           </span>
           <span className="text-xs text-hiro-muted">{specialty}</span>
         </Link>
+        <button
+          onClick={handleLogout}
+          className="mt-2 flex w-full items-center gap-2 rounded-xl px-1.5 py-1.5 -mx-1.5 text-xs text-hiro-muted transition-colors hover:bg-black/[0.04] hover:text-hiro-red"
+        >
+          <LogOut className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+          Sair
+        </button>
       </div>
     </>
   );

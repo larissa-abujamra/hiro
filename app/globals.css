@@ -182,6 +182,55 @@ main {
   animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ─── Auth pages — dark liquid glass ─────────────────────────────────────── */
+
+/* Full-screen dark canvas for /login and /signup */
+.auth-bg {
+  background: #0a0f0b;
+}
+
+/* iOS-style liquid glass card on a dark background */
+.glass-auth-card {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(52px) saturate(210%);
+  -webkit-backdrop-filter: blur(52px) saturate(210%);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    inset 1px 0 0 rgba(255, 255, 255, 0.06),
+    0 32px 80px rgba(0, 0, 0, 0.55),
+    0 8px 24px rgba(0, 0, 0, 0.3),
+    0 0 0 0.5px rgba(255, 255, 255, 0.04);
+}
+
+/* Input fields inside the dark auth card */
+.glass-auth-input {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+  color: rgba(255, 255, 255, 0.9);
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.glass-auth-input::placeholder {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.glass-auth-input:focus {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(80, 170, 110, 0.45) !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(45, 92, 63, 0.2);
+}
+
+/* Select arrow recolor on dark bg */
+.glass-auth-input option {
+  background: #1a2e20;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 /* Links com seta — hover aumenta gap */
 .link-arrow {
   display: inline-flex;

@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ButtonHiro } from "@/components/ui/ButtonHiro";
 
 const UF_LIST = [
   "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT",
@@ -12,10 +11,75 @@ const UF_LIST = [
 ];
 
 const inputClass =
-  "glass-card-input w-full rounded-xl px-4 py-3 text-[14px] text-hiro-text placeholder:text-hiro-muted/60 focus:outline-none focus:ring-2 focus:ring-hiro-green/30";
+  "glass-auth-input w-full rounded-xl px-4 py-3 text-[14px] placeholder:text-white/30 focus:outline-none";
 
 const labelClass =
-  "block text-[11px] font-semibold uppercase tracking-wide text-hiro-muted mb-1.5";
+  "block text-[11px] font-semibold uppercase tracking-wide text-white/45 mb-1.5";
+
+/* Reusable dark background blobs — same as login */
+function AuthBackground() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+      <div
+        className="absolute"
+        style={{
+          top: "10%",
+          left: "-10%",
+          width: "min(90vw, 700px)",
+          height: "min(90vw, 700px)",
+          background:
+            "radial-gradient(ellipse at 40% 50%, rgba(22, 78, 45, 0.72) 0%, rgba(14, 50, 30, 0.38) 45%, transparent 72%)",
+          filter: "blur(2px)",
+        }}
+      />
+      <div
+        className="absolute"
+        style={{
+          top: "-8%",
+          right: "-5%",
+          width: "min(65vw, 520px)",
+          height: "min(65vw, 520px)",
+          background:
+            "radial-gradient(ellipse at 55% 45%, rgba(18, 65, 38, 0.6) 0%, rgba(10, 40, 22, 0.28) 50%, transparent 72%)",
+          filter: "blur(4px)",
+        }}
+      />
+      <div
+        className="absolute"
+        style={{
+          bottom: "-15%",
+          right: "5%",
+          width: "min(70vw, 560px)",
+          height: "min(70vw, 560px)",
+          background:
+            "radial-gradient(ellipse at 50% 50%, rgba(12, 55, 32, 0.55) 0%, rgba(8, 30, 18, 0.2) 55%, transparent 75%)",
+          filter: "blur(6px)",
+        }}
+      />
+      <div
+        className="absolute"
+        style={{
+          bottom: "-5%",
+          left: "15%",
+          width: "min(50vw, 400px)",
+          height: "min(50vw, 400px)",
+          background:
+            "radial-gradient(ellipse at 50% 50%, rgba(16, 48, 28, 0.4) 0%, transparent 68%)",
+          filter: "blur(8px)",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          opacity: 0.032,
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+          backgroundSize: "180px 180px",
+        }}
+      />
+    </div>
+  );
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -64,8 +128,6 @@ export default function SignupPage() {
       return;
     }
 
-    // If a session exists the user is already confirmed (e.g. email confirmations
-    // are disabled in Supabase). Update the profile and redirect.
     if (data.session) {
       await supabase.from("profiles").upsert({
         id: data.user!.id,
@@ -74,44 +136,53 @@ export default function SignupPage() {
         uf: fields.uf,
         especialidade: fields.especialidade,
       });
-
       router.push("/");
       router.refresh();
       return;
     }
 
-    // Email confirmation required — show message.
     setEmailSent(true);
     setLoading(false);
   }
 
   if (emailSent) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="auth-bg relative flex min-h-screen items-center justify-center px-4 py-12 overflow-hidden">
+        <AuthBackground />
         <div className="relative z-10 w-full max-w-sm text-center">
-          <span className="font-serif text-4xl font-normal tracking-tight text-hiro-text">
+          <span className="font-serif text-4xl font-normal tracking-tight text-white/90">
             hiro.
           </span>
-          <div className="glass-card mt-8 rounded-2xl p-7">
-            <div className="mb-4 flex h-12 w-12 mx-auto items-center justify-center rounded-full bg-hiro-green/10">
-              <svg className="h-6 w-6 text-hiro-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+          <div className="glass-auth-card mt-8 rounded-2xl p-8">
+            <div className="mb-4 mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/8 border border-white/12">
+              <svg
+                className="h-6 w-6 text-white/70"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+                />
               </svg>
             </div>
-            <h1 className="font-serif text-xl font-normal text-hiro-text">
+            <h1 className="font-serif text-xl font-normal text-white/88">
               Verifique seu e-mail
             </h1>
-            <p className="mt-2 text-[13px] text-hiro-muted leading-relaxed">
+            <p className="mt-2 text-[13px] text-white/45 leading-relaxed">
               Enviamos um link de confirmação para{" "}
-              <span className="font-medium text-hiro-text">{fields.email}</span>.
+              <span className="font-medium text-white/75">{fields.email}</span>.
               Clique no link para ativar sua conta.
             </p>
           </div>
-          <p className="mt-5 text-[13px] text-hiro-muted">
+          <p className="mt-5 text-[13px] text-white/35">
             Já confirmou?{" "}
             <Link
               href="/login"
-              className="font-medium text-hiro-green underline-offset-2 hover:underline"
+              className="font-medium text-white/70 underline-offset-2 hover:text-white hover:underline transition-colors"
             >
               Entrar
             </Link>
@@ -122,42 +193,26 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
-        <div
-          className="absolute -right-[18%] -top-[22%] h-[min(85vw,720px)] w-[min(85vw,720px)]"
-          style={{
-            background:
-              "radial-gradient(circle at 40% 40%, rgba(198, 139, 47, 0.2) 0%, transparent 58%)",
-          }}
-        />
-        <div
-          className="absolute -bottom-[28%] -left-[20%] h-[min(90vw,780px)] w-[min(90vw,780px)]"
-          style={{
-            background:
-              "radial-gradient(circle at 45% 45%, rgba(45, 92, 63, 0.16) 0%, transparent 60%)",
-          }}
-        />
-      </div>
+    <div className="auth-bg relative flex min-h-screen items-center justify-center px-4 py-12 overflow-hidden">
+      <AuthBackground />
 
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <span className="font-serif text-4xl font-normal tracking-tight text-hiro-text">
+          <span className="font-serif text-4xl font-normal tracking-tight text-white/90">
             hiro.
           </span>
-          <p className="mt-1 text-[13px] text-hiro-muted">
+          <p className="mt-1 text-[13px] text-white/38">
             Assistente clínico com IA
           </p>
         </div>
 
-        <div className="glass-card rounded-2xl p-7">
-          <h1 className="mb-6 font-serif text-xl font-normal text-hiro-text">
+        <div className="glass-auth-card rounded-2xl p-7">
+          <h1 className="mb-6 font-serif text-xl font-normal text-white/88">
             Criar conta
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Nome completo */}
             <div>
               <label htmlFor="nome" className={labelClass}>
                 Nome completo
@@ -174,7 +229,6 @@ export default function SignupPage() {
               />
             </div>
 
-            {/* E-mail */}
             <div>
               <label htmlFor="email" className={labelClass}>
                 E-mail
@@ -191,7 +245,6 @@ export default function SignupPage() {
               />
             </div>
 
-            {/* Senha */}
             <div>
               <label htmlFor="password" className={labelClass}>
                 Senha
@@ -209,9 +262,8 @@ export default function SignupPage() {
               />
             </div>
 
-            <hr className="border-black/8" />
+            <hr className="border-white/8" />
 
-            {/* CRM + UF side by side */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor="crm" className={labelClass}>
@@ -254,7 +306,6 @@ export default function SignupPage() {
               </div>
             </div>
 
-            {/* Especialidade */}
             <div>
               <label htmlFor="especialidade" className={labelClass}>
                 Especialidade
@@ -270,26 +321,26 @@ export default function SignupPage() {
             </div>
 
             {error && (
-              <p className="rounded-xl border border-hiro-red/30 bg-hiro-red/10 px-4 py-2.5 text-[13px] text-hiro-red">
+              <p className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2.5 text-[13px] text-red-300">
                 {error}
               </p>
             )}
 
-            <ButtonHiro
+            <button
               type="submit"
-              className="mt-2 w-full"
               disabled={loading}
+              className="mt-2 w-full rounded-full bg-white/90 px-7 py-3 text-sm font-medium text-[#0a0f0b] transition-all duration-200 hover:bg-white hover:-translate-y-px hover:shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "Criando conta…" : "Criar conta"}
-            </ButtonHiro>
+            </button>
           </form>
         </div>
 
-        <p className="mt-5 text-center text-[13px] text-hiro-muted">
+        <p className="mt-5 text-center text-[13px] text-white/35">
           Já tem conta?{" "}
           <Link
             href="/login"
-            className="font-medium text-hiro-green underline-offset-2 hover:underline"
+            className="font-medium text-white/70 underline-offset-2 hover:text-white hover:underline transition-colors"
           >
             Entrar
           </Link>
