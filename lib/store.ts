@@ -123,8 +123,15 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
     let createdId: string | null = null;
     set((state) => {
       const name = state.newPatientDraft.name.trim();
-      const dateOfBirth = state.newPatientDraft.dateOfBirth.trim();
-      if (!name || !dateOfBirth) return state;
+      const rawDate = state.newPatientDraft.dateOfBirth.trim();
+      if (!name || !rawDate) return state;
+
+      // Convert dd/mm/aaaa → YYYY-MM-DD for internal storage
+      const parts = rawDate.split("/");
+      const dateOfBirth =
+        parts.length === 3 && parts[0].length === 2 && parts[1].length === 2
+          ? `${parts[2]}-${parts[1]}-${parts[0]}`
+          : rawDate;
 
       createdId = `patient-${Date.now()}`;
       const patient: Patient = {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
@@ -46,6 +47,8 @@ function NavItem({ href, label, icon, onClick, prefetch }: NavItemProps) {
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
   const profile = useDoctorStore((s) => s.profile);
   const isComplete = useDoctorStore((s) => s.isProfileComplete)();
 
@@ -56,12 +59,15 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     router.refresh();
   }
 
-  const displayName =
-    profile.nome || profile.sobrenome
-      ? `${profile.sexo === "M" ? "Dr." : "Dra."} ${profile.nome} ${profile.sobrenome}`.trim()
-      : "Meu perfil";
+  const displayName = hydrated && (profile.nome || profile.sobrenome)
+    ? `${profile.sexo === "M" ? "Dr." : "Dra."} ${profile.nome} ${profile.sobrenome}`.trim()
+    : "Meu perfil";
 
-  const specialty = profile.especialidade || "Configure seu perfil";
+  const specialty = hydrated && profile.especialidade
+    ? profile.especialidade
+    : "Configure seu perfil";
+
+  const showIncompleteDot = hydrated && !isComplete;
 
   return (
     <>
@@ -94,7 +100,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         >
           <span className="flex items-center gap-1.5 text-sm font-medium text-hiro-text group-hover:text-hiro-green transition-colors">
             {displayName}
-            {!isComplete && (
+            {showIncompleteDot && (
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-hiro-amber shrink-0" title="Perfil incompleto" />
             )}
           </span>

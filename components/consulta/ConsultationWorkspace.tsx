@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Mic, Play, Square } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Mic, Play, Square } from "lucide-react";
 import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { AvatarInitials } from "@/components/ui/AvatarInitials";
@@ -80,6 +80,16 @@ export function ConsultationWorkspace({
   const [recordingPhase, setRecordingPhase] = useState<"idle" | "recording" | "paused">(
     "idle",
   );
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [vitals, setVitals] = useState({
+    peso: "",
+    altura: "",
+    pa: "",
+    temperatura: "",
+    fc: "",
+    spo2: "",
+  });
+  const [freeNotes, setFreeNotes] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
   const {
     lines,
@@ -141,6 +151,26 @@ export function ConsultationWorkspace({
   const isRecordingActive = recordingPhase === "recording";
   const isPaused = recordingPhase === "paused";
 
+  const buildSupplementaryText = useCallback(() => {
+    const parts: string[] = [];
+    const v = vitals;
+    const vitalsEntries = [
+      v.peso && `Peso: ${v.peso} kg`,
+      v.altura && `Altura: ${v.altura} cm`,
+      v.pa && `Pressão Arterial: ${v.pa} mmHg`,
+      v.temperatura && `Temperatura: ${v.temperatura} °C`,
+      v.fc && `Frequência Cardíaca: ${v.fc} bpm`,
+      v.spo2 && `Saturação O₂: ${v.spo2}%`,
+    ].filter(Boolean);
+    if (vitalsEntries.length > 0) {
+      parts.push(`\n\n[SINAIS VITAIS AFERIDOS]\n${vitalsEntries.join("\n")}`);
+    }
+    if (freeNotes.trim()) {
+      parts.push(`\n\n[NOTAS ADICIONAIS DO MÉDICO]\n${freeNotes.trim()}`);
+    }
+    return parts.join("");
+  }, [vitals, freeNotes]);
+
   const handleStopAndGenerate = useCallback(async () => {
     if (recordingSeconds < 30) return;
 
@@ -150,17 +180,11 @@ export function ConsultationWorkspace({
     setIsGenerating(true);
     setGenerateError(null);
 
-    // Read `lines` directly from the hook — the authoritative source of truth.
-    // Do NOT read from store.liveTranscription: that value is populated via a
-    // React useEffect which runs after the render cycle. Reading the store
-    // synchronously here (before any await) would capture stale data because
-    // the final onresult events fired by recognition.stop() haven't been
-    // rendered / effected into the store yet.
     const transcriptText = lines
       .filter((l) => l.isFinal)
       .map((l) => l.text)
       .join(" ")
-      .trim();
+      .trim() + buildSupplementaryText();
 
     try {
       const store = useConsultationStore.getState();
@@ -238,6 +262,7 @@ Medicamentos ativos: ${sp.medications
       setIsGenerating(false);
     }
   }, [
+    buildSupplementaryText,
     consultationId,
     lines,
     recordingSeconds,
@@ -487,6 +512,78 @@ Medicamentos ativos: ${sp.medications
           <p className="mt-2 text-[11px] text-hiro-muted">
             {wordCount} {wordCount === 1 ? "palavra transcrita" : "palavras transcritas"}
           </p>
+        </CardHiro>
+
+        {/* Dados complementares — collapsible */}
+        <CardHiro className="rounded-2xl p-0 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setNotesOpen((o) => !o)}
+            className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-black/[0.02]"
+          >
+            <div>
+              <p className="text-[13px] font-medium text-hiro-text">
+                Dados complementares
+              </p>
+              <p className="text-[11px] text-hiro-muted">
+                Sinais vitais e notas adicionais (opcional)
+              </p>
+            </div>
+            {notesOpen ? (
+              <ChevronUp className="h-4 w-4 text-hiro-muted" strokeWidth={1.75} />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-hiro-muted" strokeWidth={1.75} />
+            )}
+          </button>
+
+          {notesOpen && (
+            <div className="border-t border-black/[0.06] px-5 pb-5 pt-4 space-y-4">
+              {/* Sinais vitais — grid */}
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-hiro-muted mb-2">
+                  Sinais vitais
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { key: "peso", label: "Peso", unit: "kg", placeholder: "72" },
+                    { key: "altura", label: "Altura", unit: "cm", placeholder: "170" },
+                    { key: "pa", label: "PA", unit: "mmHg", placeholder: "120/80" },
+                    { key: "temperatura", label: "Temp.", unit: "°C", placeholder: "36.5" },
+                    { key: "fc", label: "FC", unit: "bpm", placeholder: "78" },
+                    { key: "spo2", label: "SpO₂", unit: "%", placeholder: "98" },
+                  ] as const).map(({ key, label, unit, placeholder }) => (
+                    <div key={key} className="glass-card-input rounded-xl px-3 py-2">
+                      <p className="text-[10px] text-hiro-muted">{label} <span className="text-hiro-muted/50">({unit})</span></p>
+                      <input
+                        type="text"
+                        inputMode={key === "pa" ? "text" : "decimal"}
+                        className="mt-0.5 w-full bg-transparent text-[14px] font-medium text-hiro-text outline-none placeholder:text-hiro-muted/30"
+                        placeholder={placeholder}
+                        value={vitals[key]}
+                        onChange={(e) =>
+                          setVitals((v) => ({ ...v, [key]: e.target.value }))
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notas livres */}
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-hiro-muted mb-2">
+                  Notas adicionais
+                </p>
+                <textarea
+                  className="glass-card-input w-full resize-none rounded-xl px-4 py-3 text-[13px] leading-relaxed text-hiro-text outline-none placeholder:text-hiro-muted/40 focus:ring-2 focus:ring-hiro-green/30"
+                  rows={3}
+                  placeholder="Observações, informações de acompanhante, dados que não foram falados durante a consulta…"
+                  value={freeNotes}
+                  onChange={(e) => setFreeNotes(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
         </CardHiro>
       </section>
 

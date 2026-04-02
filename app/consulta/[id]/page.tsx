@@ -10,10 +10,6 @@ export default async function ConsultaPage({ params }: ConsultaPageProps) {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-6">
-      <h1 className="font-serif text-3xl text-hiro-text">Consulta {id}</h1>
-      <p className="mt-2 text-sm text-hiro-muted">
-        Tela 2: gravacao e transcricao em tempo real.
-      </p>
       <ConsultationWorkspace consultationId={id} patients={mockPatients} />
     </div>
   );

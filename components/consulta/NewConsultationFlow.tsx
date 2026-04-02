@@ -154,8 +154,24 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
             />
             <input
               value={newPatientDraft.dateOfBirth}
-              onChange={(event) => setNewPatientDraft({ dateOfBirth: event.target.value })}
-              type="date"
+              onChange={(event) => {
+                // Allow only digits and slashes, auto-insert slashes
+                let v = event.target.value.replace(/[^\d/]/g, "");
+                const digits = v.replace(/\//g, "");
+                if (digits.length >= 3 && !v.includes("/")) {
+                  v = digits.slice(0, 2) + "/" + digits.slice(2);
+                }
+                if (digits.length >= 5 && v.split("/").length < 3) {
+                  const parts = v.split("/");
+                  v = parts[0] + "/" + (parts[1]?.slice(0, 2) ?? "") + "/" + (parts[1]?.slice(2) ?? "") + (parts[2] ?? "");
+                }
+                if (v.length > 10) v = v.slice(0, 10);
+                setNewPatientDraft({ dateOfBirth: v });
+              }}
+              type="text"
+              inputMode="numeric"
+              maxLength={10}
+              placeholder="dd/mm/aaaa"
               className="glass-card-input rounded-xl px-3 py-2 text-sm text-hiro-text outline-none"
             />
             <select
