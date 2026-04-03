@@ -1,6 +1,7 @@
 "use client";
 
-import { Calendar, ExternalLink, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { Calendar, ExternalLink, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useCalendar } from "@/hooks/useCalendar";
 import type { CalendarAppointment } from "@/types/calendar";
 
@@ -47,7 +48,6 @@ function isToday(dateStr: string): boolean {
   );
 }
 
-/* Skeleton rows while loading */
 function LoadingSkeleton() {
   return (
     <div className="space-y-3 py-2">
@@ -64,9 +64,11 @@ function LoadingSkeleton() {
 function AppointmentRow({
   appointment,
   index,
+  onRemove,
 }: {
   appointment: CalendarAppointment;
   index: number;
+  onRemove?: () => void;
 }) {
   const today = isToday(appointment.startTime);
 
@@ -75,29 +77,114 @@ function AppointmentRow({
       className="animate-fade-up flex items-center gap-3 py-2.5"
       style={{ animationDelay: `${index * 40}ms` }}
     >
-      {/* Colored dot */}
       <span
         className={`h-2 w-2 shrink-0 rounded-full ${
           today ? "bg-hiro-green" : "bg-hiro-amber"
         }`}
       />
-
-      {/* Time */}
       <span className="w-12 shrink-0 text-sm font-medium tabular-nums text-hiro-text">
         {formatTime(appointment.startTime)}
       </span>
-
-      {/* Title */}
       <span className="min-w-0 flex-1 truncate text-sm text-hiro-muted">
         {appointment.title}
       </span>
+      {onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="shrink-0 rounded-full p-1 text-hiro-muted/40 transition-colors hover:bg-black/[0.04] hover:text-hiro-red"
+          title="Remover"
+        >
+          <Trash2 className="h-3 w-3" strokeWidth={1.75} />
+        </button>
+      )}
     </div>
   );
 }
 
-/* ─── Disconnected state ─────────────────────────────────────────────────── */
+/* ─── Add appointment form ───────────────────────────────────────────────── */
 
-function DisconnectedView({ onConnect }: { onConnect: () => void }) {
+function AddAppointmentForm({
+  onAdd,
+}: {
+  onAdd: (name: string, time: string) => Promise<void>;
+}) {
+  const [name, setName] = useState("");
+  const [time, setTime] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !time) return;
+
+    setSaving(true);
+    setError(null);
+
+    // Build ISO timestamp for today at the given time
+    const now = new Date();
+    const [hours, minutes] = time.split(":");
+    const scheduled = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      Number(hours),
+      Number(minutes)
+    );
+
+    try {
+      await onAdd(name.trim(), scheduled.toISOString());
+      setName("");
+      setTime("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao adicionar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 space-y-2">
+      <div className="flex gap-2">
+        <input
+          type="time"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          required
+          className="glass-card-input w-24 shrink-0 rounded-xl px-3 py-2 text-[13px] text-hiro-text outline-none focus:ring-2 focus:ring-hiro-green/30"
+        />
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          placeholder="Nome do paciente"
+          className="glass-card-input min-w-0 flex-1 rounded-xl px-3 py-2 text-[13px] text-hiro-text outline-none placeholder:text-hiro-muted/40 focus:ring-2 focus:ring-hiro-green/30"
+        />
+      </div>
+      {error && (
+        <p className="text-[11px] text-hiro-red">{error}</p>
+      )}
+      <button
+        type="submit"
+        disabled={saving || !name.trim() || !time}
+        className="w-full rounded-full bg-hiro-text py-2 text-[13px] font-medium text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {saving ? "Adicionando…" : "Adicionar consulta"}
+      </button>
+    </form>
+  );
+}
+
+/* ─── Disconnected — choose between Google or manual ─────────────────────── */
+
+function DisconnectedView({
+  onConnect,
+  onManual,
+}: {
+  onConnect: () => void;
+  onManual: () => void;
+}) {
   return (
     <div className="flex flex-col items-center py-4 text-center">
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-hiro-green/10">
@@ -105,17 +192,27 @@ function DisconnectedView({ onConnect }: { onConnect: () => void }) {
       </div>
 
       <p className="text-sm leading-relaxed text-hiro-muted">
-        Conecte seu calendário para visualizar suas próximas consultas aqui
+        Visualize suas próximas consultas aqui
       </p>
 
-      <button
-        type="button"
-        onClick={onConnect}
-        className="mt-4 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-5 py-2.5 text-[13px] font-medium text-hiro-text transition-all duration-200 hover:bg-white hover:-translate-y-px hover:shadow-md active:translate-y-0 active:scale-[0.98]"
-      >
-        <GoogleIcon className="h-4 w-4" />
-        Conectar ao Google Calendar
-      </button>
+      <div className="mt-4 flex w-full flex-col gap-2">
+        <button
+          type="button"
+          onClick={onConnect}
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-black/10 bg-white/80 px-5 py-2.5 text-[13px] font-medium text-hiro-text transition-all duration-200 hover:bg-white hover:-translate-y-px hover:shadow-md active:translate-y-0 active:scale-[0.98]"
+        >
+          <GoogleIcon className="h-4 w-4" />
+          Conectar ao Google Calendar
+        </button>
+        <button
+          type="button"
+          onClick={onManual}
+          className="inline-flex items-center justify-center gap-1.5 rounded-full border border-black/10 bg-transparent px-5 py-2.5 text-[13px] font-medium text-hiro-muted transition-all duration-200 hover:bg-black/[0.03] active:scale-[0.98]"
+        >
+          <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+          Adicionar consultas manualmente
+        </button>
+      </div>
 
       <p className="mt-3 text-[11px] text-hiro-muted/60">
         Em breve: Outlook, Apple Calendar
@@ -124,7 +221,88 @@ function DisconnectedView({ onConnect }: { onConnect: () => void }) {
   );
 }
 
-/* ─── Connected state ────────────────────────────────────────────────────── */
+/* ─── Manual appointments view ───────────────────────────────────────────── */
+
+function ManualView({
+  appointments,
+  isLoading,
+  onAdd,
+  onRemove,
+  onSwitchToGoogle,
+}: {
+  appointments: CalendarAppointment[];
+  isLoading: boolean;
+  onAdd: (name: string, time: string) => Promise<void>;
+  onRemove: (id: string) => void;
+  onSwitchToGoogle: () => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const todayAppts = appointments.filter((a) => isToday(a.startTime));
+
+  return (
+    <>
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-hiro-green" strokeWidth={1.75} />
+          <h3 className="text-sm font-semibold text-hiro-text">
+            Consultas do Dia
+          </h3>
+        </div>
+        <span className="text-[11px] text-hiro-muted">
+          {todayAppts.length} {todayAppts.length === 1 ? "agendada" : "agendadas"}
+        </span>
+      </div>
+
+      {isLoading && appointments.length === 0 ? (
+        <LoadingSkeleton />
+      ) : appointments.length === 0 && !showForm ? (
+        <p className="py-4 text-center text-sm text-hiro-muted">
+          Nenhuma consulta adicionada
+        </p>
+      ) : (
+        <div className="divide-y divide-black/[0.05]">
+          {appointments.map((a, i) => (
+            <AppointmentRow
+              key={a.id}
+              appointment={a}
+              index={i}
+              onRemove={() => onRemove(a.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {showForm ? (
+        <AddAppointmentForm
+          onAdd={async (name, time) => {
+            await onAdd(name, time);
+            setShowForm(false);
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-black/15 py-2 text-[12px] font-medium text-hiro-muted transition-colors hover:border-hiro-green/40 hover:text-hiro-green"
+        >
+          <Plus className="h-3 w-3" strokeWidth={2} />
+          Adicionar consulta
+        </button>
+      )}
+
+      <button
+        type="button"
+        onClick={onSwitchToGoogle}
+        className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-hiro-muted/60 transition-colors hover:text-hiro-green"
+      >
+        <GoogleIcon className="h-3 w-3" />
+        Conectar ao Google Calendar
+      </button>
+    </>
+  );
+}
+
+/* ─── Google connected view ──────────────────────────────────────────────── */
 
 function ConnectedView({
   appointments,
@@ -171,7 +349,6 @@ function ConnectedView({
         </p>
       ) : (
         <>
-          {/* Today */}
           {todayAppts.length > 0 && (
             <div>
               <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">
@@ -185,7 +362,6 @@ function ConnectedView({
             </div>
           )}
 
-          {/* Upcoming */}
           {upcomingAppts.length > 0 && (
             <div className={todayAppts.length > 0 ? "mt-4" : ""}>
               <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">
@@ -257,11 +433,17 @@ export function CalendarWidget() {
     isConnected,
     isLoading,
     appointments,
+    manualAppointments,
+    hasManual,
     error,
     connectCalendar,
     disconnectCalendar,
+    addManualAppointment,
+    removeManualAppointment,
     refreshAppointments,
   } = useCalendar();
+
+  const [showManual, setShowManual] = useState(false);
 
   // Initial loading
   if (isConnected === null && isLoading) {
@@ -272,20 +454,36 @@ export function CalendarWidget() {
     );
   }
 
+  // Determine which view to show
+  const showGoogleConnected = isConnected === true;
+  const showManualView = showManual || (!showGoogleConnected && hasManual);
+  const showDisconnected = !showGoogleConnected && !showManualView;
+
   return (
     <section className="glass-card rounded-2xl p-6">
-      {error && !isConnected ? (
+      {error && !isConnected && !hasManual ? (
         <ErrorView message={error} onRetry={refreshAppointments} />
-      ) : isConnected ? (
+      ) : showGoogleConnected ? (
         <ConnectedView
           appointments={appointments}
           isLoading={isLoading}
           onDisconnect={disconnectCalendar}
           onRefresh={refreshAppointments}
         />
-      ) : (
-        <DisconnectedView onConnect={connectCalendar} />
-      )}
+      ) : showManualView ? (
+        <ManualView
+          appointments={manualAppointments}
+          isLoading={isLoading}
+          onAdd={addManualAppointment}
+          onRemove={removeManualAppointment}
+          onSwitchToGoogle={connectCalendar}
+        />
+      ) : showDisconnected ? (
+        <DisconnectedView
+          onConnect={connectCalendar}
+          onManual={() => setShowManual(true)}
+        />
+      ) : null}
     </section>
   );
 }

@@ -9,15 +9,17 @@ export function useCalendar() {
   const [isConnected, setIsConnected] = useState<boolean | null>(null); // null = loading
   const [isLoading, setIsLoading] = useState(true);
   const [appointments, setAppointments] = useState<CalendarAppointment[]>([]);
+  const [manualAppointments, setManualAppointments] = useState<CalendarAppointment[]>([]);
+  const [hasManual, setHasManual] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchAppointments = useCallback(async () => {
+  // Fetch Google Calendar appointments
+  const fetchGoogleAppointments = useCallback(async () => {
     try {
       const res = await fetch("/api/calendar/appointments");
 
       if (res.status === 400) {
-        // Not connected
         setIsConnected(false);
         setAppointments([]);
         return;
@@ -51,11 +53,28 @@ export function useCalendar() {
     }
   }, []);
 
+  // Fetch manual appointments
+  const fetchManualAppointments = useCallback(async () => {
+    try {
+      const res = await fetch("/api/appointments");
+      if (!res.ok) return;
+      const data = await res.json();
+      const mapped = (data.appointments ?? []).map((a: CalendarAppointment) => ({
+        ...a,
+        date: new Date(a.date),
+      }));
+      setManualAppointments(mapped);
+      setHasManual(mapped.length > 0);
+    } catch {
+      // silent — manual appointments are optional
+    }
+  }, []);
+
   const refreshAppointments = useCallback(async () => {
     setIsLoading(true);
-    await fetchAppointments();
+    await Promise.all([fetchGoogleAppointments(), fetchManualAppointments()]);
     setIsLoading(false);
-  }, [fetchAppointments]);
+  }, [fetchGoogleAppointments, fetchManualAppointments]);
 
   // Initial load
   useEffect(() => {
@@ -65,12 +84,12 @@ export function useCalendar() {
   // Auto-refresh when connected
   useEffect(() => {
     if (isConnected) {
-      intervalRef.current = setInterval(fetchAppointments, REFRESH_INTERVAL_MS);
+      intervalRef.current = setInterval(fetchGoogleAppointments, REFRESH_INTERVAL_MS);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isConnected, fetchAppointments]);
+  }, [isConnected, fetchGoogleAppointments]);
 
   function connectCalendar() {
     window.location.href = "/api/calendar/auth/google";
@@ -92,13 +111,40 @@ export function useCalendar() {
     }
   }
 
+  async function addManualAppointment(patientName: string, scheduledTime: string) {
+    const res = await fetch("/api/appointments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ patient_name: patientName, scheduled_time: scheduledTime }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error ?? "Erro ao adicionar consulta");
+    }
+    await fetchManualAppointments();
+  }
+
+  async function removeManualAppointment(id: string) {
+    const res = await fetch(`/api/appointments?id=${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error ?? "Erro ao remover consulta");
+    }
+    setManualAppointments((prev) => prev.filter((a) => a.id !== id));
+    setHasManual(manualAppointments.length > 1);
+  }
+
   return {
     isConnected,
     isLoading,
     appointments,
+    manualAppointments,
+    hasManual,
     error,
     connectCalendar,
     disconnectCalendar,
+    addManualAppointment,
+    removeManualAppointment,
     refreshAppointments,
   };
 }
