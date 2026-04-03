@@ -138,7 +138,7 @@ function Navbar({ onScrollTo }: { onScrollTo: (id: string) => void }) {
           ))}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-6">
           <Link
             href="/login"
             className="hidden text-[13px] font-medium text-white/60 transition-colors hover:text-white md:inline"
@@ -151,7 +151,7 @@ function Navbar({ onScrollTo }: { onScrollTo: (id: string) => void }) {
             rel="noopener noreferrer"
             className="rounded-full bg-white/90 px-5 py-2 text-[13px] font-medium text-[#0e1610] transition-all duration-200 hover:bg-white hover:-translate-y-px hover:shadow-lg"
           >
-            Agendar Demonstração
+            Agendar Demo
           </a>
         </div>
       </div>
@@ -265,7 +265,7 @@ function ProblemSection() {
         {/* Editorial numbers with vertical dividers */}
         <div className="mt-20 grid grid-cols-1 gap-12 text-center md:mt-24 md:grid-cols-3 md:gap-0">
           {stats.map(({ numValue, suffix, staticValue, label }, i) => (
-            <FadeIn key={label} delay={i * 0.15}>
+            <FadeIn key={i} delay={i * 0.15}>
               <div className={`${i > 0 ? "md:border-l md:border-[#d4c9b8]" : ""} md:px-8 flex flex-col items-center justify-center`}>
                 <p className="whitespace-nowrap font-serif text-5xl font-medium tracking-tight text-[#1a1a1a] md:text-6xl lg:text-7xl">
                   {staticValue ? (
