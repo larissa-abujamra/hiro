@@ -6,17 +6,14 @@ import { animate, motion, useInView, useMotionValue, useTransform } from "framer
 import {
   ArrowRight,
   Calendar,
-  Clock,
   EyeOff,
   FileText,
   Lock,
   Mic,
-  Percent,
   Pill,
   Server,
   Shield,
   Sparkles,
-  Trophy,
 } from "lucide-react";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { DitheringShader } from "@/components/ui/dithering-shader";
@@ -107,28 +104,6 @@ function AnimatedNumber({
   );
 }
 
-/* SVG wave divider — placed between sections, not inside them.
-   bgFrom = color of the section above, bgTo = color of the section below */
-function WaveDivider({ from, to }: { from: string; to: string }) {
-  return (
-    <div className="relative w-full overflow-hidden leading-[0]" style={{ background: from, marginTop: -1, marginBottom: -1 }}>
-      <svg
-        viewBox="0 0 1440 80"
-        xmlns="http://www.w3.org/2000/svg"
-        className="relative block w-full"
-        preserveAspectRatio="none"
-        style={{ height: "clamp(40px, 5vw, 80px)" }}
-      >
-        <path d="M0,0 L1440,0 L1440,80 L0,80 Z" fill={from} />
-        <path
-          d="M0,40 C360,80 720,0 1080,40 C1260,60 1380,50 1440,45 L1440,80 L0,80 Z"
-          fill={to}
-        />
-      </svg>
-    </div>
-  );
-}
-
 /* ─── Navbar ─────────────────────────────────────────────────────────────── */
 
 function Navbar({ onScrollTo }: { onScrollTo: (id: string) => void }) {
@@ -215,24 +190,6 @@ function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
               O Hiro usa inteligência artificial para transcrever suas consultas e
               gerar prontuários SOAP completos — em segundos.
             </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <a
-                href="https://calendly.com/abujamra-usc/30min"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-flex items-center gap-2 rounded-full bg-[#2d5a47] px-8 py-3.5 text-[14px] font-medium text-white transition-all duration-200 hover:-translate-y-px hover:bg-[#367a5a] hover:shadow-[0_8px_32px_rgba(45,92,63,0.45)]"
-              >
-                Agendar Demonstração
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
-              </a>
-              <button
-                type="button"
-                onClick={() => onScrollTo("como-funciona")}
-                className="text-[14px] font-medium text-white/45 underline-offset-4 transition-colors hover:text-white/80 hover:underline"
-              >
-                Ver como funciona
-              </button>
-            </div>
           </div>
         }
       >
@@ -244,6 +201,25 @@ function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
         />
       </ContainerScroll>
 
+      {/* CTAs below the tablet */}
+      <div className="flex flex-wrap items-center justify-center gap-4 pb-20 md:pb-28">
+        <a
+          href="https://calendly.com/abujamra-usc/30min"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group inline-flex items-center gap-2 rounded-full bg-[#2d5a47] px-8 py-3.5 text-[14px] font-medium text-white transition-all duration-200 hover:-translate-y-px hover:bg-[#367a5a] hover:shadow-[0_8px_32px_rgba(45,92,63,0.45)]"
+        >
+          Agendar Demonstração
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
+        </a>
+        <button
+          type="button"
+          onClick={() => onScrollTo("como-funciona")}
+          className="text-[14px] font-medium text-white/45 underline-offset-4 transition-colors hover:text-white/80 hover:underline"
+        >
+          Ver como funciona
+        </button>
+      </div>
     </section>
   );
 }
@@ -252,30 +228,13 @@ function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
 
 function ProblemSection() {
   const stats = [
-    {
-      icon: Clock,
-      numValue: 16,
-      suffix: " min",
-      label: "Tempo médio documentando cada consulta",
-      accent: "#c9a962",
-    },
-    {
-      icon: Percent,
-      numValue: 40,
-      suffix: "%",
-      label: "Do dia em tarefas administrativas",
-      accent: "#2d5a47",
-    },
-    {
-      icon: Trophy,
-      staticValue: "#1",
-      label: "Causa de burnout entre médicos",
-      accent: "#9b4d3a",
-    },
+    { numValue: 16, suffix: " min", label: "Tempo médio documentando cada consulta" },
+    { numValue: 40, suffix: "%", label: "Do dia em tarefas administrativas" },
+    { staticValue: "#1", label: "Causa de burnout entre médicos" },
   ];
 
   return (
-    <section className="relative bg-[#f5f0e8] py-24 md:py-32">
+    <section className="relative bg-[#f5f0e8] py-24 md:py-36">
       {/* Subtle organic pattern */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.03]" aria-hidden>
         <div
@@ -303,38 +262,25 @@ function ProblemSection() {
           </p>
         </FadeIn>
 
-        {/* Cards with animated numbers */}
-        <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
-          {stats.map(({ icon: Icon, numValue, suffix, staticValue, label, accent }, i) => (
-            <FadeIn key={label} delay={i * 0.12} className="h-full">
-              <div
-                className="group flex h-full flex-col rounded-3xl border border-[#1a1a1a]/[0.06] bg-white/70 p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(26,58,47,0.08)]"
-                style={{ backdropFilter: "blur(12px)" }}
-              >
-                <div
-                  className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl"
-                  style={{ background: `${accent}15` }}
-                >
-                  <Icon className="h-6 w-6" style={{ color: accent }} strokeWidth={1.5} />
-                </div>
-                <p className="font-serif text-5xl font-normal tracking-tight text-[#1a1a1a] md:text-6xl">
+        {/* Editorial numbers — no cards */}
+        <div className="mt-20 grid grid-cols-1 gap-12 text-center md:mt-24 md:grid-cols-3 md:gap-16">
+          {stats.map(({ numValue, suffix, staticValue, label }, i) => (
+            <FadeIn key={label} delay={i * 0.15}>
+              <div>
+                <p className="font-serif text-6xl font-medium tracking-tight text-[#1a1a1a] md:text-7xl lg:text-8xl">
                   {staticValue ? (
-                    <FadeIn>{staticValue}</FadeIn>
+                    staticValue
                   ) : (
-                    <AnimatedNumber
-                      value={numValue!}
-                      suffix={suffix ?? ""}
-                    />
+                    <AnimatedNumber value={numValue!} suffix={suffix ?? ""} />
                   )}
                 </p>
-                <p className="mt-3 flex-1 text-sm leading-relaxed text-[#1a1a1a]/50">
+                <p className="mx-auto mt-4 max-w-[200px] text-sm leading-relaxed text-[#1a1a1a]/45 md:text-base">
                   {label}
                 </p>
               </div>
             </FadeIn>
           ))}
         </div>
-
       </div>
     </section>
   );
@@ -637,17 +583,13 @@ export default function LandingPage() {
     <div className="min-h-screen">
       <Navbar onScrollTo={scrollTo} />
       <HeroSection onScrollTo={scrollTo} />
-      <WaveDivider from="#0f1a13" to="#f5f0e8" />
       <ProblemSection />
-      <WaveDivider from="#f5f0e8" to="#0f1a13" />
       <HowItWorksSection />
       <div className="bg-[#0f1a13] px-5 md:px-8">
         <div className="mx-auto max-w-3xl border-t border-white/[0.06]" />
       </div>
       <FeaturesScroll />
-      <WaveDivider from="#0f1a13" to="#faf8f5" />
       <IntegrationsSection />
-      <WaveDivider from="#faf8f5" to="#0f1a13" />
       <SecuritySection />
       <CTASection />
       <Footer />
