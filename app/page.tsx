@@ -228,7 +228,7 @@ function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
 
 function ProblemSection() {
   const stats = [
-    { numValue: 16, suffix: " min", label: "Tempo médio documentando cada consulta" },
+    { numValue: 16, suffix: " min", label: <>Tempo médio documentando<br />cada consulta</> },
     { numValue: 40, suffix: "%", label: "Do dia em tarefas administrativas" },
     { staticValue: "#1", label: "Causa de burnout entre médicos" },
   ];
@@ -262,19 +262,19 @@ function ProblemSection() {
           </p>
         </FadeIn>
 
-        {/* Editorial numbers — no cards */}
-        <div className="mt-20 grid grid-cols-1 gap-12 text-center md:mt-24 md:grid-cols-3 md:gap-16">
+        {/* Editorial numbers with vertical dividers */}
+        <div className="mt-20 grid grid-cols-1 gap-12 text-center md:mt-24 md:grid-cols-3 md:gap-0">
           {stats.map(({ numValue, suffix, staticValue, label }, i) => (
             <FadeIn key={label} delay={i * 0.15}>
-              <div>
-                <p className="font-serif text-6xl font-medium tracking-tight text-[#1a1a1a] md:text-7xl lg:text-8xl">
+              <div className={`${i > 0 ? "md:border-l md:border-[#d4c9b8]" : ""} md:px-8 flex flex-col items-center justify-center`}>
+                <p className="whitespace-nowrap font-serif text-5xl font-medium tracking-tight text-[#1a1a1a] md:text-6xl lg:text-7xl">
                   {staticValue ? (
                     staticValue
                   ) : (
                     <AnimatedNumber value={numValue!} suffix={suffix ?? ""} />
                   )}
                 </p>
-                <p className="mx-auto mt-4 max-w-[200px] text-sm leading-relaxed text-[#1a1a1a]/45 md:text-base">
+                <p className="mx-auto mt-4 text-sm leading-relaxed text-[#1a1a1a]/45 md:text-base">
                   {label}
                 </p>
               </div>
