@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   if (errorParam || !code || !state) {
     console.log("[calendar/callback] EARLY EXIT — missing code/state or error");
     return NextResponse.redirect(
-      `${origin}/?calendar_error=${encodeURIComponent(errorParam ?? "missing_code")}`
+      `${origin}/dashboard?calendar_error=${encodeURIComponent(errorParam ?? "missing_code")}`
     );
   }
 
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     console.log("[calendar/callback] google-auth module loaded OK");
   } catch (importErr) {
     console.error("[calendar/callback] IMPORT ERROR for google-auth:", importErr);
-    return NextResponse.redirect(`${origin}/?calendar_error=import_failed`);
+    return NextResponse.redirect(`${origin}/dashboard?calendar_error=import_failed`);
   }
 
   const cookieStore = await cookies();
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
 
   if (!existingProfile) {
     console.error("[calendar/callback] NO PROFILE ROW for user id:", state);
-    return NextResponse.redirect(`${origin}/?calendar_error=profile_not_found`);
+    return NextResponse.redirect(`${origin}/dashboard?calendar_error=profile_not_found`);
   }
 
   try {
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
 
     if (!tokens.access_token) {
       console.error("[calendar/callback] No access_token received");
-      return NextResponse.redirect(`${origin}/?calendar_error=no_tokens`);
+      return NextResponse.redirect(`${origin}/dashboard?calendar_error=no_tokens`);
     }
 
     const updatePayload = {
@@ -107,18 +107,18 @@ export async function GET(request: Request) {
 
     if (updateError) {
       console.error("[calendar/callback] DB UPDATE FAILED:", updateError);
-      return NextResponse.redirect(`${origin}/?calendar_error=db_save_failed`);
+      return NextResponse.redirect(`${origin}/dashboard?calendar_error=db_save_failed`);
     }
 
     if (!updateData || updateData.length === 0) {
       console.error("[calendar/callback] UPDATE matched 0 rows!");
-      return NextResponse.redirect(`${origin}/?calendar_error=no_rows_updated`);
+      return NextResponse.redirect(`${origin}/dashboard?calendar_error=no_rows_updated`);
     }
 
     console.log("[calendar/callback] SUCCESS — calendar connected");
-    return NextResponse.redirect(`${origin}/?calendar_connected=true`);
+    return NextResponse.redirect(`${origin}/dashboard?calendar_connected=true`);
   } catch (err) {
     console.error("[calendar/callback] EXCEPTION:", err);
-    return NextResponse.redirect(`${origin}/?calendar_error=exchange_failed`);
+    return NextResponse.redirect(`${origin}/dashboard?calendar_error=exchange_failed`);
   }
 }

@@ -4,12 +4,12 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { SidebarDesktopShell } from "./SidebarDesktopShell";
 
-const AUTH_PATHS = ["/login", "/signup", "/auth"];
+const PUBLIC_PATHS = ["/login", "/signup", "/auth"];
 
 export function ConditionalSidebar() {
   const pathname = usePathname();
-  const isAuth = AUTH_PATHS.some((p) => pathname.startsWith(p));
-  if (isAuth) return null;
+  const isPublic = pathname === "/" || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  if (isPublic) return null;
   return (
     <>
       <SidebarDesktopShell />

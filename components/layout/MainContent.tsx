@@ -2,14 +2,14 @@
 
 import { usePathname } from "next/navigation";
 
-const AUTH_PATHS = ["/login", "/signup", "/auth"];
+const PUBLIC_PATHS = ["/login", "/signup", "/auth"];
 
 export function MainContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuth = AUTH_PATHS.some((p) => pathname.startsWith(p));
+  const isPublic = pathname === "/" || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   return (
     <main
-      className={`relative z-[3] min-h-full ${isAuth ? "" : "lg:pl-[220px]"}`}
+      className={`relative z-[3] min-h-full ${isPublic ? "" : "lg:pl-[220px]"}`}
     >
       {children}
     </main>

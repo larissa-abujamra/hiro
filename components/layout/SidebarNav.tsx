@@ -76,7 +76,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 space-y-0.5 px-3 py-4">
-        <NavItem href="/" icon={<span className="text-[13px] leading-none">◻</span>} label="Início" onClick={onNavigate} />
+        <NavItem href="/dashboard" icon={<span className="text-[13px] leading-none">◻</span>} label="Início" onClick={onNavigate} />
         <NavItem
           href="/consulta/nova"
           icon={<Mic strokeWidth={1.75} />}
