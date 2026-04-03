@@ -117,8 +117,77 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
         p.id === patientId ? { ...p, ...updates } : p
       ),
     })),
-  initializePatients: (isDemo: boolean, userId: string) =>
-    set({ patients: isDemo ? mockPatients : [], initialized: true, initializedForUser: userId }),
+  initializePatients: (isDemo: boolean, userId: string) => {
+    if (isDemo) {
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10);
+      const h = (hoursAgo: number) => new Date(now.getTime() - hoursAgo * 3600_000).toISOString();
+
+      // Inject today's consultations into mock patients for metrics
+      const todayConsultations: Consultation[] = [
+        {
+          id: "demo-cons-today-1",
+          patientId: "patient-bruno-ferreira",
+          date: today,
+          reason: "Retorno — controle de hipertensão",
+          duration: 12,
+          transcription: [],
+          soap: { s: "Paciente refere melhora dos picos pressóricos.", o: "PA 132/84 mmHg, FC 76 bpm.", a: "HAS com controle adequado.", p: "Manter medicação atual, retorno em 3 meses." },
+          confirmedCids: [{ code: "I10", name: "Hipertensão essencial", confidence: 0.95, sourceQuote: "controle de pressão", confirmed: true }],
+          detectedItems: [],
+          documents: [],
+        },
+        {
+          id: "demo-cons-today-2",
+          patientId: "patient-ana-clara-ribeiro",
+          date: today,
+          reason: "Consulta de rotina",
+          duration: 15,
+          transcription: [],
+          soap: { s: "Paciente sem queixas ativas, refere bem-estar geral.", o: "Exame físico sem alterações.", a: "Saúde preservada, sem comorbidades.", p: "Manter acompanhamento anual." },
+          confirmedCids: [],
+          detectedItems: [],
+          documents: [],
+        },
+        {
+          id: "demo-cons-today-3",
+          patientId: "patient-cintia-souza",
+          date: today,
+          reason: "Diabetes — retorno",
+          duration: 9,
+          transcription: [],
+          soap: { s: "Paciente refere controle glicêmico adequado com dieta.", o: "Glicemia de jejum 102 mg/dL, HbA1c 6.2%.", a: "DM2 compensado.", p: "Manter metformina 850mg 2x/dia, solicitar nova HbA1c em 3 meses." },
+          confirmedCids: [{ code: "E11", name: "Diabetes mellitus tipo 2", confidence: 0.92, sourceQuote: "controle glicêmico", confirmed: true }],
+          detectedItems: [],
+          documents: [],
+        },
+      ];
+
+      const patientsWithToday = mockPatients.map((p) => {
+        const todayForPatient = todayConsultations.filter((c) => c.patientId === p.id);
+        return todayForPatient.length > 0
+          ? { ...p, consultations: [...p.consultations, ...todayForPatient] }
+          : p;
+      });
+
+      const demoActivity: ActivityEntry[] = [
+        { id: "demo-act-1", type: "prontuario_generated", patientName: "Bruno Ferreira", timestamp: h(0.5) },
+        { id: "demo-act-2", type: "consultation_saved", patientName: "Bruno Ferreira", timestamp: h(0.6) },
+        { id: "demo-act-3", type: "consultation_started", patientName: "Bruno Ferreira", timestamp: h(1) },
+        { id: "demo-act-4", type: "prontuario_generated", patientName: "Ana Clara Ribeiro", timestamp: h(2.5) },
+        { id: "demo-act-5", type: "consultation_saved", patientName: "Ana Clara Ribeiro", timestamp: h(2.6) },
+        { id: "demo-act-6", type: "consultation_started", patientName: "Ana Clara Ribeiro", timestamp: h(3) },
+        { id: "demo-act-7", type: "prontuario_generated", patientName: "Cíntia Souza", timestamp: h(4) },
+        { id: "demo-act-8", type: "consultation_started", patientName: "Cíntia Souza", timestamp: h(4.5) },
+        { id: "demo-act-9", type: "patient_created", patientName: "Elaine Prado", timestamp: h(6) },
+        { id: "demo-act-10", type: "consultation_started", patientName: "Rodrigo Mendes", timestamp: h(8) },
+      ];
+
+      set({ patients: patientsWithToday, activityLog: demoActivity, initialized: true, initializedForUser: userId });
+    } else {
+      set({ patients: [], activityLog: [], initialized: true, initializedForUser: userId });
+    }
+  },
   createPatientFromDraft: () => {
     let createdId: string | null = null;
     set((state) => {
@@ -196,7 +265,7 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
   addActivity: (entry) =>
     set((state) => ({
       activityLog: [
-        { ...entry, id: `act-${Date.now()}`, timestamp: new Date().toISOString() },
+        { ...entry, id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, timestamp: new Date().toISOString() },
         ...state.activityLog,
       ].slice(0, 20), // keep last 20
     })),

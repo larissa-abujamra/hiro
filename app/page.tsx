@@ -110,8 +110,8 @@ function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
             <h1 className="font-serif text-5xl font-normal leading-[1.1] tracking-tight text-white/95 md:text-7xl">
               Foque no paciente.
               <br />
-              <span className="italic text-[#7cc49e]">
-                A gente cuida do prontuário.
+              <span className="italic font-light text-[#7cc49e]">
+                O <em className="font-semibold">Hiro</em> cuida do prontuário.
               </span>
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/50 md:text-lg">
@@ -138,30 +138,13 @@ function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
           </div>
         }
       >
-        {/* Placeholder "screenshot" inside the tablet */}
-        <div className="relative aspect-[16/10] w-full bg-gradient-to-br from-[#1a2e20] to-[#0e1610] p-6 md:p-10">
-          <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2d5c3f]/50 ring-1 ring-white/10">
-              <Mic className="h-7 w-7 text-[#7cc49e]" strokeWidth={1.5} />
-            </div>
-            <p className="font-serif text-2xl text-white/70 md:text-3xl">
-              Hiro Dashboard
-            </p>
-            <p className="text-sm text-white/30">
-              Transcrição em tempo real com IA
-            </p>
-            <div className="mt-4 grid w-full max-w-md grid-cols-3 gap-3">
-              {["7 consultas", "100% documentadas", "11 min média"].map((t) => (
-                <div
-                  key={t}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-3"
-                >
-                  <p className="text-[11px] text-white/40">{t}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Real dashboard screenshot */}
+        <img
+          src="/dashboard-preview.png"
+          alt="Dashboard do Hiro mostrando métricas, agenda e ações rápidas"
+          className="w-full"
+          draggable={false}
+        />
       </ContainerScroll>
     </section>
   );
