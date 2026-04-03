@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { animate, motion, useInView, useMotionValue, useTransform } from "framer-motion";
 import {
+  ArrowRight,
   Calendar,
   Clock,
   EyeOff,
@@ -18,6 +19,8 @@ import {
   Trophy,
 } from "lucide-react";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
+import { DitheringShader } from "@/components/ui/dithering-shader";
+import { FeaturesScroll } from "@/components/ui/features-scroll";
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -35,8 +38,32 @@ function FadeIn({
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 28 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function ScaleIn({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={inView ? { opacity: 1, scale: 1 } : {}}
       transition={{ duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] }}
       className={className}
     >
@@ -45,15 +72,73 @@ function FadeIn({
   );
 }
 
+/* Animated count-up number */
+function AnimatedNumber({
+  value,
+  suffix = "",
+  prefix = "",
+  className,
+}: {
+  value: number;
+  suffix?: string;
+  prefix?: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const motionVal = useMotionValue(0);
+  const rounded = useTransform(motionVal, (v) => Math.round(v));
+
+  useEffect(() => {
+    if (!inView) return;
+    const controls = animate(motionVal, value, {
+      duration: 2,
+      ease: [0.16, 1, 0.3, 1],
+    });
+    return () => controls.stop();
+  }, [inView, motionVal, value]);
+
+  return (
+    <span ref={ref} className={className}>
+      {prefix}
+      <motion.span>{rounded}</motion.span>
+      {suffix}
+    </span>
+  );
+}
+
+/* SVG wave divider — placed between sections, not inside them.
+   bgFrom = color of the section above, bgTo = color of the section below */
+function WaveDivider({ from, to }: { from: string; to: string }) {
+  return (
+    <div className="relative w-full overflow-hidden leading-[0]" style={{ background: from, marginTop: -1, marginBottom: -1 }}>
+      <svg
+        viewBox="0 0 1440 80"
+        xmlns="http://www.w3.org/2000/svg"
+        className="relative block w-full"
+        preserveAspectRatio="none"
+        style={{ height: "clamp(40px, 5vw, 80px)" }}
+      >
+        <path d="M0,0 L1440,0 L1440,80 L0,80 Z" fill={from} />
+        <path
+          d="M0,40 C360,80 720,0 1080,40 C1260,60 1380,50 1440,45 L1440,80 L0,80 Z"
+          fill={to}
+        />
+      </svg>
+    </div>
+  );
+}
+
 /* ─── Navbar ─────────────────────────────────────────────────────────────── */
 
 function Navbar({ onScrollTo }: { onScrollTo: (id: string) => void }) {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06]"
+    <nav
+      className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06]"
       style={{
-        background: "rgba(14, 22, 16, 0.7)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        background: "rgba(14, 22, 16, 0.75)",
+        backdropFilter: "blur(24px) saturate(180%)",
+        WebkitBackdropFilter: "blur(24px) saturate(180%)",
       }}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 md:px-8">
@@ -99,22 +184,34 @@ function Navbar({ onScrollTo }: { onScrollTo: (id: string) => void }) {
   );
 }
 
-/* ─── Hero ───────────────────────────────────────────────────────────────── */
+/* ─── Hero — dark ────────────────────────────────────────────────────────── */
 
 function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
   return (
-    <section className="relative overflow-hidden pt-24">
+    <section className="relative overflow-hidden bg-[#0f1a13] pt-24">
+      {/* Subtle organic radial accents */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div
+          className="absolute left-[-10%] top-[10%] h-[700px] w-[700px]"
+          style={{ background: "radial-gradient(circle, rgba(45,90,60,0.25) 0%, transparent 65%)" }}
+        />
+        <div
+          className="absolute right-[-8%] top-[30%] h-[500px] w-[500px]"
+          style={{ background: "radial-gradient(circle, rgba(201,169,98,0.1) 0%, transparent 60%)" }}
+        />
+      </div>
+
       <ContainerScroll
         titleComponent={
           <div className="mb-8 flex flex-col items-center text-center md:mb-12">
-            <h1 className="font-serif text-5xl font-normal leading-[1.1] tracking-tight text-white/95 md:text-7xl">
+            <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-tight text-white/95 md:text-6xl lg:text-[4.5rem]">
               Foque no paciente.
               <br />
-              <span className="italic font-light text-[#7cc49e]">
+              <span className="italic font-light text-[#7fb69a]">
                 O <em className="font-semibold">Hiro</em> cuida do prontuário.
               </span>
             </h1>
-            <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/50 md:text-lg">
+            <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/45 md:text-lg">
               O Hiro usa inteligência artificial para transcrever suas consultas e
               gerar prontuários SOAP completos — em segundos.
             </p>
@@ -123,14 +220,15 @@ function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
                 href="https://calendly.com/abujamra-usc/30min"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-full bg-[#2d5c3f] px-8 py-3.5 text-[14px] font-medium text-white transition-all duration-200 hover:-translate-y-px hover:shadow-[0_8px_32px_rgba(45,92,63,0.4)]"
+                className="group inline-flex items-center gap-2 rounded-full bg-[#2d5a47] px-8 py-3.5 text-[14px] font-medium text-white transition-all duration-200 hover:-translate-y-px hover:bg-[#367a5a] hover:shadow-[0_8px_32px_rgba(45,92,63,0.45)]"
               >
                 Agendar Demonstração
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
               </a>
               <button
                 type="button"
                 onClick={() => onScrollTo("como-funciona")}
-                className="text-[14px] font-medium text-white/50 underline-offset-4 transition-colors hover:text-white/80 hover:underline"
+                className="text-[14px] font-medium text-white/45 underline-offset-4 transition-colors hover:text-white/80 hover:underline"
               >
                 Ver como funciona
               </button>
@@ -138,7 +236,6 @@ function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
           </div>
         }
       >
-        {/* Real dashboard screenshot */}
         <img
           src="/dashboard-preview.png"
           alt="Dashboard do Hiro mostrando métricas, agenda e ações rápidas"
@@ -146,214 +243,292 @@ function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
           draggable={false}
         />
       </ContainerScroll>
+
     </section>
   );
 }
 
-/* ─── O Problema ─────────────────────────────────────────────────────────── */
+/* ─── O Problema — light ─────────────────────────────────────────────────── */
 
 function ProblemSection() {
   const stats = [
-    { icon: Clock, value: "16 min", label: "Tempo médio documentando cada consulta" },
-    { icon: Percent, value: "40%", label: "Do dia em tarefas administrativas" },
-    { icon: Trophy, value: "#1", label: "Causa de burnout entre médicos" },
+    {
+      icon: Clock,
+      numValue: 16,
+      suffix: " min",
+      label: "Tempo médio documentando cada consulta",
+      accent: "#c9a962",
+    },
+    {
+      icon: Percent,
+      numValue: 40,
+      suffix: "%",
+      label: "Do dia em tarefas administrativas",
+      accent: "#2d5a47",
+    },
+    {
+      icon: Trophy,
+      staticValue: "#1",
+      label: "Causa de burnout entre médicos",
+      accent: "#9b4d3a",
+    },
   ];
 
   return (
-    <section className="py-24 md:py-32">
-      <div className="mx-auto max-w-5xl px-5 md:px-8">
+    <section className="relative bg-[#f5f0e8] py-24 md:py-32">
+      {/* Subtle organic pattern */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03]" aria-hidden>
+        <div
+          className="h-full w-full"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5 Q45 15 30 30 Q15 45 30 55' fill='none' stroke='%231a3a2f' stroke-width='0.5'/%3E%3C/svg%3E\")",
+            backgroundSize: "60px 60px",
+          }}
+        />
+      </div>
+
+      <div className="relative mx-auto max-w-5xl px-5 md:px-8">
         <FadeIn className="text-center">
-          <h2 className="font-serif text-3xl font-normal leading-tight tracking-tight text-white/90 md:text-5xl">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#c9a962]">
+            O problema
+          </p>
+          <h2 className="mt-3 font-serif text-4xl font-normal leading-tight tracking-tight text-[#1a1a1a] md:text-[3.2rem]">
             Médicos gastam até 2 horas
             <br className="hidden md:block" /> por dia em documentação.
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-base text-white/40 md:text-lg">
-            Tempo que poderia ser dedicado ao que realmente importa: seus pacientes.
+          <p className="mx-auto mt-4 max-w-xl text-base text-[#1a1a1a]/50 md:text-lg">
+            Tempo que poderia ser dedicado ao que realmente importa: seus
+            pacientes.
           </p>
         </FadeIn>
 
+        {/* Cards with animated numbers */}
         <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
-          {stats.map(({ icon: Icon, value, label }, i) => (
-            <FadeIn key={value} delay={i * 0.1}>
+          {stats.map(({ icon: Icon, numValue, suffix, staticValue, label, accent }, i) => (
+            <FadeIn key={label} delay={i * 0.12} className="h-full">
               <div
-                className="rounded-2xl border border-white/[0.08] p-8 text-center"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  backdropFilter: "blur(24px)",
-                }}
+                className="group flex h-full flex-col rounded-3xl border border-[#1a1a1a]/[0.06] bg-white/70 p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(26,58,47,0.08)]"
+                style={{ backdropFilter: "blur(12px)" }}
               >
-                <Icon className="mx-auto mb-4 h-6 w-6 text-[#7cc49e]" strokeWidth={1.5} />
-                <p className="font-serif text-4xl font-normal tracking-tight text-white/90 md:text-5xl">
-                  {value}
+                <div
+                  className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl"
+                  style={{ background: `${accent}15` }}
+                >
+                  <Icon className="h-6 w-6" style={{ color: accent }} strokeWidth={1.5} />
+                </div>
+                <p className="font-serif text-5xl font-normal tracking-tight text-[#1a1a1a] md:text-6xl">
+                  {staticValue ? (
+                    <FadeIn>{staticValue}</FadeIn>
+                  ) : (
+                    <AnimatedNumber
+                      value={numValue!}
+                      suffix={suffix ?? ""}
+                    />
+                  )}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed text-white/45">{label}</p>
+                <p className="mt-3 flex-1 text-sm leading-relaxed text-[#1a1a1a]/50">
+                  {label}
+                </p>
               </div>
             </FadeIn>
           ))}
         </div>
+
       </div>
     </section>
   );
 }
 
-/* ─── Como Funciona ──────────────────────────────────────────────────────── */
+/* ─── Como Funciona — dark ───────────────────────────────────────────────── */
 
 function HowItWorksSection() {
   const steps = [
     {
       icon: Mic,
       title: "Grave a consulta",
-      desc: "Inicie a gravação enquanto atende seu paciente normalmente.",
+      desc: "Inicie a gravação enquanto atende seu paciente normalmente. Sem mudanças no seu fluxo.",
     },
     {
       icon: Sparkles,
       title: "A IA transcreve",
-      desc: "Transcrição em tempo real com extração automática de informações clínicas.",
+      desc: "Transcrição em tempo real com extração automática de informações clínicas relevantes.",
     },
     {
       icon: FileText,
       title: "Prontuário pronto",
-      desc: "Receba o SOAP estruturado com um clique.",
+      desc: "Receba o SOAP estruturado, revise e exporte. Tudo com um clique.",
     },
   ];
 
   return (
-    <section id="como-funciona" className="py-24 md:py-32">
-      <div className="mx-auto max-w-5xl px-5 md:px-8">
+    <section id="como-funciona" className="relative bg-[#0f1a13] py-28 md:py-36">
+      {/* Ambient glow */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div
+          className="absolute left-1/2 top-1/2 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/2"
+          style={{ background: "radial-gradient(ellipse, rgba(45,90,71,0.2) 0%, transparent 65%)" }}
+        />
+      </div>
+
+      <div className="relative mx-auto max-w-5xl px-5 md:px-8">
         <FadeIn className="text-center">
-          <h2 className="font-serif text-3xl font-normal tracking-tight text-white/90 md:text-5xl">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#c9a962]">
+            Como funciona
+          </p>
+          <h2 className="mt-3 font-serif text-4xl font-normal tracking-tight text-[#f5f5f0] md:text-6xl">
             Simples. Rápido. Preciso.
           </h2>
         </FadeIn>
 
-        <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
-          {steps.map(({ icon: Icon, title, desc }, i) => (
-            <FadeIn key={title} delay={i * 0.1}>
-              <div
-                className="group rounded-2xl border border-white/[0.08] p-8 transition-colors hover:border-white/[0.15]"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  backdropFilter: "blur(24px)",
-                }}
-              >
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-[#2d5c3f]/40 ring-1 ring-white/10 transition-colors group-hover:bg-[#2d5c3f]/60">
-                  <Icon className="h-6 w-6 text-[#7cc49e]" strokeWidth={1.5} />
+        {/* Timeline layout */}
+        <div className="relative mt-16">
+          {/* Connecting line — desktop only */}
+          <div className="absolute left-0 right-0 top-[52px] hidden h-px bg-gradient-to-r from-transparent via-[#2d5a47]/50 to-transparent md:block" />
+
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            {steps.map(({ icon: Icon, title, desc }, i) => (
+              <ScaleIn key={title} delay={i * 0.15}>
+                <div className="group relative flex flex-col items-center text-center">
+                  {/* Step number circle */}
+                  <div className="relative z-10 mb-6 flex h-[104px] w-[104px] items-center justify-center">
+                    <div className="absolute inset-0 rounded-full bg-[#2d5a47]/20 transition-colors group-hover:bg-[#2d5a47]/35" />
+                    <div className="absolute inset-3 rounded-full bg-[#0f1a13] ring-1 ring-[#2d5a47]/40" />
+                    <Icon className="relative h-8 w-8 text-[#7fb69a]" strokeWidth={1.5} />
+                  </div>
+
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#c9a962]">
+                    Passo {i + 1}
+                  </p>
+                  <h3 className="mt-2 font-serif text-2xl text-[#f5f5f0]">{title}</h3>
+                  <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/40">{desc}</p>
                 </div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/30">
-                  Passo {i + 1}
-                </p>
-                <h3 className="mt-1 font-serif text-xl text-white/85">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/40">{desc}</p>
-              </div>
-            </FadeIn>
-          ))}
+              </ScaleIn>
+            ))}
+          </div>
         </div>
       </div>
+
     </section>
   );
 }
 
-/* ─── Integrações ────────────────────────────────────────────────────────── */
+/* ─── Integrações — light ────────────────────────────────────────────────── */
 
 function IntegrationsSection() {
   const integrations = [
     {
       icon: Pill,
       name: "Memed",
-      desc: "Prescrições digitais integradas",
+      desc: "Prescrições digitais integradas diretamente no fluxo da consulta.",
+      color: "#2d5a47",
     },
     {
       icon: Calendar,
       name: "Google Calendar",
-      desc: "Sincronize sua agenda automaticamente",
+      desc: "Sincronize sua agenda automaticamente e veja próximas consultas no dashboard.",
+      color: "#1a73e8",
     },
     {
       icon: Sparkles,
       name: "Em breve",
-      desc: "Integração com principais PEPs do Brasil",
+      desc: "Integração com iClinic, MV SOUL, Tasy, Pixeon e outros PEPs do Brasil.",
+      color: "#999",
       muted: true,
     },
   ];
 
   return (
-    <section id="integracoes" className="py-24 md:py-32">
-      <div className="mx-auto max-w-5xl px-5 md:px-8">
+    <section id="integracoes" className="relative bg-[#faf8f5] py-24 md:py-32">
+      <div className="relative mx-auto max-w-5xl px-5 md:px-8">
         <FadeIn className="text-center">
-          <h2 className="font-serif text-3xl font-normal tracking-tight text-white/90 md:text-5xl">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#2d5a47]">
+            Integrações
+          </p>
+          <h2 className="mt-3 font-serif text-4xl font-normal tracking-tight text-[#1a1a1a] md:text-[3.2rem]">
             Conectado ao seu fluxo de trabalho
           </h2>
         </FadeIn>
 
-        <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
-          {integrations.map(({ icon: Icon, name, desc, muted }, i) => (
-            <FadeIn key={name} delay={i * 0.1}>
+        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {integrations.map(({ icon: Icon, name, desc, color, muted }, i) => (
+            <FadeIn key={name} delay={i * 0.12} className="h-full">
               <div
-                className={`rounded-2xl border p-8 ${
+                className={`group flex h-full flex-col rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] ${
                   muted
-                    ? "border-dashed border-white/[0.08]"
-                    : "border-white/[0.08]"
+                    ? "border-dashed border-[#1a1a1a]/10 bg-white/40"
+                    : "border-[#1a1a1a]/[0.06] bg-white/70"
                 }`}
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  backdropFilter: "blur(24px)",
-                }}
+                style={{ backdropFilter: "blur(12px)" }}
               >
-                <Icon
-                  className={`mb-4 h-6 w-6 ${
-                    muted ? "text-white/25" : "text-[#7cc49e]"
-                  }`}
-                  strokeWidth={1.5}
-                />
+                <div
+                  className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl"
+                  style={{ background: `${color}12` }}
+                >
+                  <Icon
+                    className="h-7 w-7"
+                    style={{ color: muted ? "#bbb" : color }}
+                    strokeWidth={1.5}
+                  />
+                </div>
                 <h3
-                  className={`font-serif text-xl ${
-                    muted ? "text-white/40" : "text-white/85"
+                  className={`font-serif text-2xl ${
+                    muted ? "text-[#1a1a1a]/35" : "text-[#1a1a1a]"
                   }`}
                 >
                   {name}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/40">{desc}</p>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-[#1a1a1a]/45">{desc}</p>
               </div>
             </FadeIn>
           ))}
         </div>
       </div>
+
     </section>
   );
 }
 
-/* ─── Segurança ──────────────────────────────────────────────────────────── */
+/* ─── Segurança — dark ───────────────────────────────────────────────────── */
 
 function SecuritySection() {
   const items = [
-    { icon: Lock, text: "Criptografia de ponta a ponta" },
-    { icon: Shield, text: "Em conformidade com a LGPD" },
-    { icon: Server, text: "Dados armazenados em servidores seguros" },
-    { icon: EyeOff, text: "Nunca compartilhamos informações com terceiros" },
+    { icon: Lock, title: "Criptografia", text: "Dados protegidos com criptografia de ponta a ponta em trânsito e em repouso." },
+    { icon: Shield, title: "LGPD", text: "Em total conformidade com a Lei Geral de Proteção de Dados brasileira." },
+    { icon: Server, title: "Infraestrutura", text: "Servidores seguros com redundância e backups automáticos." },
+    { icon: EyeOff, title: "Privacidade", text: "Seus dados nunca são compartilhados, vendidos ou usados para treinar modelos." },
   ];
 
   return (
-    <section id="seguranca" className="py-24 md:py-32">
-      <div className="mx-auto max-w-5xl px-5 md:px-8">
-        <FadeIn className="text-center">
-          <h2 className="font-serif text-3xl font-normal tracking-tight text-white/90 md:text-5xl">
+    <section id="seguranca" className="relative bg-[#0f1a13] py-28 md:py-36">
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div
+          className="absolute right-[10%] top-[20%] h-[500px] w-[500px]"
+          style={{ background: "radial-gradient(circle, rgba(201,169,98,0.08) 0%, transparent 60%)" }}
+        />
+      </div>
+
+      <div className="relative mx-auto max-w-5xl px-5 md:px-8">
+        <FadeIn className="md:text-left">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#c9a962]">
+            Segurança
+          </p>
+          <h2 className="mt-3 max-w-lg font-serif text-4xl font-normal tracking-tight text-[#f5f5f0] md:text-6xl">
             Seus dados protegidos. Sempre.
           </h2>
         </FadeIn>
 
         <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {items.map(({ icon: Icon, text }, i) => (
-            <FadeIn key={text} delay={i * 0.08}>
-              <div
-                className="flex items-start gap-4 rounded-2xl border border-white/[0.08] p-6"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  backdropFilter: "blur(24px)",
-                }}
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#2d5c3f]/40 ring-1 ring-white/10">
-                  <Icon className="h-5 w-5 text-[#7cc49e]" strokeWidth={1.5} />
+          {items.map(({ icon: Icon, title, text }, i) => (
+            <FadeIn key={title} delay={i * 0.1}>
+              <div className="group flex h-full gap-5 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-7 transition-all duration-300 hover:border-white/[0.12] hover:bg-white/[0.06]">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#2d5a47]/25 ring-1 ring-white/[0.08] transition-colors group-hover:bg-[#2d5a47]/40">
+                  <Icon className="h-6 w-6 text-[#7fb69a]" strokeWidth={1.5} />
                 </div>
-                <p className="pt-2 text-sm leading-relaxed text-white/60">{text}</p>
+                <div>
+                  <h3 className="font-serif text-lg text-[#f5f5f0]">{title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-white/40">{text}</p>
+                </div>
               </div>
             </FadeIn>
           ))}
@@ -363,40 +538,59 @@ function SecuritySection() {
   );
 }
 
-/* ─── CTA Final ──────────────────────────────────────────────────────────── */
+/* ─── CTA Final — deep green gradient ────────────────────────────────────── */
 
 function CTASection() {
   return (
-    <section className="py-24 md:py-32">
-      <FadeIn>
+    <section
+      className="relative overflow-hidden py-20 md:py-24"
+      style={{ background: "linear-gradient(180deg, #1a3a2f 0%, #0f2419 100%)" }}
+    >
+      {/* Ambient glow behind text */}
+      <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
         <div
-          className="mx-auto max-w-4xl rounded-3xl border border-white/[0.08] px-8 py-16 text-center md:px-16 md:py-20"
-          style={{
-            background:
-              "linear-gradient(160deg, rgba(26, 58, 40, 0.7) 0%, rgba(14, 30, 20, 0.8) 100%)",
-            backdropFilter: "blur(32px)",
-          }}
-        >
-          <h2 className="font-serif text-3xl font-normal tracking-tight text-white/90 md:text-5xl">
+          className="absolute left-1/2 top-[30%] h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/2"
+          style={{ background: "radial-gradient(ellipse, rgba(127,182,154,0.1) 0%, transparent 55%)" }}
+        />
+      </div>
+
+      <FadeIn className="relative z-10">
+        <div className="mx-auto max-w-3xl px-6 text-center md:px-8">
+          <h2 className="font-serif text-4xl font-normal tracking-tight text-[#f5f5f0] md:text-6xl">
             Pronto para transformar
             <br /> sua rotina?
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-base text-white/45 md:text-lg">
+          <p className="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-white/40">
             Agende uma demonstração gratuita e veja o Hiro em ação.
           </p>
           <a
             href="https://calendly.com/abujamra-usc/30min"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-8 inline-block rounded-full bg-white/90 px-10 py-4 text-[15px] font-medium text-[#0e1610] transition-all duration-200 hover:bg-white hover:-translate-y-px hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)]"
+            className="group mt-10 inline-flex items-center gap-2 rounded-full bg-white/90 px-10 py-4 text-[15px] font-semibold text-[#0e1610] transition-all duration-200 hover:bg-white hover:-translate-y-px hover:shadow-[0_8px_40px_rgba(255,255,255,0.15)]"
           >
             Agendar Demonstração
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
           </a>
-          <p className="mt-4 text-[13px] text-white/30">
+          <p className="mt-5 text-[13px] text-white/25">
             Sem compromisso. Leva apenas 15 minutos.
           </p>
         </div>
       </FadeIn>
+
+      {/* Large sphere — overlaps with text, rising from the bottom */}
+      <div className="pointer-events-none absolute bottom-[-900px] left-1/2 z-0 hidden -translate-x-1/2 opacity-30 md:block" aria-hidden>
+        <DitheringShader
+          shape="sphere"
+          type="8x8"
+          colorBack="transparent"
+          colorFront="#7fb69a"
+          pxSize={2}
+          speed={0.5}
+          width={1200}
+          height={1200}
+        />
+      </div>
     </section>
   );
 }
@@ -405,25 +599,25 @@ function CTASection() {
 
 function Footer() {
   return (
-    <footer className="border-t border-white/[0.06] py-10">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-5 md:flex-row md:justify-between md:px-8">
-        <span className="font-serif text-xl text-white/60">hiro.</span>
+    <footer className="border-t border-white/[0.04] bg-[#0a1108] py-12">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-8 px-5 md:flex-row md:justify-between md:px-8">
+        <span className="font-serif text-xl text-white/50">hiro.</span>
 
-        <div className="flex flex-wrap items-center justify-center gap-6 text-[13px] text-white/35">
+        <div className="flex flex-wrap items-center justify-center gap-6 text-[13px] text-white/30">
           <a href="mailto:contato@hiro.med.br" className="transition-colors hover:text-white/60">
             Contato
           </a>
-          <span className="hidden h-3 w-px bg-white/15 md:block" />
+          <span className="hidden h-3 w-px bg-white/10 md:block" />
           <a href="#" className="transition-colors hover:text-white/60">
             Termos de Uso
           </a>
-          <span className="hidden h-3 w-px bg-white/15 md:block" />
+          <span className="hidden h-3 w-px bg-white/10 md:block" />
           <a href="#" className="transition-colors hover:text-white/60">
             Política de Privacidade
           </a>
         </div>
 
-        <div className="text-center text-[12px] text-white/25 md:text-right">
+        <div className="text-center text-[12px] text-white/20 md:text-right">
           <p>Feito no Brasil</p>
           <p className="mt-0.5">2026 Hiro. Todos os direitos reservados.</p>
         </div>
@@ -440,15 +634,20 @@ export default function LandingPage() {
   }
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ background: "linear-gradient(180deg, #0e1610 0%, #0a110c 50%, #0e1610 100%)" }}
-    >
+    <div className="min-h-screen">
       <Navbar onScrollTo={scrollTo} />
       <HeroSection onScrollTo={scrollTo} />
+      <WaveDivider from="#0f1a13" to="#f5f0e8" />
       <ProblemSection />
+      <WaveDivider from="#f5f0e8" to="#0f1a13" />
       <HowItWorksSection />
+      <div className="bg-[#0f1a13] px-5 md:px-8">
+        <div className="mx-auto max-w-3xl border-t border-white/[0.06]" />
+      </div>
+      <FeaturesScroll />
+      <WaveDivider from="#0f1a13" to="#faf8f5" />
       <IntegrationsSection />
+      <WaveDivider from="#faf8f5" to="#0f1a13" />
       <SecuritySection />
       <CTASection />
       <Footer />
