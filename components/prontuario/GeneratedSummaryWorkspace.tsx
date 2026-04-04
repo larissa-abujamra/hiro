@@ -5,11 +5,37 @@ import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   Check,
+  Copy,
   FileText,
   FlaskConical,
   Grid2x2,
   Sparkles,
 } from "lucide-react";
+
+function CopyButton({ text, className }: { text: string; className?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className={`rounded-md p-1.5 transition-colors ${
+        copied
+          ? "text-hiro-green"
+          : "text-hiro-muted/30 hover:bg-black/[0.04] hover:text-hiro-muted"
+      } ${className ?? ""}`}
+      title={copied ? "Copiado!" : "Copiar"}
+    >
+      {copied ? <Check className="h-3.5 w-3.5" strokeWidth={2} /> : <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />}
+    </button>
+  );
+}
 import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { BadgeStatus } from "@/components/ui/BadgeStatus";
@@ -18,6 +44,37 @@ import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { useConsultationStore } from "@/lib/store";
 import type { GeneratedDocument, Patient } from "@/lib/types";
 import { MemedPrescription } from "@/components/prontuario/MemedPrescription";
+
+function CopyFullSoapButton({ soap }: { soap: { s: string; o: string; a: string; p: string } }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const text = `SUBJETIVO:\n${soap.s}\n\nOBJETIVO:\n${soap.o}\n\nAVALIAÇÃO:\n${soap.a}\n\nPLANO:\n${soap.p}`;
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="inline-flex items-center justify-center gap-2 rounded-full border border-black/[0.08] bg-transparent px-5 py-2.5 text-[13px] font-medium text-hiro-muted transition-all duration-200 hover:bg-black/[0.03] active:scale-[0.98]"
+    >
+      {copied ? (
+        <>
+          <Check className="h-4 w-4 text-hiro-green" strokeWidth={2} />
+          <span className="text-hiro-green">Copiado!</span>
+        </>
+      ) : (
+        <>
+          <Copy className="h-4 w-4" strokeWidth={1.75} />
+          Copiar Prontuário Completo
+        </>
+      )}
+    </button>
+  );
+}
 
 interface GeneratedSummaryWorkspaceProps {
   consultationId: string;
@@ -266,8 +323,13 @@ export function GeneratedSummaryWorkspace({
                       : { title: "Plano", hint: "Conduta" };
               return (
               <div key={key} className="flex flex-col gap-2">
-                <OverlineLabel>{soapHeading.title.toUpperCase()}</OverlineLabel>
-                <p className="text-[12px] leading-snug text-hiro-muted">{soapHeading.hint}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <OverlineLabel>{soapHeading.title.toUpperCase()}</OverlineLabel>
+                    <p className="text-[12px] leading-snug text-hiro-muted">{soapHeading.hint}</p>
+                  </div>
+                  <CopyButton text={soap[key]} />
+                </div>
                 <textarea
                   value={soap[key]}
                   onChange={(e) => updateSoap(key, e.target.value)}
@@ -284,6 +346,9 @@ export function GeneratedSummaryWorkspace({
             })}
           </div>
         </CardHiro>
+
+        {/* Copy full SOAP */}
+        <CopyFullSoapButton soap={soap} />
       </section>
 
       <aside className="flex flex-col gap-4 lg:col-span-4">

@@ -13,6 +13,7 @@ import { useDetection } from "@/hooks/useDetection";
 import { useTranscription } from "@/hooks/useTranscription";
 import { useConsultationStore } from "@/lib/store";
 import type { DetectedItem, Patient } from "@/lib/types";
+import { ExamAnalysisPanel } from "@/components/consulta/ExamAnalysisPanel";
 
 function detectedItemMeta(item: DetectedItem) {
   const badgeClass =
@@ -90,6 +91,7 @@ export function ConsultationWorkspace({
     spo2: "",
   });
   const [freeNotes, setFreeNotes] = useState("");
+  const [examText, setExamText] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
   const {
     lines,
@@ -168,8 +170,11 @@ export function ConsultationWorkspace({
     if (freeNotes.trim()) {
       parts.push(`\n\n[NOTAS ADICIONAIS DO MÉDICO]\n${freeNotes.trim()}`);
     }
+    if (examText.trim()) {
+      parts.push(`\n\n${examText.trim()}`);
+    }
     return parts.join("");
-  }, [vitals, freeNotes]);
+  }, [vitals, freeNotes, examText]);
 
   const handleStopAndGenerate = useCallback(async () => {
     if (recordingSeconds < 30) return;
@@ -585,6 +590,11 @@ Medicamentos ativos: ${sp.medications
             </div>
           )}
         </CardHiro>
+
+        {/* Análise de exames */}
+        <ExamAnalysisPanel
+          onAddToSoap={(text) => setExamText((prev) => prev ? `${prev}\n${text}` : text)}
+        />
       </section>
 
       <aside className="space-y-5 lg:col-span-5">

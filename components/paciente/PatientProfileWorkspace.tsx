@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  Check,
   FileText,
+  Loader2,
+  Sparkles,
   Upload,
 } from "lucide-react";
 import {
@@ -25,6 +30,15 @@ import { BadgeStatus } from "@/components/ui/BadgeStatus";
 import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { useConsultationStore } from "@/lib/store";
 import type { Exam } from "@/lib/types";
+import type { ExamResult } from "@/components/consulta/ExamAnalysisPanel";
+
+interface ExamAnalysisState {
+  examId: string;
+  loading: boolean;
+  results: ExamResult[];
+  summary: string;
+  error: string | null;
+}
 
 interface PatientProfileWorkspaceProps {
   patientId: string;
@@ -43,6 +57,58 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
   const [period, setPeriod] = useState<"3m" | "6m" | "1a" | "Tudo">("Tudo");
   const [exams, setExams] = useState<Exam[]>(patient?.exams ?? []);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const analyzeInputRef = useRef<HTMLInputElement>(null);
+  const [analysis, setAnalysis] = useState<ExamAnalysisState | null>(null);
+
+  const handleAnalyzeExam = async (file: File) => {
+    const examId = `analyze-${Date.now()}`;
+    setAnalysis({ examId, loading: true, results: [], summary: "", error: null });
+
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const mediaType = file.type === "application/pdf"
+        ? "application/pdf"
+        : file.type === "image/png"
+          ? "image/png"
+          : "image/jpeg";
+
+      const res = await fetch("/api/exam-analysis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: base64, mediaType }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Erro ao analisar exame");
+      }
+
+      const data = await res.json();
+      setAnalysis({
+        examId,
+        loading: false,
+        results: data.results ?? [],
+        summary: data.summary ?? "",
+        error: null,
+      });
+    } catch (err) {
+      setAnalysis((prev) =>
+        prev ? { ...prev, loading: false, error: err instanceof Error ? err.message : "Erro ao analisar" } : null
+      );
+    }
+  };
+
+  const STATUS_CONFIG = {
+    normal: { label: "Normal", icon: Check, bg: "bg-[#D6E8DC]", text: "text-[#0F6E56]" },
+    alto: { label: "Alto", icon: ArrowUp, bg: "bg-[#FAECE7]", text: "text-[#993C1D]" },
+    baixo: { label: "Baixo", icon: ArrowDown, bg: "bg-[#FAEEDA]", text: "text-[#854F0B]" },
+  } as const;
 
   const [isEditing, setIsEditing] = useState(false);
   const [editDraft, setEditDraft] = useState({
@@ -486,67 +552,185 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
         )}
 
         {activeTab === "Exames" && (
-          <CardHiro className="rounded-2xl p-5">
-            <div
-              className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-black/15 p-8 transition-colors hover:border-hiro-green/40 hover:bg-black/[0.02]"
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="h-8 w-8 text-hiro-muted/50" />
-              <p className="text-[13px] text-hiro-muted">
-                Arraste arquivos ou clique para selecionar
+          <div className="space-y-4">
+            {/* Upload area */}
+            <CardHiro className="rounded-2xl p-5">
+              <div
+                className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-black/15 p-8 transition-colors hover:border-hiro-green/40 hover:bg-black/[0.02]"
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-8 w-8 text-hiro-muted/50" />
+                <p className="text-[13px] text-hiro-muted">
+                  Arraste arquivos ou clique para selecionar
+                </p>
+                <p className="text-[11px] text-hiro-muted/60">PDF · JPG · PNG</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  multiple
+                  onChange={(e) => appendFiles(e.target.files)}
+                />
+              </div>
+
+              {exams.length === 0 ? (
+                <p className="mt-4 text-[13px] italic text-hiro-muted/60">
+                  Nenhum exame enviado. Faça upload de laudos, imagens e resultados.
+                </p>
+              ) : (
+                exams.map((exam) => (
+                  <div
+                    key={exam.id}
+                    className="glass-card-input mt-3 flex items-center gap-3 rounded-xl p-4"
+                  >
+                    <div
+                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
+                      style={iconCircleGlassOnLightCard}
+                    >
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-medium text-hiro-text">
+                        {exam.fileName}
+                      </p>
+                      <p className="text-[11px] text-hiro-muted">
+                        {exam.date} · {examTypeLabels[exam.type]}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="text-[12px] text-hiro-green hover:underline">Ver</button>
+                      <button
+                        className="text-[12px] text-hiro-muted hover:text-hiro-red"
+                        onClick={() =>
+                          setExams((prev) => prev.filter((item) => item.id !== exam.id))
+                        }
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardHiro>
+
+            {/* Analyze with AI */}
+            <CardHiro className="rounded-2xl p-5">
+              <OverlineLabel>ANÁLISE COM IA</OverlineLabel>
+              <p className="mt-1 text-[12px] text-hiro-muted">
+                Envie um exame para extrair valores automaticamente.
               </p>
-              <p className="text-[11px] text-hiro-muted/60">PDF · JPG · PNG</p>
+
+              <button
+                type="button"
+                onClick={() => analyzeInputRef.current?.click()}
+                disabled={analysis?.loading}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-hiro-green/30 bg-hiro-green/5 py-3 text-[13px] font-medium text-hiro-green transition-colors hover:border-hiro-green/50 hover:bg-hiro-green/10 disabled:opacity-50"
+              >
+                <Sparkles className="h-4 w-4" strokeWidth={1.75} />
+                Analisar exame com IA
+              </button>
               <input
-                ref={fileInputRef}
+                ref={analyzeInputRef}
                 type="file"
                 className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png"
-                multiple
-                onChange={(e) => appendFiles(e.target.files)}
+                accept="image/jpeg,image/png,application/pdf"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleAnalyzeExam(f);
+                  e.target.value = "";
+                }}
               />
-            </div>
 
-            {exams.length === 0 ? (
-              <p className="mt-4 text-[13px] italic text-hiro-muted/60">
-                Nenhum exame enviado. Faça upload de laudos, imagens e resultados.
-              </p>
-            ) : (
-              exams.map((exam) => (
-                <div
-                  key={exam.id}
-                  className="glass-card-input mt-3 flex items-center gap-3 rounded-xl p-4"
-                >
-                  <div
-                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
-                    style={iconCircleGlassOnLightCard}
-                  >
-                    <FileText className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium text-hiro-text">
-                      {exam.fileName}
-                    </p>
-                    <p className="text-[11px] text-hiro-muted">
-                      {exam.date} · {examTypeLabels[exam.type]}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="text-[12px] text-hiro-green hover:underline">Ver</button>
-                    <button
-                      className="text-[12px] text-hiro-muted hover:text-hiro-red"
-                      onClick={() =>
-                        setExams((prev) => prev.filter((item) => item.id !== exam.id))
-                      }
-                    >
-                      Remover
-                    </button>
-                  </div>
+              {/* Loading */}
+              {analysis?.loading && (
+                <div className="mt-4 flex items-center justify-center gap-2 py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-hiro-green" />
+                  <p className="text-[13px] text-hiro-muted">Analisando exame...</p>
                 </div>
-              ))
-            )}
-          </CardHiro>
+              )}
+
+              {/* Error */}
+              {analysis?.error && (
+                <div className="mt-3 rounded-xl border border-hiro-red/30 bg-hiro-red/10 px-4 py-3 text-[13px] text-hiro-red">
+                  {analysis.error}
+                </div>
+              )}
+
+              {/* Results */}
+              {analysis && !analysis.loading && analysis.results.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  {analysis.summary && (
+                    <div className="rounded-xl border border-hiro-green/20 bg-hiro-green/5 px-4 py-3">
+                      <p className="text-[12px] font-medium text-hiro-green">Resumo</p>
+                      <p className="mt-1 text-[13px] leading-relaxed text-hiro-text">
+                        {analysis.summary}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="overflow-hidden rounded-xl border border-black/[0.06]">
+                    <table className="w-full text-left text-[13px]">
+                      <thead>
+                        <tr className="border-b border-black/[0.06] bg-black/[0.02]">
+                          <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">
+                            Exame
+                          </th>
+                          <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">
+                            Valor
+                          </th>
+                          <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analysis.results.map((r, i) => {
+                          const cfg = STATUS_CONFIG[r.status] ?? STATUS_CONFIG.normal;
+                          const Icon = cfg.icon;
+                          return (
+                            <tr key={i} className="border-b border-black/[0.04] last:border-0">
+                              <td className="px-3 py-2">
+                                <p className="font-medium text-hiro-text">{r.name}</p>
+                                {r.reference && (
+                                  <p className="text-[11px] text-hiro-muted">Ref: {r.reference}</p>
+                                )}
+                              </td>
+                              <td className="whitespace-nowrap px-3 py-2 tabular-nums text-hiro-text">
+                                {r.value} {r.unit}
+                              </td>
+                              <td className="px-3 py-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${cfg.bg} ${cfg.text}`}
+                                >
+                                  <Icon className="h-3 w-3" strokeWidth={2} />
+                                  {cfg.label}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {analysis.results.some((r) => r.status !== "normal") && (
+                    <div className="flex items-center gap-2 rounded-xl border border-hiro-amber/30 bg-[#FAEEDA]/50 px-4 py-2.5">
+                      <AlertTriangle className="h-4 w-4 shrink-0 text-hiro-amber" strokeWidth={1.75} />
+                      <p className="text-[12px] text-hiro-text">
+                        {analysis.results.filter((r) => r.status !== "normal").length}{" "}
+                        {analysis.results.filter((r) => r.status !== "normal").length === 1
+                          ? "valor fora da faixa normal"
+                          : "valores fora da faixa normal"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardHiro>
+          </div>
         )}
       </section>
     </div>
