@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useConsultationStore, DEMO_EMAIL } from "@/lib/store";
+import { loadPatients } from "@/lib/persistence";
 
 export function StoreInitializer() {
   const initializedForUser = useConsultationStore((s) => s.initializedForUser);
@@ -11,10 +12,27 @@ export function StoreInitializer() {
   useEffect(() => {
     const supabase = createClient();
 
-    function initForUser(userId: string | null, email: string | null) {
+    async function initForUser(userId: string | null, email: string | null) {
       if (!userId) return;
       if (initializedForUser === userId) return;
-      initializePatients(email === DEMO_EMAIL, userId);
+
+      if (email === DEMO_EMAIL) {
+        initializePatients(true, userId);
+        return;
+      }
+
+      // Load real patients from Supabase
+      const patients = await loadPatients();
+      if (patients.length > 0) {
+        // Use loaded patients instead of empty array
+        useConsultationStore.setState({
+          patients,
+          initialized: true,
+          initializedForUser: userId,
+        });
+      } else {
+        initializePatients(false, userId);
+      }
     }
 
     // Initialize on mount

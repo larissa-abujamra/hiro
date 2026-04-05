@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { mockPatients } from "@/lib/mockData";
+import { persistPatient } from "@/lib/persistence";
 
 const DEMO_EMAIL = "admin@hiro.com";
 import type {
@@ -111,12 +112,16 @@ const initialState = {
 
 export const useConsultationStore = create<ConsultationState>((set) => ({
   ...initialState,
-  updatePatient: (patientId, updates) =>
+  updatePatient: (patientId, updates) => {
     set((state) => ({
       patients: state.patients.map((p) =>
         p.id === patientId ? { ...p, ...updates } : p
       ),
-    })),
+    }));
+    // Persist after state update
+    const updated = useConsultationStore.getState().patients.find((p) => p.id === patientId);
+    if (updated) persistPatient(updated);
+  },
   initializePatients: (isDemo: boolean, userId: string) => {
     if (isDemo) {
       const now = new Date();
@@ -224,6 +229,11 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
         patients: [patient, ...state.patients],
       };
     });
+    // Persist new patient
+    if (createdId) {
+      const created = useConsultationStore.getState().patients.find((p) => p.id === createdId);
+      if (created) persistPatient(created);
+    }
     return createdId;
   },
   setIntakeMode: (mode) => set({ intakeMode: mode }),
@@ -269,7 +279,7 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
         ...state.activityLog,
       ].slice(0, 20), // keep last 20
     })),
-  saveConsultationToPatient: (consultation) =>
+  saveConsultationToPatient: (consultation) => {
     set((state) => {
       const patients = state.patients.map((patient) => {
         if (patient.id !== consultation.patientId) return patient;
@@ -299,7 +309,13 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
         };
       });
       return { patients };
-    }),
+    });
+    // Persist the patient that was updated
+    const updated = useConsultationStore.getState().patients.find(
+      (p) => p.id === consultation.patientId
+    );
+    if (updated) persistPatient(updated);
+  },
   resetConsultation: () =>
     set((state) => ({
       ...state,

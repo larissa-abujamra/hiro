@@ -57,8 +57,9 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
   const [period, setPeriod] = useState<"3m" | "6m" | "1a" | "Tudo">("Tudo");
   const [exams, setExams] = useState<Exam[]>(patient?.exams ?? []);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const analyzeInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFileMap, setUploadedFileMap] = useState<Map<string, File>>(new Map());
   const [analysis, setAnalysis] = useState<ExamAnalysisState | null>(null);
+  const [analyzingExamId, setAnalyzingExamId] = useState<string | null>(null);
 
   const handleAnalyzeExam = async (file: File) => {
     const examId = `analyze-${Date.now()}`;
@@ -218,6 +219,12 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
       };
     });
     setExams((prev) => [...uploaded, ...prev]);
+    // Store real File objects for analysis
+    setUploadedFileMap((prev) => {
+      const next = new Map(prev);
+      list.forEach((file, index) => next.set(uploaded[index].id, file));
+      return next;
+    });
   };
 
   const handleDrop: React.DragEventHandler<HTMLDivElement> = (e) => {
@@ -581,155 +588,147 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
                   Nenhum exame enviado. Faça upload de laudos, imagens e resultados.
                 </p>
               ) : (
-                exams.map((exam) => (
-                  <div
-                    key={exam.id}
-                    className="glass-card-input mt-3 flex items-center gap-3 rounded-xl p-4"
-                  >
+                exams.map((exam) => {
+                  const hasFile = uploadedFileMap.has(exam.id);
+                  const isThisAnalyzing = analyzingExamId === exam.id && analysis?.loading;
+                  return (
                     <div
-                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
-                      style={iconCircleGlassOnLightCard}
+                      key={exam.id}
+                      className="glass-card-input mt-3 flex items-center gap-3 rounded-xl p-4"
                     >
-                      <FileText className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-medium text-hiro-text">
-                        {exam.fileName}
-                      </p>
-                      <p className="text-[11px] text-hiro-muted">
-                        {exam.date} · {examTypeLabels[exam.type]}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="text-[12px] text-hiro-green hover:underline">Ver</button>
-                      <button
-                        className="text-[12px] text-hiro-muted hover:text-hiro-red"
-                        onClick={() =>
-                          setExams((prev) => prev.filter((item) => item.id !== exam.id))
-                        }
+                      <div
+                        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
+                        style={iconCircleGlassOnLightCard}
                       >
-                        Remover
-                      </button>
+                        <FileText className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-medium text-hiro-text">
+                          {exam.fileName}
+                        </p>
+                        <p className="text-[11px] text-hiro-muted">
+                          {exam.date} · {examTypeLabels[exam.type]}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {hasFile && (
+                          <button
+                            className={`inline-flex items-center gap-1 text-[12px] font-medium transition-colors ${
+                              isThisAnalyzing
+                                ? "text-hiro-muted"
+                                : "text-hiro-green hover:underline"
+                            }`}
+                            disabled={!!isThisAnalyzing}
+                            onClick={() => {
+                              const file = uploadedFileMap.get(exam.id);
+                              if (file) {
+                                setAnalyzingExamId(exam.id);
+                                handleAnalyzeExam(file);
+                              }
+                            }}
+                          >
+                            {isThisAnalyzing ? (
+                              <><Loader2 className="h-3 w-3 animate-spin" /> Analisando...</>
+                            ) : (
+                              <><Sparkles className="h-3 w-3" strokeWidth={1.75} /> Analisar</>
+                            )}
+                          </button>
+                        )}
+                        <button className="text-[12px] text-hiro-green hover:underline">Ver</button>
+                        <button
+                          className="text-[12px] text-hiro-muted hover:text-hiro-red"
+                          onClick={() => {
+                            setExams((prev) => prev.filter((item) => item.id !== exam.id));
+                            setUploadedFileMap((prev) => { const n = new Map(prev); n.delete(exam.id); return n; });
+                            if (analyzingExamId === exam.id) { setAnalysis(null); setAnalyzingExamId(null); }
+                          }}
+                        >
+                          Remover
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </CardHiro>
 
-            {/* Analyze with AI */}
-            <CardHiro className="rounded-2xl p-5">
-              <OverlineLabel>ANÁLISE COM IA</OverlineLabel>
-              <p className="mt-1 text-[12px] text-hiro-muted">
-                Envie um exame para extrair valores automaticamente.
-              </p>
+            {/* Analysis results — shown below when an exam has been analyzed */}
+            {analysis && (
+              <CardHiro className="rounded-2xl p-5">
+                <OverlineLabel>RESULTADO DA ANÁLISE</OverlineLabel>
 
-              <button
-                type="button"
-                onClick={() => analyzeInputRef.current?.click()}
-                disabled={analysis?.loading}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-hiro-green/30 bg-hiro-green/5 py-3 text-[13px] font-medium text-hiro-green transition-colors hover:border-hiro-green/50 hover:bg-hiro-green/10 disabled:opacity-50"
-              >
-                <Sparkles className="h-4 w-4" strokeWidth={1.75} />
-                Analisar exame com IA
-              </button>
-              <input
-                ref={analyzeInputRef}
-                type="file"
-                className="hidden"
-                accept="image/jpeg,image/png,application/pdf"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleAnalyzeExam(f);
-                  e.target.value = "";
-                }}
-              />
-
-              {/* Loading */}
-              {analysis?.loading && (
-                <div className="mt-4 flex items-center justify-center gap-2 py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-hiro-green" />
-                  <p className="text-[13px] text-hiro-muted">Analisando exame...</p>
-                </div>
-              )}
-
-              {/* Error */}
-              {analysis?.error && (
-                <div className="mt-3 rounded-xl border border-hiro-red/30 bg-hiro-red/10 px-4 py-3 text-[13px] text-hiro-red">
-                  {analysis.error}
-                </div>
-              )}
-
-              {/* Results */}
-              {analysis && !analysis.loading && analysis.results.length > 0 && (
-                <div className="mt-4 space-y-3">
-                  {analysis.summary && (
-                    <div className="rounded-xl border border-hiro-green/20 bg-hiro-green/5 px-4 py-3">
-                      <p className="text-[12px] font-medium text-hiro-green">Resumo</p>
-                      <p className="mt-1 text-[13px] leading-relaxed text-hiro-text">
-                        {analysis.summary}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="overflow-hidden rounded-xl border border-black/[0.06]">
-                    <table className="w-full text-left text-[13px]">
-                      <thead>
-                        <tr className="border-b border-black/[0.06] bg-black/[0.02]">
-                          <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">
-                            Exame
-                          </th>
-                          <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">
-                            Valor
-                          </th>
-                          <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {analysis.results.map((r, i) => {
-                          const cfg = STATUS_CONFIG[r.status] ?? STATUS_CONFIG.normal;
-                          const Icon = cfg.icon;
-                          return (
-                            <tr key={i} className="border-b border-black/[0.04] last:border-0">
-                              <td className="px-3 py-2">
-                                <p className="font-medium text-hiro-text">{r.name}</p>
-                                {r.reference && (
-                                  <p className="text-[11px] text-hiro-muted">Ref: {r.reference}</p>
-                                )}
-                              </td>
-                              <td className="whitespace-nowrap px-3 py-2 tabular-nums text-hiro-text">
-                                {r.value} {r.unit}
-                              </td>
-                              <td className="px-3 py-2">
-                                <span
-                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${cfg.bg} ${cfg.text}`}
-                                >
-                                  <Icon className="h-3 w-3" strokeWidth={2} />
-                                  {cfg.label}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                {analysis.loading && (
+                  <div className="mt-4 flex items-center justify-center gap-2 py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-hiro-green" />
+                    <p className="text-[13px] text-hiro-muted">Analisando exame...</p>
                   </div>
+                )}
 
-                  {analysis.results.some((r) => r.status !== "normal") && (
-                    <div className="flex items-center gap-2 rounded-xl border border-hiro-amber/30 bg-[#FAEEDA]/50 px-4 py-2.5">
-                      <AlertTriangle className="h-4 w-4 shrink-0 text-hiro-amber" strokeWidth={1.75} />
-                      <p className="text-[12px] text-hiro-text">
-                        {analysis.results.filter((r) => r.status !== "normal").length}{" "}
-                        {analysis.results.filter((r) => r.status !== "normal").length === 1
-                          ? "valor fora da faixa normal"
-                          : "valores fora da faixa normal"}
-                      </p>
+                {analysis.error && (
+                  <div className="mt-3 rounded-xl border border-hiro-red/30 bg-hiro-red/10 px-4 py-3 text-[13px] text-hiro-red">
+                    {analysis.error}
+                  </div>
+                )}
+
+                {!analysis.loading && analysis.results.length > 0 && (
+                  <div className="mt-4 space-y-3">
+                    {analysis.summary && (
+                      <div className="rounded-xl border border-hiro-green/20 bg-hiro-green/5 px-4 py-3">
+                        <p className="text-[12px] font-medium text-hiro-green">Resumo</p>
+                        <p className="mt-1 text-[13px] leading-relaxed text-hiro-text">
+                          {analysis.summary}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="overflow-hidden rounded-xl border border-black/[0.06]">
+                      <table className="w-full text-left text-[13px]">
+                        <thead>
+                          <tr className="border-b border-black/[0.06] bg-black/[0.02]">
+                            <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">Exame</th>
+                            <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">Valor</th>
+                            <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {analysis.results.map((r, i) => {
+                            const cfg = STATUS_CONFIG[r.status] ?? STATUS_CONFIG.normal;
+                            const Icon = cfg.icon;
+                            return (
+                              <tr key={i} className="border-b border-black/[0.04] last:border-0">
+                                <td className="px-3 py-2">
+                                  <p className="font-medium text-hiro-text">{r.name}</p>
+                                  {r.reference && <p className="text-[11px] text-hiro-muted">Ref: {r.reference}</p>}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-2 tabular-nums text-hiro-text">{r.value} {r.unit}</td>
+                                <td className="px-3 py-2">
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${cfg.bg} ${cfg.text}`}>
+                                    <Icon className="h-3 w-3" strokeWidth={2} />
+                                    {cfg.label}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
-                  )}
-                </div>
-              )}
-            </CardHiro>
+
+                    {analysis.results.some((r) => r.status !== "normal") && (
+                      <div className="flex items-center gap-2 rounded-xl border border-hiro-amber/30 bg-[#FAEEDA]/50 px-4 py-2.5">
+                        <AlertTriangle className="h-4 w-4 shrink-0 text-hiro-amber" strokeWidth={1.75} />
+                        <p className="text-[12px] text-hiro-text">
+                          {analysis.results.filter((r) => r.status !== "normal").length}{" "}
+                          {analysis.results.filter((r) => r.status !== "normal").length === 1
+                            ? "valor fora da faixa normal"
+                            : "valores fora da faixa normal"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardHiro>
+            )}
           </div>
         )}
       </section>

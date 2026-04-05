@@ -6,10 +6,29 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 // Allow larger request bodies for image/PDF uploads
 export const maxDuration = 60;
 
-function parseJson(text: string) {
+function parseJson(text: string): Record<string, unknown> {
   const trimmed = text.trim();
-  const fence = trimmed.match(/^```(?:json)?\s*([\s\S]*?)```$/m);
-  return JSON.parse(fence ? fence[1].trim() : trimmed);
+
+  // Try direct parse first
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // not plain JSON, continue
+  }
+
+  // Strip markdown code fences (```json ... ``` or ``` ... ```)
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fenceMatch) {
+    return JSON.parse(fenceMatch[1].trim());
+  }
+
+  // Try extracting the first { ... } block
+  const braceMatch = trimmed.match(/\{[\s\S]*\}/);
+  if (braceMatch) {
+    return JSON.parse(braceMatch[0]);
+  }
+
+  throw new Error("Não foi possível interpretar a resposta da IA");
 }
 
 export async function POST(req: NextRequest) {
@@ -63,7 +82,9 @@ Para cada valor, determine:
 4. Se está dentro da faixa normal (normal, alto, baixo)
 5. Faixa de referência, se visível
 
-Responda SOMENTE com JSON válido neste formato:
+IMPORTANTE: Responda APENAS com JSON puro e válido. Não use markdown, não use code blocks, não adicione texto antes ou depois. A resposta deve começar com { e terminar com }.
+
+Formato:
 {
   "results": [
     {
@@ -110,9 +131,11 @@ Responda SOMENTE com JSON válido neste formato:
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erro desconhecido";
     console.error("Exam analysis error:", message, err);
-    return NextResponse.json(
-      { error: `Erro ao analisar exame: ${message}` },
-      { status: 500 }
-    );
+
+    const userMessage = message.includes("interpretar")
+      ? "Não foi possível analisar o exame. Tente novamente ou envie um arquivo com melhor qualidade."
+      : `Erro ao analisar exame: ${message}`;
+
+    return NextResponse.json({ error: userMessage }, { status: 500 });
   }
 }

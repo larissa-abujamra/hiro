@@ -15,10 +15,19 @@ interface NewConsultationFlowProps {
 }
 
 const REASONS = [
+  "Primeira consulta",
   "Retorno clínico",
-  "Queixa respiratória",
+  "Consulta de rotina",
+  "Queixa aguda",
+  "Acompanhamento de crônico",
   "Revisão de exames",
-  "Renovação de receituário",
+  "Renovação de receita",
+  "Dor ou desconforto",
+  "Pré-operatório",
+  "Saúde mental",
+  "Atestado ou declaração",
+  "Urgência / Encaixe",
+  "Outro",
 ];
 
 export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {}) {
