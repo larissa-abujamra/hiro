@@ -44,6 +44,10 @@ import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { useConsultationStore } from "@/lib/store";
 import type { GeneratedDocument, Patient } from "@/lib/types";
 import { MemedPrescription } from "@/components/prontuario/MemedPrescription";
+import { ReceitaModal } from "@/components/documentos/ReceitaModal";
+import { PedidoExamesModal } from "@/components/documentos/PedidoExamesModal";
+import type { Medicamento } from "@/lib/generateReceita";
+import { useDoctorStore } from "@/lib/doctorStore";
 
 function CopyFullSoapButton({ soap }: { soap: { s: string; o: string; a: string; p: string } }) {
   const [copied, setCopied] = useState(false);
@@ -75,6 +79,56 @@ function CopyFullSoapButton({ soap }: { soap: { s: string; o: string; a: string;
     </button>
   );
 }
+
+/* ─── Return date calculation ────────────────────────────────────────────── */
+
+const WORD_TO_NUM: Record<string, number> = {
+  um: 1, uma: 1, dois: 2, duas: 2, "três": 3, tres: 3,
+  quatro: 4, cinco: 5, seis: 6, sete: 7, oito: 8,
+  nove: 9, dez: 10, quinze: 15, vinte: 20, trinta: 30,
+};
+
+function addDays(date: Date, days: number): Date {
+  const r = new Date(date);
+  r.setDate(r.getDate() + days);
+  return r;
+}
+
+function calculateReturnDate(text: string, today: Date): Date {
+  let t = text;
+  // Replace words with numbers
+  for (const [word, num] of Object.entries(WORD_TO_NUM)) {
+    t = t.replace(new RegExp(`\\b${word}\\b`, "gi"), String(num));
+  }
+
+  // "2, 3 dias" or "2 a 3 dias" → use the higher number
+  const rangeMatch = t.match(/(\d+)\s*[,a]\s*(\d+)\s*dias?/);
+  if (rangeMatch) return addDays(today, Math.max(Number(rangeMatch[1]), Number(rangeMatch[2])));
+
+  // "X meses" or "X mês"
+  const monthsMatch = t.match(/(\d+)\s*m[eê]s(?:es)?/);
+  if (monthsMatch) return addDays(today, Number(monthsMatch[1]) * 30);
+
+  // "X semanas"
+  const weeksMatch = t.match(/(\d+)\s*semanas?/);
+  if (weeksMatch) return addDays(today, Number(weeksMatch[1]) * 7);
+
+  // "X dias"
+  const daysMatch = t.match(/(\d+)\s*dias?/);
+  if (daysMatch) return addDays(today, Number(daysMatch[1]));
+
+  // Fallback: 7 days
+  return addDays(today, 7);
+}
+
+function formatReturnDate(date: Date): string {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
 
 interface GeneratedSummaryWorkspaceProps {
   consultationId: string;
@@ -124,8 +178,13 @@ export function GeneratedSummaryWorkspace({
   ) ?? null;
   const isReviewMode = !generatedSoap && !!savedConsultation;
 
-  const doctorName = "Dra. Larissa Oliveira";
+  const doctorProfile = useDoctorStore((s) => s.profile);
+  const doctorName = doctorProfile.nome
+    ? `${doctorProfile.sexo === "M" ? "Dr." : "Dra."} ${doctorProfile.nome} ${doctorProfile.sobrenome}`.trim()
+    : "Dra. Larissa Oliveira";
   const [toast, setToast] = useState<string | null>(null);
+  const [receitaOpen, setReceitaOpen] = useState(false);
+  const [pedidoOpen, setPedidoOpen] = useState(false);
 
   const soapSource = generatedSoap ?? savedConsultation?.soap ?? null;
   const soap = useMemo(
@@ -163,11 +222,6 @@ export function GeneratedSummaryWorkspace({
         status: "ready" as const,
         summary: "Solicitações com indicação clínica",
       },
-      {
-        type: "tiss",
-        status: "pending" as const,
-        summary: "XML validado, aguardando integração final",
-      },
     ],
     [],
   );
@@ -188,10 +242,16 @@ export function GeneratedSummaryWorkspace({
 
   const detectedReturn = resolvedDetectedItems.find((item) => item.type === "return") ?? null;
   const suggestedReturnDate = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toLocaleDateString("pt-BR");
-  }, []);
+    const today = new Date();
+
+    if (!detectedReturn) {
+      today.setDate(today.getDate() + 7);
+      return formatReturnDate(today);
+    }
+
+    const text = (detectedReturn.sourceQuote || detectedReturn.text || "").toLowerCase();
+    return formatReturnDate(calculateReturnDate(text, today));
+  }, [detectedReturn]);
 
   const docLabels: Record<GeneratedDocument["type"], string> = {
     prescription: "Receituário",
@@ -429,9 +489,14 @@ export function GeneratedSummaryWorkspace({
           <OverlineLabel>DOCUMENTOS GERADOS</OverlineLabel>
           <div className="flex flex-col gap-2">
             {generatedDocs.map((doc) => (
-              <div
+              <button
                 key={doc.type}
-                className="glass-card-input flex cursor-pointer items-center gap-3 rounded-xl p-4 transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.03] active:scale-[0.995]"
+                type="button"
+                onClick={() => {
+                  if (doc.type === "prescription") setReceitaOpen(true);
+                  if (doc.type === "exam-request") setPedidoOpen(true);
+                }}
+                className="glass-card-input flex cursor-pointer items-center gap-3 rounded-xl p-4 text-left transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.03] active:scale-[0.995]"
               >
                 <div
                   className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
@@ -447,29 +512,116 @@ export function GeneratedSummaryWorkspace({
                   label={doc.status === "ready" ? "Pronto" : "Pendente"}
                   status={doc.status}
                 />
-              </div>
-            ))}
-          </div>
-          <button className="mt-1 w-full rounded-full border border-black/15 px-5 py-2.5 text-[13px] text-hiro-muted">
-            Assinar em lote — em breve
-          </button>
-        </CardHiro>
-
-        <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
-          <OverlineLabel>EXPORTAR PARA</OverlineLabel>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {["iClinic", "MV SOUL", "Tasy", "Pixeon", "HL7 FHIR"].map((s) => (
-              <button
-                key={s}
-                onClick={() => showToast(`Integração com ${s} — em breve`)}
-                className="rounded-full border border-black/[0.08] bg-white/50 px-3 py-1.5 text-[11px] text-hiro-muted transition-colors hover:bg-white/80"
-              >
-                {s}
               </button>
             ))}
           </div>
         </CardHiro>
       </aside>
+
+      {/* ─── Modals ──────────────────────────────────────────────────────── */}
+
+      <ReceitaModal
+        isOpen={receitaOpen}
+        onClose={() => setReceitaOpen(false)}
+        patientName={patient.name}
+        doctorName={doctorName}
+        crm={doctorProfile.crm || "000000"}
+        uf={doctorProfile.uf || "SP"}
+        initialMeds={extractMedsFromPlan(soap.p, resolvedDetectedItems)}
+      />
+
+      <PedidoExamesModal
+        isOpen={pedidoOpen}
+        onClose={() => setPedidoOpen(false)}
+        patientName={patient.name}
+        patientAge={Math.max(0, new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear())}
+        doctorName={doctorName}
+        crm={doctorProfile.crm || "000000"}
+        uf={doctorProfile.uf || "SP"}
+        initialExames={extractExamesFromSoap(soap, resolvedDetectedItems)}
+        initialIndicacao={soap.a}
+      />
     </div>
   );
+}
+
+/* ─── Extraction helpers ─────────────────────────────────────────────────── */
+
+function extractMedsFromPlan(plan: string, items: { type: string; text: string }[]): Medicamento[] {
+  const meds: Medicamento[] = [];
+
+  // From detected prescription items
+  items
+    .filter((i) => i.type === "prescription")
+    .forEach((item) => {
+      meds.push({ nome: item.text, dosagem: "", posologia: "", quantidade: "" });
+    });
+
+  // From plan text — look for common patterns
+  if (plan && meds.length === 0) {
+    const lines = plan.split(/[;\n]/).map((l) => l.trim()).filter(Boolean);
+    const medPattern = /(\w[\w\s]+?)\s+(\d+\s*mg|\d+\s*ml|\d+\s*mcg|\d+\s*g)/i;
+    for (const line of lines) {
+      const match = line.match(medPattern);
+      if (match) {
+        meds.push({
+          nome: match[1].trim(),
+          dosagem: match[2].trim(),
+          posologia: line.replace(match[0], "").replace(/^[,;.\s-]+/, "").trim(),
+          quantidade: "",
+        });
+      }
+    }
+  }
+
+  return meds;
+}
+
+function extractExamesFromSoap(
+  soap: { s: string; o: string; a: string; p: string },
+  items: { type: string; text: string }[],
+): string[] {
+  const exames: string[] = [];
+
+  // From detected exam items
+  items
+    .filter((i) => i.type === "exam")
+    .forEach((item) => {
+      if (!exames.includes(item.text)) exames.push(item.text);
+    });
+
+  // From plan text — look for exam keywords
+  const fullText = `${soap.p} ${soap.o}`.toLowerCase();
+  const examKeywords = [
+    { keyword: "hemograma", name: "Hemograma completo" },
+    { keyword: "glicemia", name: "Glicemia de jejum" },
+    { keyword: "hba1c", name: "Hemoglobina glicada (HbA1c)" },
+    { keyword: "hemoglobina glicada", name: "Hemoglobina glicada (HbA1c)" },
+    { keyword: "colesterol", name: "Colesterol total e frações" },
+    { keyword: "triglicerídeo", name: "Triglicerídeos" },
+    { keyword: "triglicerideos", name: "Triglicerídeos" },
+    { keyword: "tgo", name: "TGO / TGP" },
+    { keyword: "tgp", name: "TGO / TGP" },
+    { keyword: "transaminase", name: "TGO / TGP" },
+    { keyword: "ureia", name: "Ureia e creatinina" },
+    { keyword: "creatinina", name: "Ureia e creatinina" },
+    { keyword: "ácido úrico", name: "Ácido úrico" },
+    { keyword: "acido urico", name: "Ácido úrico" },
+    { keyword: "tsh", name: "TSH e T4 livre" },
+    { keyword: "tireoide", name: "TSH e T4 livre" },
+    { keyword: "urina", name: "Urina tipo 1 (EAS)" },
+    { keyword: "raio-x", name: "Raio-X de tórax" },
+    { keyword: "raio x", name: "Raio-X de tórax" },
+    { keyword: "eletrocardiograma", name: "Eletrocardiograma" },
+    { keyword: "ecg", name: "Eletrocardiograma" },
+    { keyword: "ultrassom", name: "Ultrassom abdominal" },
+  ];
+
+  for (const { keyword, name } of examKeywords) {
+    if (fullText.includes(keyword) && !exames.includes(name)) {
+      exames.push(name);
+    }
+  }
+
+  return exames;
 }

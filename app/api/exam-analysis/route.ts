@@ -3,32 +3,56 @@ import { NextRequest, NextResponse } from "next/server";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// Allow larger request bodies for image/PDF uploads
 export const maxDuration = 60;
 
+/**
+ * Try to fix truncated JSON by closing unclosed brackets/braces.
+ */
+function tryFixTruncatedJson(str: string): string {
+  let fixed = str.trim();
+
+  // Remove trailing comma before we close
+  fixed = fixed.replace(/,\s*$/, "");
+
+  // Remove incomplete last key-value (e.g. `"name": "Hemo` cut off)
+  fixed = fixed.replace(/,\s*"[^"]*":\s*"[^"]*$/, "");
+  fixed = fixed.replace(/,\s*\{[^}]*$/, "");
+
+  const openBrackets = (fixed.match(/\[/g) || []).length;
+  const closeBrackets = (fixed.match(/\]/g) || []).length;
+  const openBraces = (fixed.match(/\{/g) || []).length;
+  const closeBraces = (fixed.match(/\}/g) || []).length;
+
+  for (let i = 0; i < openBrackets - closeBrackets; i++) fixed += "]";
+  for (let i = 0; i < openBraces - closeBraces; i++) fixed += "}";
+
+  return fixed;
+}
+
 function parseJson(text: string): Record<string, unknown> {
-  const trimmed = text.trim();
+  let source = text.trim();
 
-  // Try direct parse first
+  // Strip markdown fences
+  const fenceMatch = source.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fenceMatch) source = fenceMatch[1].trim();
+
+  // Extract first { ... } if there's surrounding text
+  const braceMatch = source.match(/\{[\s\S]*\}?/);
+  if (braceMatch) source = braceMatch[0];
+
+  // Try direct parse
   try {
-    return JSON.parse(trimmed);
+    return JSON.parse(source);
   } catch {
-    // not plain JSON, continue
+    // Try fixing truncated JSON
+    try {
+      const fixed = tryFixTruncatedJson(source);
+      console.log("[exam-analysis] Fixed truncated JSON, length:", fixed.length);
+      return JSON.parse(fixed);
+    } catch {
+      throw new Error("Não foi possível interpretar a resposta da IA");
+    }
   }
-
-  // Strip markdown code fences (```json ... ``` or ``` ... ```)
-  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenceMatch) {
-    return JSON.parse(fenceMatch[1].trim());
-  }
-
-  // Try extracting the first { ... } block
-  const braceMatch = trimmed.match(/\{[\s\S]*\}/);
-  if (braceMatch) {
-    return JSON.parse(braceMatch[0]);
-  }
-
-  throw new Error("Não foi possível interpretar a resposta da IA");
 }
 
 export async function POST(req: NextRequest) {
@@ -52,15 +76,10 @@ export async function POST(req: NextRequest) {
 
   const isPdf = mediaType === "application/pdf";
 
-  // Build the content block depending on file type
   const fileContent: Anthropic.Messages.ContentBlockParam = isPdf
     ? {
         type: "document",
-        source: {
-          type: "base64",
-          media_type: "application/pdf",
-          data: fileData,
-        },
+        source: { type: "base64", media_type: "application/pdf", data: fileData },
       }
     : {
         type: "image",
@@ -71,36 +90,27 @@ export async function POST(req: NextRequest) {
         },
       };
 
-  const prompt = `Você é um assistente médico especializado em interpretação de exames laboratoriais e de imagem.
+  const prompt = `Você é um assistente médico. Analise este ${isPdf ? "PDF" : "imagem"} de exame e extraia os valores mais importantes.
 
-Analise este ${isPdf ? "documento PDF de exame médico" : "imagem de exame médico"} e extraia TODOS os valores encontrados.
-
-Para cada valor, determine:
-1. Nome do exame/parâmetro
-2. Valor encontrado
-3. Unidade de medida
-4. Se está dentro da faixa normal (normal, alto, baixo)
-5. Faixa de referência, se visível
-
-IMPORTANTE: Responda APENAS com JSON puro e válido. Não use markdown, não use code blocks, não adicione texto antes ou depois. A resposta deve começar com { e terminar com }.
+REGRAS:
+- Retorne no máximo 25 valores (os mais relevantes clinicamente)
+- Responda APENAS com JSON puro — sem markdown, sem code blocks
+- A resposta DEVE começar com { e terminar com }
+- Mantenha a resposta curta e completa
 
 Formato:
 {
   "results": [
-    {
-      "name": "Nome do exame",
-      "value": "valor numérico ou texto",
-      "unit": "unidade",
-      "status": "normal" | "alto" | "baixo",
-      "reference": "faixa de referência se disponível"
-    }
+    {"name": "Nome", "value": "valor", "unit": "unidade", "status": "normal", "reference": "ref"}
   ],
-  "summary": "Resumo breve dos achados principais em português",
-  "type": "hemograma" | "bioquimica" | "urina" | "hormonal" | "imagem" | "outro"
-}`;
+  "summary": "Resumo breve em português",
+  "type": "hemograma"
+}
+
+Os valores possíveis de "status" são: "normal", "alto", "baixo".
+Os valores possíveis de "type" são: "hemograma", "bioquimica", "urina", "hormonal", "imagem", "outro".`;
 
   try {
-    // Use sonnet for PDF/document support
     const model = isPdf
       ? "claude-sonnet-4-6"
       : (process.env.ANTHROPIC_PRONTUARIO_MODEL ?? "claude-haiku-4-5");
@@ -109,7 +119,7 @@ Formato:
 
     const response = await client.messages.create({
       model,
-      max_tokens: 2000,
+      max_tokens: 4096,
       messages: [
         {
           role: "user",
@@ -118,8 +128,15 @@ Formato:
       ],
     });
 
+    const stopReason = response.stop_reason;
     const text = response.content[0]?.type === "text" ? response.content[0].text : "{}";
-    console.log("[exam-analysis] Response:", text.slice(0, 200));
+
+    console.log(`[exam-analysis] stop_reason: ${stopReason}, response length: ${text.length}`);
+    console.log("[exam-analysis] Response preview:", text.slice(0, 300));
+
+    if (stopReason === "max_tokens") {
+      console.warn("[exam-analysis] Response was truncated by max_tokens — attempting fix");
+    }
 
     const parsed = parseJson(text);
 
@@ -132,9 +149,14 @@ Formato:
     const message = err instanceof Error ? err.message : "Erro desconhecido";
     console.error("Exam analysis error:", message, err);
 
-    const userMessage = message.includes("interpretar")
-      ? "Não foi possível analisar o exame. Tente novamente ou envie um arquivo com melhor qualidade."
-      : `Erro ao analisar exame: ${message}`;
+    let userMessage: string;
+    if (message.includes("interpretar")) {
+      userMessage = "O exame é muito extenso para análise completa. Tente enviar apenas as páginas com os resultados.";
+    } else if (message.includes("max_tokens") || message.includes("truncat")) {
+      userMessage = "O exame é muito extenso. Tente enviar um arquivo menor ou apenas as páginas com os resultados.";
+    } else {
+      userMessage = `Erro ao analisar exame: ${message}`;
+    }
 
     return NextResponse.json({ error: userMessage }, { status: 500 });
   }

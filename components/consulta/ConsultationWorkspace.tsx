@@ -74,6 +74,7 @@ export function ConsultationWorkspace({
   const setGeneratedSoap = useConsultationStore((state) => state.setGeneratedSoap);
   const setPatientSummary = useConsultationStore((state) => state.setPatientSummary);
   const setFlags = useConsultationStore((state) => state.setFlags);
+  const updatePatient = useConsultationStore((state) => state.updatePatient);
   const resetConsultation = useConsultationStore((state) => state.resetConsultation);
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -255,6 +256,14 @@ Medicamentos ativos: ${sp.medications
           : [],
       );
 
+      // Persist vitals to the patient record if entered
+      if (selectedPatientId && (vitals.peso || vitals.altura)) {
+        const updates: Record<string, unknown> = {};
+        if (vitals.peso) updates.weight = Number(vitals.peso);
+        if (vitals.altura) updates.height = Number(vitals.altura);
+        updatePatient(selectedPatientId, updates);
+      }
+
       router.push(`/consulta/${consultationId}/resumo`);
     } catch (err) {
       console.error("Prontuário error:", err);
@@ -275,8 +284,11 @@ Medicamentos ativos: ${sp.medications
     setFlags,
     setGeneratedSoap,
     setPatientSummary,
+    selectedPatientId,
     stop,
     stopRecording,
+    updatePatient,
+    vitals,
   ]);
 
   const handleCancelConsultation = useCallback(() => {

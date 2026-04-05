@@ -56,9 +56,12 @@ export function MemedPrescription({
     "idle",
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const tokenRef = useRef<string | null>(null);
   const profile = useDoctorStore((s) => s.profile);
   const isProfileComplete = useDoctorStore((s) => s.isProfileComplete)();
+
+  useEffect(() => setMounted(true), []);
 
   // Clean up Memed script and DOM artifacts on unmount
   useEffect(() => removeMemedScript, []);
@@ -147,6 +150,10 @@ export function MemedPrescription({
   // Derive medication keywords from detectedItems + plan text for display
   const medicationHints = prescriptionItems.map((item) => item.text);
 
+  if (!mounted) {
+    return <div className="h-10 animate-pulse rounded-full bg-black/[0.06]" />;
+  }
+
   if (!isProfileComplete) {
     return (
       <div className="rounded-xl border border-hiro-amber/40 bg-[#FAEEDA]/50 px-4 py-3 text-[13px] text-hiro-text">
@@ -159,65 +166,21 @@ export function MemedPrescription({
     );
   }
 
+  // TODO: Reativar quando Memed estiver estável (atualmente retornando 503)
   return (
     <div className="flex flex-col gap-3">
       <ButtonHiro
         type="button"
-        onClick={handleClick}
-        disabled={phase === "loading"}
-        className="inline-flex w-full items-center justify-center gap-2"
+        disabled
+        variant="secondary"
+        className="inline-flex w-full items-center justify-center gap-2 opacity-60"
       >
-        {phase === "loading" ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            Carregando Memed...
-          </>
-        ) : (
-          <>
-            <Pill className="h-4 w-4" aria-hidden />
-            {phase === "saved" ? "Abrir Prescrição Novamente" : "Gerar Prescrição"}
-          </>
-        )}
+        <Pill className="h-4 w-4" aria-hidden />
+        Prescrição Digital — Em breve
       </ButtonHiro>
-
-      {phase === "saved" && (
-        <p className="rounded-lg bg-[#E1F5EE] px-3 py-2 text-[12px] font-medium text-[#0F6E56]">
-          Prescrição salva com sucesso na Memed.
-        </p>
-      )}
-
-      {errorMsg && (
-        <p className="rounded-lg border border-hiro-red/20 bg-[#FAECE7] px-3 py-2 text-[12px] text-hiro-red">
-          {errorMsg}
-        </p>
-      )}
-
-      {medicationHints.length > 0 && (
-        <div className="rounded-xl border border-black/[0.06] bg-hiro-bg/60 px-3 py-2.5">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-hiro-muted">
-            Medicamentos detectados na fala
-          </p>
-          <ul className="space-y-1">
-            {medicationHints.map((hint, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-1.5 text-[12px] text-hiro-text"
-              >
-                <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-hiro-green" />
-                {hint}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {medicationHints.length === 0 && planText.trim() && (
-        <p className="text-[11px] leading-relaxed text-hiro-muted">
-          Revise o campo{" "}
-          <span className="font-medium text-hiro-text">Plano</span> e adicione
-          os medicamentos dentro do Memed.
-        </p>
-      )}
+      <p className="text-center text-[11px] text-hiro-muted">
+        Integração com Memed em manutenção. Disponível em breve.
+      </p>
     </div>
   );
 }

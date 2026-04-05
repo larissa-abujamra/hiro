@@ -1,4 +1,3 @@
-import { MemedClient, MemedError } from "memed-node";
 import { NextRequest, NextResponse } from "next/server";
 
 interface DoctorBody {
@@ -13,8 +12,14 @@ interface DoctorBody {
   email?: string;
 }
 
+const MEMED_API_URL = "https://integrations.api.memed.com.br/v1";
+
 export async function POST(req: NextRequest) {
-  // ── Credential check ──────────────────────────────────────────────────────
+  console.log("=== MEMED DEBUG ===");
+  console.log("MEMED_API_KEY exists:", !!process.env.MEMED_API_KEY);
+  console.log("MEMED_SECRET_KEY exists:", !!process.env.MEMED_SECRET_KEY);
+  console.log("MEMED_API_URL:", MEMED_API_URL);
+
   if (!process.env.MEMED_API_KEY || !process.env.MEMED_SECRET_KEY) {
     return NextResponse.json(
       { error: "Credenciais Memed não configuradas (MEMED_API_KEY / MEMED_SECRET_KEY)" },
@@ -22,12 +27,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── Doctor profile from request body (sent by the frontend store) ─────────
   let body: DoctorBody = {};
   try {
     body = (await req.json()) as DoctorBody;
   } catch {
-    // empty body is handled below
+    // empty body handled below
   }
 
   const nome = body.nome?.trim() ?? "";
@@ -40,7 +44,6 @@ export async function POST(req: NextRequest) {
   const email = body.email?.trim() ?? "";
   const external_id = body.external_id?.trim() || "hiro-medico-default";
 
-  // ── Validate required fields ──────────────────────────────────────────────
   const missing: string[] = [];
   if (!nome) missing.push("nome");
   if (!sobrenome) missing.push("sobrenome");
@@ -51,61 +54,120 @@ export async function POST(req: NextRequest) {
 
   if (missing.length) {
     return NextResponse.json(
-      {
-        error: `Perfil incompleto. Preencha: ${missing.join(", ")}. Acesse "Meu perfil" no menu lateral.`,
-      },
+      { error: `Perfil incompleto. Preencha: ${missing.join(", ")}. Acesse "Meu perfil" no menu lateral.` },
       { status: 422 },
     );
   }
 
-  const memed = new MemedClient({
-    apiKey: process.env.MEMED_API_KEY,
-    secretKey: process.env.MEMED_SECRET_KEY,
-    environment: "integration",
-  });
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "Memed-API-Key": process.env.MEMED_API_KEY,
+    "Memed-Secret-Key": process.env.MEMED_SECRET_KEY,
+  };
 
-  // ── Try to get existing prescritor, create if not found ───────────────────
-  try {
-    const prescritor = await memed.prescritor.get(external_id);
-    return NextResponse.json({ token: prescritor.token });
-  } catch (getErr) {
-    const isNotFound =
-      getErr instanceof MemedError &&
-      (getErr.statusCode === 404 || getErr.statusCode === 422);
-
-    if (!isNotFound) {
-      const msg = getErr instanceof MemedError ? getErr.message : String(getErr);
-      console.error("Memed get prescritor error:", getErr);
-      return NextResponse.json(
-        { error: `Erro ao consultar médico na Memed: ${msg}` },
-        { status: 500 },
-      );
-    }
-
-    // Prescritor not registered yet — create now
-    try {
-      const created = await memed.prescritor.create({
+  const doctorPayload = {
+    data: {
+      type: "usuarios",
+      attributes: {
         external_id,
         nome,
         sobrenome,
         data_nascimento,
         cpf,
         sexo,
-        board: { board_code: "CRM", board_number: crm, board_state: uf },
-        email,
-      });
-      return NextResponse.json({ token: created.token });
-    } catch (createErr) {
-      const memedErr = createErr instanceof MemedError ? createErr : null;
-      const detail = memedErr
-        ? `[${memedErr.statusCode}] ${memedErr.message}`
-        : String(createErr);
+        uf,
+        crm,
+        email: email || undefined,
+      },
+    },
+  };
 
-      console.error("Memed create prescritor error:", createErr);
+  console.log("[memed] Doctor payload:", JSON.stringify(doctorPayload, null, 2));
+
+  // ── Try to GET existing prescritor first ──────────────────────────────────
+  try {
+    const getUrl = `${MEMED_API_URL}/sinapse-prescricao/usuarios/${external_id}`;
+    console.log("[memed] GET", getUrl);
+
+    const getRes = await fetch(getUrl, { method: "GET", headers });
+    const getText = await getRes.text();
+
+    console.log("[memed] GET status:", getRes.status);
+    console.log("[memed] GET response:", getText.slice(0, 500));
+
+    if (getRes.ok) {
+      try {
+        const getData = JSON.parse(getText);
+        const token =
+          getData?.data?.attributes?.token ??
+          getData?.data?.token ??
+          getData?.token;
+        if (token) {
+          console.log("[memed] Found existing prescritor, token:", token.slice(0, 20) + "...");
+          return NextResponse.json({ token });
+        }
+      } catch {
+        console.error("[memed] Failed to parse GET response");
+      }
+    }
+
+    // If 404 or 422, prescritor doesn't exist yet — create below
+    if (getRes.status !== 404 && getRes.status !== 422 && !getRes.ok) {
       return NextResponse.json(
-        { error: `Falha ao registrar médico na Memed: ${detail}` },
+        { error: `Erro ao consultar médico na Memed: [${getRes.status}] ${getText.slice(0, 200)}` },
         { status: 500 },
       );
     }
+  } catch (err) {
+    console.error("[memed] GET request failed:", err);
+    // Continue to create
+  }
+
+  // ── CREATE prescritor ─────────────────────────────────────────────────────
+  try {
+    const createUrl = `${MEMED_API_URL}/sinapse-prescricao/usuarios`;
+    console.log("[memed] POST", createUrl);
+
+    const createRes = await fetch(createUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(doctorPayload),
+    });
+
+    const createText = await createRes.text();
+    console.log("[memed] POST status:", createRes.status);
+    console.log("[memed] POST response:", createText.slice(0, 500));
+
+    if (!createRes.ok) {
+      return NextResponse.json(
+        { error: `Falha ao registrar médico na Memed: [${createRes.status}] ${createText.slice(0, 200)}` },
+        { status: 500 },
+      );
+    }
+
+    const createData = JSON.parse(createText);
+    const token =
+      createData?.data?.attributes?.token ??
+      createData?.data?.token ??
+      createData?.token;
+
+    if (!token) {
+      console.error("[memed] No token in create response:", createText.slice(0, 300));
+      return NextResponse.json(
+        { error: "Memed respondeu sem token. Verifique os dados do perfil." },
+        { status: 500 },
+      );
+    }
+
+    console.log("[memed] Created prescritor, token:", token.slice(0, 20) + "...");
+    return NextResponse.json({ token });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[memed] CREATE request failed:", err);
+    return NextResponse.json(
+      { error: `Erro de conexão com Memed: ${message}` },
+      { status: 500 },
+    );
   }
 }
