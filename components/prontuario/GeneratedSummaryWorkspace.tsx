@@ -10,6 +10,7 @@ import {
   FlaskConical,
   Grid2x2,
   Sparkles,
+  X,
 } from "lucide-react";
 
 function CopyButton({ text, className }: { text: string; className?: string }) {
@@ -44,6 +45,7 @@ import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { useConsultationStore } from "@/lib/store";
 import type { GeneratedDocument, Patient } from "@/lib/types";
 import { MemedPrescription } from "@/components/prontuario/MemedPrescription";
+import { CIDSearchModal } from "@/components/cid/CIDSearchModal";
 import { ReceitaModal } from "@/components/documentos/ReceitaModal";
 import { PedidoExamesModal } from "@/components/documentos/PedidoExamesModal";
 import type { Medicamento } from "@/lib/generateReceita";
@@ -185,6 +187,8 @@ export function GeneratedSummaryWorkspace({
   const [toast, setToast] = useState<string | null>(null);
   const [receitaOpen, setReceitaOpen] = useState(false);
   const [pedidoOpen, setPedidoOpen] = useState(false);
+  const [cidModalOpen, setCidModalOpen] = useState(false);
+  const [addedCids, setAddedCids] = useState<{ code: string; name: string }[]>([]);
 
   const soapSource = generatedSoap ?? savedConsultation?.soap ?? null;
   const soap = useMemo(
@@ -362,7 +366,7 @@ export function GeneratedSummaryWorkspace({
         {flags.length > 0 && (
           <CardHiro className="rounded-2xl border border-hiro-amber/35 bg-[#FAEEDA]/50 p-5">
             <OverlineLabel>ALERTAS</OverlineLabel>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] text-hiro-text">
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-[15px] text-hiro-text">
               {flags.map((flag, index) => (
                 <li key={`${index}-${flag.slice(0, 48)}`}>{flag}</li>
               ))}
@@ -393,7 +397,7 @@ export function GeneratedSummaryWorkspace({
                 <textarea
                   value={soap[key]}
                   onChange={(e) => updateSoap(key, e.target.value)}
-                  className="glass-card-input min-h-[80px] w-full resize-none rounded-xl px-4 py-3 text-[13px] leading-relaxed text-hiro-text focus:outline-none focus:ring-2 focus:ring-hiro-green/30"
+                  className="glass-card-input min-h-[80px] w-full resize-none rounded-xl px-4 py-3 text-[15px] leading-relaxed text-hiro-text focus:outline-none focus:ring-2 focus:ring-hiro-green/30"
                   style={{ height: "auto" }}
                   onInput={(e) => {
                     const t = e.currentTarget;
@@ -414,7 +418,7 @@ export function GeneratedSummaryWorkspace({
       <aside className="flex flex-col gap-4 lg:col-span-4">
         <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
           <OverlineLabel>CID-10 CONFIRMADO</OverlineLabel>
-          {resolvedCids.map(
+          {[...resolvedCids.map((c) => ({ code: c.code, name: c.name })), ...addedCids].map(
             (cid) => (
               <div
                 key={cid.code}
@@ -423,14 +427,27 @@ export function GeneratedSummaryWorkspace({
                 <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-hiro-green">
                   <Check className="h-2.5 w-2.5 text-white" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <span className="text-[12px] font-medium text-hiro-text">{cid.code}</span>
                   <span className="ml-1.5 text-[12px] text-hiro-muted">{cid.name}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setAddedCids((prev) => prev.filter((c) => c.code !== cid.code))}
+                  className="shrink-0 rounded-full p-0.5 text-hiro-muted/30 transition-colors hover:text-hiro-red"
+                >
+                  <X className="h-3 w-3" strokeWidth={2} />
+                </button>
               </div>
             ),
           )}
-          <button className="mt-1 text-left text-[12px] text-hiro-green">+ Adicionar CID</button>
+          <button
+            type="button"
+            onClick={() => setCidModalOpen(true)}
+            className="mt-1 text-left text-[12px] font-medium text-hiro-green transition-colors hover:text-hiro-green/80"
+          >
+            + Adicionar CID
+          </button>
         </CardHiro>
 
         {detectedReturn && (
@@ -450,44 +467,39 @@ export function GeneratedSummaryWorkspace({
         )}
 
         <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
-          <OverlineLabel>PRESCRIÇÃO DIGITAL</OverlineLabel>
-          <p className="text-[12px] leading-relaxed text-hiro-muted">
-            Prescreva digitalmente via Memed com assinatura integrada.
-          </p>
-          <MemedPrescription
-            planText={soap.p}
-            prescriptionItems={resolvedDetectedItems.filter((i) => i.type === "prescription")}
-          />
-        </CardHiro>
-
-        <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
-          <OverlineLabel>ASSINAR E FINALIZAR</OverlineLabel>
-          <details className="rounded-xl border border-black/10 bg-hiro-bg px-4 py-3">
-            <summary className="cursor-pointer text-[13px] font-medium text-hiro-text">
-              Exportar resumo clínico
-            </summary>
-            <button
-              type="button"
-              onClick={handleSavePDF}
-              className="mt-3 w-full rounded-full bg-hiro-text px-5 py-2.5 text-[13px] font-medium text-white"
-            >
-              Salvar PDF do laudo
-            </button>
-          </details>
-          <p className="text-center text-[11px] text-hiro-muted">
-            Resumo e documentos podem ser salvos no prontuário do paciente.
-          </p>
+          <OverlineLabel>SALVAR</OverlineLabel>
           <button
             onClick={handleSaveWithoutSign}
-            className="mt-1 w-full rounded-full border border-black/15 px-4 py-2.5 text-[13px] text-hiro-muted"
+            className="w-full rounded-xl bg-[#2d5a47] px-5 py-4 text-[14px] font-medium text-white transition-all duration-200 hover:bg-[#244a3b] hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(45,92,63,0.2)] active:translate-y-0 active:scale-[0.98]"
           >
             Salvar consulta
           </button>
+          <p className="text-center text-[11px] text-hiro-muted">
+            Resumo e documentos salvos no prontuário do paciente.
+          </p>
         </CardHiro>
 
         <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
           <OverlineLabel>DOCUMENTOS GERADOS</OverlineLabel>
           <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={handleSavePDF}
+              className="glass-card-input flex cursor-pointer items-center gap-3 rounded-xl p-4 text-left transition-all duration-150 ease-out hover:-translate-y-px hover:bg-black/[0.03] active:scale-[0.995]"
+            >
+              <div
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
+                style={iconCircleGlassOnLightCard}
+              >
+                <FileText className="h-4 w-4" strokeWidth={1.75} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-medium text-hiro-text">Resumo clínico</p>
+                <p className="truncate text-[12px] text-hiro-muted">Prontuário completo em PDF</p>
+              </div>
+              <BadgeStatus label="Pronto" status="ready" />
+            </button>
+
             {generatedDocs.map((doc) => (
               <button
                 key={doc.type}
@@ -516,9 +528,32 @@ export function GeneratedSummaryWorkspace({
             ))}
           </div>
         </CardHiro>
+
+        <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
+          <OverlineLabel>PRESCRIÇÃO DIGITAL</OverlineLabel>
+          <p className="text-[12px] leading-relaxed text-hiro-muted">
+            Prescreva digitalmente via Memed com assinatura integrada.
+          </p>
+          <MemedPrescription
+            planText={soap.p}
+            prescriptionItems={resolvedDetectedItems.filter((i) => i.type === "prescription")}
+          />
+        </CardHiro>
       </aside>
 
       {/* ─── Modals ──────────────────────────────────────────────────────── */}
+
+      <CIDSearchModal
+        isOpen={cidModalOpen}
+        onClose={() => setCidModalOpen(false)}
+        existingCodes={[
+          ...resolvedCids.map((c) => c.code),
+          ...addedCids.map((c) => c.code),
+        ]}
+        onAdd={(code, name) => {
+          setAddedCids((prev) => [...prev, { code, name }]);
+        }}
+      />
 
       <ReceitaModal
         isOpen={receitaOpen}
