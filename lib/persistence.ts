@@ -6,13 +6,26 @@ import type { Patient } from "@/lib/types";
  */
 export async function persistPatient(patient: Patient): Promise<void> {
   try {
-    await fetch("/api/patients", {
+    console.log("[persistence] Saving patient:", patient.id, patient.name, {
+      consultations: patient.consultations.length,
+      height: patient.height,
+      weight: patient.weight,
+    });
+
+    const res = await fetch("/api/patients", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ patient }),
     });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      console.error("[persistence] Save FAILED:", res.status, data);
+    } else {
+      console.log("[persistence] Save OK for", patient.id);
+    }
   } catch (err) {
-    console.error("Failed to persist patient:", err);
+    console.error("[persistence] Save ERROR:", err);
   }
 }
 
@@ -21,12 +34,21 @@ export async function persistPatient(patient: Patient): Promise<void> {
  */
 export async function loadPatients(): Promise<Patient[]> {
   try {
+    console.log("[persistence] Loading patients from Supabase...");
     const res = await fetch("/api/patients");
-    if (!res.ok) return [];
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      console.error("[persistence] Load FAILED:", res.status, data);
+      return [];
+    }
+
     const data = await res.json();
-    return data.patients ?? [];
+    const patients = data.patients ?? [];
+    console.log("[persistence] Loaded", patients.length, "patients:", patients.map((p: Patient) => p.name));
+    return patients;
   } catch (err) {
-    console.error("Failed to load patients:", err);
+    console.error("[persistence] Load ERROR:", err);
     return [];
   }
 }
