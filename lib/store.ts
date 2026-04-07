@@ -232,6 +232,7 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
     // Persist new patient
     if (createdId) {
       const created = useConsultationStore.getState().patients.find((p) => p.id === createdId);
+      console.log("[store] createPatientFromDraft — created:", createdId, created?.name);
       if (created) persistPatient(created);
     }
     return createdId;
@@ -280,6 +281,7 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
       ].slice(0, 20), // keep last 20
     })),
   saveConsultationToPatient: (consultation) => {
+    console.log("[store] saveConsultationToPatient called for patient:", consultation.patientId, "consultation:", consultation.id);
     set((state) => {
       const patients = state.patients.map((patient) => {
         if (patient.id !== consultation.patientId) return patient;
@@ -314,7 +316,12 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
     const updated = useConsultationStore.getState().patients.find(
       (p) => p.id === consultation.patientId
     );
-    if (updated) persistPatient(updated);
+    console.log("[store] Patient found for persist:", updated?.id, updated?.name, "consultations:", updated?.consultations.length);
+    if (updated) {
+      persistPatient(updated);
+    } else {
+      console.error("[store] Patient NOT FOUND for id:", consultation.patientId, "— available patients:", useConsultationStore.getState().patients.map(p => p.id));
+    }
   },
   resetConsultation: () =>
     set((state) => ({
