@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Loader2, Mic, Play, Square } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { AudioWaveform } from "@/components/recording/AudioWaveform";
+import { RecordButton } from "@/components/recording/RecordButton";
+import { RecordingFAB } from "@/components/recording/RecordingFAB";
 import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { AvatarInitials } from "@/components/ui/AvatarInitials";
@@ -94,6 +97,7 @@ export function ConsultationWorkspace({
   const [freeNotes, setFreeNotes] = useState("");
   const [examText, setExamText] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
+  const recordingPanelRef = useRef<HTMLDivElement>(null);
   const {
     lines,
     interimText,
@@ -404,100 +408,65 @@ Medicamentos ativos: ${sp.medications
           </div>
         </CardHiro>
 
-        <CardHiro className="hiro-surface-glow rounded-2xl p-8">
-          <div className="flex flex-col items-center gap-5">
-            <button
-              type="button"
-              onClick={() => void toggleMainRecording()}
-              className={`relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hiro-active/50 focus-visible:ring-offset-2 active:scale-[0.97] ${
-                isRecordingActive
-                  ? "bg-[#8B1A1A] text-white rec-ring"
-                  : isPaused
-                    ? "border-2 border-hiro-active bg-white/35 text-hiro-active backdrop-blur-xl"
-                    : "bg-hiro-active text-white"
-              }`}
-            >
-              {isRecordingActive ? (
-                <Square className="relative h-6 w-6" />
-              ) : isPaused ? (
-                <Play className="relative h-7 w-7" />
-              ) : (
-                <Mic className="relative h-7 w-7" />
-              )}
-            </button>
+        <div ref={recordingPanelRef}>
+          <CardHiro className="hiro-surface-glow rounded-2xl p-8">
+            <div className="flex flex-col items-center gap-5">
+              {/* Timeline waveform */}
+              <div className="w-full max-w-lg">
+                <AudioWaveform
+                  isRecording={isRecordingActive}
+                  seconds={recordingSeconds}
+                />
+              </div>
 
-            {isRecordingActive && (
-              <div
-                className="flex w-full max-w-[220px] flex-col items-center gap-2 rounded-xl border border-[#8B1A1A]/30 bg-[#FAECE7]/50 px-4 py-3"
-                role="status"
-                aria-live="polite"
+              {/* Record button */}
+              <RecordButton
+                phase={recordingPhase}
+                onClick={() => void toggleMainRecording()}
+              />
+
+              {/* Timer */}
+              <p
+                className={`font-serif text-[28px] tabular-nums ${
+                  isRecordingActive ? "text-[#2d5a47]" : "text-hiro-text"
+                }`}
               >
-                <div className="flex h-9 items-end justify-center gap-0.5">
-                  {[0, 0.1, 0.2, 0.15, 0.05, 0.12, 0.08, 0.03].map((delay, i) => (
-                    <div
-                      key={i}
-                      className="w-1.5 rounded-full bg-[#8B1A1A]"
-                      style={{
-                        animation: "waveBar 1s ease-in-out infinite",
-                        animationDelay: `${delay}s`,
-                      }}
-                    />
-                  ))}
+                {timerLabel}
+              </p>
+
+              {/* Status text */}
+              <p className="text-center text-[13px] text-hiro-muted">
+                {recordingPhase === "idle"
+                  ? "Toque para iniciar a gravação"
+                  : recordingPhase === "recording"
+                    ? "Gravando — toque para pausar"
+                    : "Pausado — toque para continuar"}
+              </p>
+
+              {/* Errors */}
+              {!isSupported && (
+                <div className="w-full rounded-xl border border-hiro-red/30 bg-[#FAECE7] px-4 py-3 text-sm text-hiro-red">
+                  Reconhecimento de voz não disponível neste navegador. Use Chrome
+                  ou Edge para transcrição em tempo real.
                 </div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8B1A1A]">
-                  Gravando
-                </p>
-              </div>
-            )}
+              )}
+              {error && isSupported && (
+                <div className="w-full rounded-xl border border-hiro-red/30 bg-[#FAECE7] px-4 py-3 text-sm text-hiro-red">
+                  {error}
+                </div>
+              )}
+            </div>
+          </CardHiro>
+        </div>
 
-            <p
-              className={`font-serif text-[28px] tabular-nums ${
-                isRecordingActive ? "text-[#8B1A1A]" : "text-hiro-text"
-              }`}
-            >
-              {timerLabel}
-            </p>
-            <p className="text-center text-[13px] text-hiro-muted">
-              {recordingPhase === "idle"
-                ? "Toque para iniciar a gravação"
-                : recordingPhase === "recording"
-                  ? "Gravando — toque para pausar"
-                  : "Pausado — toque para continuar"}
-            </p>
-
-            {recordingPhase !== "idle" && (
-              <ButtonHiro
-                variant="secondary"
-                onClick={async () => {
-                  if (isRecordingActive) {
-                    setRecordingPhase("paused");
-                    stop();
-                    stopRecording();
-                  } else {
-                    const ok = await start();
-                    if (!ok) return;
-                    setRecordingPhase("recording");
-                    startRecording();
-                  }
-                }}
-                className="px-5 py-2 text-[13px] text-hiro-muted"
-              >
-                {isRecordingActive ? "Pausar" : "Retomar"}
-              </ButtonHiro>
-            )}
-            {!isSupported && (
-              <div className="w-full rounded-xl border border-hiro-red/30 bg-[#FAECE7] px-4 py-3 text-sm text-hiro-red">
-                Reconhecimento de voz não disponível neste navegador. Use Chrome
-                ou Edge para transcrição em tempo real.
-              </div>
-            )}
-            {error && isSupported && (
-              <div className="w-full rounded-xl border border-hiro-red/30 bg-[#FAECE7] px-4 py-3 text-sm text-hiro-red">
-                {error}
-              </div>
-            )}
-          </div>
-        </CardHiro>
+        {/* FAB — appears when recording panel scrolls out of view */}
+        <RecordingFAB
+          targetRef={recordingPanelRef}
+          isRecording={isRecordingActive}
+          isPaused={isPaused}
+          onClick={() => void toggleMainRecording()}
+          timerLabel={timerLabel}
+        />
 
         <CardHiro className="rounded-2xl p-5">
           <OverlineLabel>TRANSCRIÇÃO EM TEMPO REAL</OverlineLabel>

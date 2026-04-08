@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Calendar, ExternalLink, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useCalendar } from "@/hooks/useCalendar";
+import { TimePicker } from "@/components/ui/time-picker";
 import type { CalendarAppointment } from "@/types/calendar";
 
 /* Simple inline Google "G" logo */
@@ -110,13 +111,13 @@ function AddAppointmentForm({
   onAdd: (name: string, time: string) => Promise<void>;
 }) {
   const [name, setName] = useState("");
-  const [time, setTime] = useState("");
+  const [time, setTime] = useState("08:00");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !time) return;
+    if (!name.trim()) return;
 
     setSaving(true);
     setError(null);
@@ -145,13 +146,11 @@ function AddAppointmentForm({
 
   return (
     <form onSubmit={handleSubmit} className="mt-3 space-y-2">
-      <div className="flex gap-2">
-        <input
-          type="time"
+      <div className="flex items-center gap-2">
+        <TimePicker
           value={time}
-          onChange={(e) => setTime(e.target.value)}
-          required
-          className="glass-card-input w-24 shrink-0 rounded-xl px-3 py-2 text-[13px] text-hiro-text outline-none focus:ring-2 focus:ring-hiro-green/30"
+          onChange={setTime}
+          disabled={saving}
         />
         <input
           type="text"
@@ -159,7 +158,7 @@ function AddAppointmentForm({
           onChange={(e) => setName(e.target.value)}
           required
           placeholder="Nome do paciente"
-          className="glass-card-input min-w-0 flex-1 rounded-xl px-3 py-2 text-[13px] text-hiro-text outline-none placeholder:text-hiro-muted/40 focus:ring-2 focus:ring-hiro-green/30"
+          className="glass-card-input min-w-0 flex-1 rounded-xl px-3 py-2.5 text-[13px] text-hiro-text outline-none placeholder:text-hiro-muted/40 focus:ring-2 focus:ring-hiro-green/30"
         />
       </div>
       {error && (
@@ -167,7 +166,7 @@ function AddAppointmentForm({
       )}
       <button
         type="submit"
-        disabled={saving || !name.trim() || !time}
+        disabled={saving || !name.trim()}
         className="w-full rounded-full bg-hiro-text py-2 text-[13px] font-medium text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
       >
         {saving ? "Adicionando…" : "Adicionar consulta"}
