@@ -417,96 +417,6 @@ export function GeneratedSummaryWorkspace({
       </section>
 
       <aside className="flex flex-col gap-4 lg:col-span-4">
-        {/* CID Confirmado */}
-        <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
-          <OverlineLabel>CID-10 CONFIRMADO</OverlineLabel>
-
-          {/* Confirmed CIDs */}
-          {[...resolvedCids.map((c) => ({ code: c.code, name: c.name })), ...addedCids].length === 0 && diagnosticosSugeridos.length === 0 && (
-            <p className="text-[12px] italic text-hiro-muted/60">
-              Nenhum CID confirmado ainda.
-            </p>
-          )}
-          {[...resolvedCids.map((c) => ({ code: c.code, name: c.name })), ...addedCids].map(
-            (cid) => (
-              <div
-                key={cid.code}
-                className="flex items-center gap-2.5 border-b border-black/[0.06] py-2 last:border-0"
-              >
-                <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-hiro-green">
-                  <Check className="h-2.5 w-2.5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="text-[12px] font-medium text-hiro-text">{cid.code}</span>
-                  <span className="ml-1.5 text-[12px] text-hiro-muted">{cid.name}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAddedCids((prev) => prev.filter((c) => c.code !== cid.code))}
-                  className="shrink-0 rounded-full p-0.5 text-hiro-muted/30 transition-colors hover:text-hiro-red"
-                >
-                  <X className="h-3 w-3" strokeWidth={2} />
-                </button>
-              </div>
-            ),
-          )}
-
-          {/* Suggested diagnoses from AI — doctor picks the exact CID */}
-          {diagnosticosSugeridos.length > 0 && (
-            <div className="mt-2 space-y-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-hiro-amber">
-                Sugerido pela IA — selecione o CID
-              </p>
-              {diagnosticosSugeridos.map((diag, idx) => (
-                <div key={idx} className="rounded-xl border border-hiro-amber/20 bg-[#FAEEDA]/30 px-3 py-2.5">
-                  <p className="text-[12px] font-medium text-hiro-text">{diag.texto}</p>
-                  <p className="text-[10px] text-hiro-muted">{diag.categoria}</p>
-                  {diag.sourceQuote && (
-                    <p className="mt-1 text-[10px] italic text-hiro-muted/60">"{diag.sourceQuote}"</p>
-                  )}
-                  <div className="mt-2 space-y-1">
-                    {diag.matchCodes.slice(0, 5).map((match) => {
-                      const alreadyAdded = addedCids.some((c) => c.code === match.codigo) ||
-                        resolvedCids.some((c) => c.code === match.codigo);
-                      return (
-                        <button
-                          key={match.codigo}
-                          type="button"
-                          disabled={alreadyAdded}
-                          onClick={() => {
-                            setAddedCids((prev) => [...prev, { code: match.codigo, name: match.descricao }]);
-                          }}
-                          className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12px] transition-colors ${
-                            alreadyAdded
-                              ? "opacity-40"
-                              : "hover:bg-black/[0.04]"
-                          }`}
-                        >
-                          <span className="font-semibold text-hiro-green">{match.codigo}</span>
-                          <span className="flex-1 text-hiro-text">{match.descricao}</span>
-                          {alreadyAdded ? (
-                            <Check className="h-3 w-3 text-hiro-green" strokeWidth={2} />
-                          ) : (
-                            <span className="text-[10px] text-hiro-green">+</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setCidModalOpen(true)}
-            className="mt-1 text-left text-[12px] font-medium text-hiro-green transition-colors hover:text-hiro-green/80"
-          >
-            + Buscar CID manualmente
-          </button>
-        </CardHiro>
-
         {detectedReturn && (
           <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
             <OverlineLabel>RETORNO DETECTADO</OverlineLabel>
@@ -534,6 +444,53 @@ export function GeneratedSummaryWorkspace({
           <p className="text-center text-[11px] text-hiro-muted">
             Resumo e documentos salvos no prontuário do paciente.
           </p>
+        </CardHiro>
+
+        {/* CID Confirmado */}
+        <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
+          <OverlineLabel>CID-10 CONFIRMADO</OverlineLabel>
+          {[...resolvedCids.map((c) => ({ code: c.code, name: c.name })), ...addedCids].length === 0 && diagnosticosSugeridos.length === 0 && (
+            <p className="text-[12px] italic text-hiro-muted/60">Nenhum CID confirmado ainda.</p>
+          )}
+          {[...resolvedCids.map((c) => ({ code: c.code, name: c.name })), ...addedCids].map((cid) => (
+            <div key={cid.code} className="flex items-center gap-2.5 border-b border-black/[0.06] py-2 last:border-0">
+              <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-hiro-green">
+                <Check className="h-2.5 w-2.5 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-[12px] font-medium text-hiro-text">{cid.code}</span>
+                <span className="ml-1.5 text-[12px] text-hiro-muted">{cid.name}</span>
+              </div>
+              <button type="button" onClick={() => setAddedCids((prev) => prev.filter((c) => c.code !== cid.code))} className="shrink-0 rounded-full p-0.5 text-hiro-muted/30 transition-colors hover:text-hiro-red">
+                <X className="h-3 w-3" strokeWidth={2} />
+              </button>
+            </div>
+          ))}
+          {diagnosticosSugeridos.length > 0 && (
+            <div className="mt-2 space-y-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-hiro-amber">Sugerido pela IA — selecione o CID</p>
+              {diagnosticosSugeridos.map((diag, idx) => (
+                <div key={idx} className="rounded-xl border border-hiro-amber/20 bg-[#FAEEDA]/30 px-3 py-2.5">
+                  <p className="text-[12px] font-medium text-hiro-text">{diag.texto}</p>
+                  <p className="text-[10px] text-hiro-muted">{diag.categoria}</p>
+                  {diag.sourceQuote && <p className="mt-1 text-[10px] italic text-hiro-muted/60">"{diag.sourceQuote}"</p>}
+                  <div className="mt-2 space-y-1">
+                    {diag.matchCodes.slice(0, 5).map((match) => {
+                      const alreadyAdded = addedCids.some((c) => c.code === match.codigo) || resolvedCids.some((c) => c.code === match.codigo);
+                      return (
+                        <button key={match.codigo} type="button" disabled={alreadyAdded} onClick={() => setAddedCids((prev) => [...prev, { code: match.codigo, name: match.descricao }])} className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12px] transition-colors ${alreadyAdded ? "opacity-40" : "hover:bg-black/[0.04]"}`}>
+                          <span className="font-semibold text-hiro-green">{match.codigo}</span>
+                          <span className="flex-1 text-hiro-text">{match.descricao}</span>
+                          {alreadyAdded ? <Check className="h-3 w-3 text-hiro-green" strokeWidth={2} /> : <span className="text-[10px] text-hiro-green">+</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <button type="button" onClick={() => setCidModalOpen(true)} className="mt-1 text-left text-[12px] font-medium text-hiro-green transition-colors hover:text-hiro-green/80">+ Buscar CID manualmente</button>
         </CardHiro>
 
         <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
