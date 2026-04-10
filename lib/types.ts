@@ -12,6 +12,7 @@ export interface Patient {
   consultations: Consultation[];
   exams: Exam[];
   metrics: PatientMetrics[];
+  trackedMetrics?: TrackedMetric[];
 }
 
 export interface Consultation {
@@ -65,6 +66,19 @@ export interface PatientMetrics {
   diastolic?: number;
   weight?: number;
   glucose?: number;
+}
+
+export interface TrackedMetricEntry {
+  value: number;
+  date: string;
+  examId?: string;
+}
+
+export interface TrackedMetric {
+  name: string;
+  unit: string;
+  referenceRange?: string;
+  history: TrackedMetricEntry[];
 }
 
 export interface GeneratedDocument {

@@ -29,8 +29,9 @@ import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { BadgeStatus } from "@/components/ui/BadgeStatus";
 import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { useConsultationStore } from "@/lib/store";
-import type { Exam } from "@/lib/types";
+import type { Exam, TrackedMetric } from "@/lib/types";
 import type { ExamResult } from "@/components/consulta/ExamAnalysisPanel";
+import { persistPatient } from "@/lib/persistence";
 
 interface ExamAnalysisState {
   examId: string;
@@ -60,6 +61,54 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
   const [uploadedFileMap, setUploadedFileMap] = useState<Map<string, File>>(new Map());
   const [analysis, setAnalysis] = useState<ExamAnalysisState | null>(null);
   const [analyzingExamId, setAnalyzingExamId] = useState<string | null>(null);
+  const [selectedForTracking, setSelectedForTracking] = useState<Set<string>>(new Set());
+  const [trackingSaved, setTrackingSaved] = useState(false);
+
+  const toggleTracking = (name: string) => {
+    setSelectedForTracking((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+    setTrackingSaved(false);
+  };
+
+  const saveMetricsToPatient = () => {
+    if (!patient || !analysis || selectedForTracking.size === 0) return;
+
+    const currentTracked: TrackedMetric[] = patient.trackedMetrics ?? [];
+    const updated = [...currentTracked];
+    const today = new Date().toISOString().slice(0, 10);
+
+    for (const r of analysis.results) {
+      if (!selectedForTracking.has(r.name)) continue;
+      const numValue = parseFloat(r.value);
+      if (isNaN(numValue)) continue;
+
+      const existingIdx = updated.findIndex((m) => m.name === r.name);
+      if (existingIdx >= 0) {
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          history: [
+            ...updated[existingIdx].history,
+            { value: numValue, date: today },
+          ],
+        };
+      } else {
+        updated.push({
+          name: r.name,
+          unit: r.unit,
+          referenceRange: r.reference,
+          history: [{ value: numValue, date: today }],
+        });
+      }
+    }
+
+    updatePatient(patient.id, { trackedMetrics: updated });
+    setTrackingSaved(true);
+    setSelectedForTracking(new Set());
+  };
 
   const handleAnalyzeExam = async (file: File) => {
     const examId = `analyze-${Date.now()}`;
@@ -688,12 +737,15 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
                             <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">Exame</th>
                             <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">Valor</th>
                             <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">Status</th>
+                            <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">Evolução</th>
                           </tr>
                         </thead>
                         <tbody>
                           {analysis.results.map((r, i) => {
                             const cfg = STATUS_CONFIG[r.status] ?? STATUS_CONFIG.normal;
                             const Icon = cfg.icon;
+                            const isNumeric = !isNaN(parseFloat(r.value));
+                            const isSelected = selectedForTracking.has(r.name);
                             return (
                               <tr key={i} className="border-b border-black/[0.04] last:border-0">
                                 <td className="px-3 py-2">
@@ -707,12 +759,56 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
                                     {cfg.label}
                                   </span>
                                 </td>
+                                <td className="px-3 py-2">
+                                  {isNumeric && (
+                                    <label className="flex cursor-pointer items-center gap-1.5">
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => toggleTracking(r.name)}
+                                        className="h-3.5 w-3.5 rounded border-hiro-muted/40 accent-hiro-green"
+                                      />
+                                      <span className="text-[11px] text-hiro-muted">Acompanhar</span>
+                                    </label>
+                                  )}
+                                </td>
                               </tr>
                             );
                           })}
                         </tbody>
                       </table>
                     </div>
+
+                    {/* Tracking selection summary + save */}
+                    {selectedForTracking.size > 0 && (
+                      <div className="rounded-xl border border-hiro-green/20 bg-hiro-green/5 px-4 py-3">
+                        <p className="text-[12px] text-hiro-muted mb-2">
+                          {selectedForTracking.size} valor(es) para acompanhamento:
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {analysis.results
+                            .filter((r) => selectedForTracking.has(r.name))
+                            .map((r) => (
+                              <span key={r.name} className="rounded-full border border-hiro-green/20 bg-white/60 px-2.5 py-1 text-[11px] font-medium text-hiro-text">
+                                {r.name}: {r.value} {r.unit}
+                              </span>
+                            ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={saveMetricsToPatient}
+                          className="w-full rounded-xl bg-[#2d5a47] py-2.5 text-[13px] font-medium text-white transition-all duration-200 hover:bg-[#244a3b] active:scale-[0.98]"
+                        >
+                          Adicionar à evolução do paciente
+                        </button>
+                      </div>
+                    )}
+
+                    {trackingSaved && selectedForTracking.size === 0 && (
+                      <p className="text-center text-[12px] text-hiro-green">
+                        Valores adicionados à evolução do paciente.
+                      </p>
+                    )}
 
                     {analysis.results.some((r) => r.status !== "normal") && (
                       <div className="flex items-center gap-2 rounded-xl border border-hiro-amber/30 bg-[#FAEEDA]/50 px-4 py-2.5">
