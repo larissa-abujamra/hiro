@@ -1,17 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
-  ArrowDown,
-  ArrowUp,
-  Check,
-  FileText,
-  Loader2,
   Plus,
-  Sparkles,
-  Upload,
   X,
 } from "lucide-react";
 import {
@@ -28,24 +21,14 @@ import { ButtonHiro } from "@/components/ui/ButtonHiro";
 import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { BadgeStatus } from "@/components/ui/BadgeStatus";
-import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { useConsultationStore } from "@/lib/store";
-import type { Exam, SavedExam, TrackedMetric } from "@/lib/types";
+import type { TrackedMetric } from "@/lib/types";
 import { formatDateBR } from "@/lib/formatDate";
 import { MetricEvolutionChart } from "@/components/paciente/MetricEvolutionChart";
 import { MetricsSummaryCard } from "@/components/paciente/MetricsSummaryCard";
 import { AddMetricManually } from "@/components/paciente/AddMetricManually";
-import type { ExamResult } from "@/components/consulta/ExamAnalysisPanel";
 import { CIDSearchModal } from "@/components/cid/CIDSearchModal";
 import { ExamesTab } from "@/components/paciente/ExamesTab";
-
-interface ExamAnalysisState {
-  examId: string;
-  loading: boolean;
-  results: ExamResult[];
-  summary: string;
-  error: string | null;
-}
 
 interface PatientProfileWorkspaceProps {
   patientId: string;
@@ -62,137 +45,9 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
     "Histórico",
   );
   const [period, setPeriod] = useState<"3m" | "6m" | "1a" | "Tudo">("Tudo");
-  const [exams, setExams] = useState<Exam[]>(patient?.exams ?? []);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadedFileMap, setUploadedFileMap] = useState<Map<string, File>>(new Map());
-  const [analysis, setAnalysis] = useState<ExamAnalysisState | null>(null);
-  const [analyzingExamId, setAnalyzingExamId] = useState<string | null>(null);
-  const [selectedForTracking, setSelectedForTracking] = useState<Set<string>>(new Set());
-  const [trackingSaved, setTrackingSaved] = useState(false);
   const [cidModalOpen, setCidModalOpen] = useState(false);
   const [medModalOpen, setMedModalOpen] = useState(false);
   const [newMed, setNewMed] = useState({ name: "", dose: "", status: "active" as const });
-  const [viewingExam, setViewingExam] = useState<SavedExam | null>(null);
-
-  const toggleTracking = (name: string) => {
-    setSelectedForTracking((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-    setTrackingSaved(false);
-  };
-
-  const saveMetricsToPatient = () => {
-    if (!patient || !analysis || selectedForTracking.size === 0) return;
-
-    const currentTracked: TrackedMetric[] = patient.trackedMetrics ?? [];
-    const updated = [...currentTracked];
-    const today = new Date().toISOString().slice(0, 10);
-
-    for (const r of analysis.results) {
-      if (!selectedForTracking.has(r.name)) continue;
-      const numValue = parseFloat(r.value);
-      if (isNaN(numValue)) continue;
-
-      const existingIdx = updated.findIndex((m) => m.name === r.name);
-      if (existingIdx >= 0) {
-        updated[existingIdx] = {
-          ...updated[existingIdx],
-          history: [
-            ...updated[existingIdx].history,
-            { value: numValue, date: today },
-          ],
-        };
-      } else {
-        updated.push({
-          name: r.name,
-          unit: r.unit,
-          referenceRange: r.reference,
-          history: [{ value: numValue, date: today }],
-        });
-      }
-    }
-
-    updatePatient(patient.id, { trackedMetrics: updated });
-    setTrackingSaved(true);
-    setSelectedForTracking(new Set());
-  };
-
-  const handleAnalyzeExam = async (file: File) => {
-    const examId = `analyze-${Date.now()}`;
-    setAnalysis({ examId, loading: true, results: [], summary: "", error: null });
-
-    try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(",")[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      const mediaType = file.type === "application/pdf"
-        ? "application/pdf"
-        : file.type === "image/png"
-          ? "image/png"
-          : "image/jpeg";
-
-      const res = await fetch("/api/exam-analysis", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64, mediaType }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Erro ao analisar exame");
-      }
-
-      const data = await res.json();
-      const results = data.results ?? [];
-      const summary = data.summary ?? "";
-
-      setAnalysis({
-        examId,
-        loading: false,
-        results,
-        summary,  
-        error: null,
-      });
-
-      // Save analysis to patient's savedExams
-      if (patient && results.length > 0) {
-        const savedExam: SavedExam = {
-          id: examId,
-          name: data.type === "hemograma" ? "Hemograma" : data.type === "bioquimica" ? "Bioquímica" : data.type === "urina" ? "Urina" : data.type === "hormonal" ? "Hormonal" : file.name.replace(/\.[^.]+$/, ""),
-          examDate: data.examDate ?? null,
-          uploadDate: new Date().toISOString().slice(0, 10),
-          type: data.type ?? "outro",
-          summary,
-          results: results.map((r: ExamResult) => ({
-            name: r.name,
-            value: r.value,
-            unit: r.unit,
-            reference: r.reference,
-            status: r.status,
-          })),
-        };
-        const currentExams = patient.savedExams ?? [];
-        updatePatient(patient.id, { savedExams: [...currentExams, savedExam] });
-      }
-    } catch (err) {
-      setAnalysis((prev) =>
-        prev ? { ...prev, loading: false, error: err instanceof Error ? err.message : "Erro ao analisar" } : null
-      );
-    }
-  };
-
-  const STATUS_CONFIG = {
-    normal: { label: "Normal", icon: Check, bg: "bg-[#D6E8DC]", text: "text-[#0F6E56]" },
-    alto: { label: "Alto", icon: ArrowUp, bg: "bg-[#FAECE7]", text: "text-[#993C1D]" },
-    baixo: { label: "Baixo", icon: ArrowDown, bg: "bg-[#FAEEDA]", text: "text-[#854F0B]" },
-  } as const;
 
   const [isEditing, setIsEditing] = useState(false);
   const [editDraft, setEditDraft] = useState({
@@ -279,41 +134,6 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
         ((med.name.includes("Sinvastatina") && medName.includes("Anlodipino")) ||
           (medName.includes("Sinvastatina") && med.name.includes("Anlodipino"))),
     );
-
-  const examTypeLabels: Record<Exam["type"], string> = {
-    lab: "Laboratorial",
-    imaging: "Imagem",
-    report: "Laudo",
-    other: "Outro",
-  };
-
-  const appendFiles = (files: FileList | null) => {
-    if (!files) return;
-    const list = Array.from(files);
-    const uploaded: Exam[] = list.map((file, index) => {
-      const type: Exam["type"] = file.type.includes("image")
-        ? "imaging"
-        : "report";
-      return {
-        id: `uploaded-${Date.now()}-${index}`,
-        fileName: file.name,
-        date: new Date().toISOString().slice(0, 10),
-        type,
-      };
-    });
-    setExams((prev) => [...uploaded, ...prev]);
-    // Store real File objects for analysis
-    setUploadedFileMap((prev) => {
-      const next = new Map(prev);
-      list.forEach((file, index) => next.set(uploaded[index].id, file));
-      return next;
-    });
-  };
-
-  const handleDrop: React.DragEventHandler<HTMLDivElement> = (e) => {
-    e.preventDefault();
-    appendFiles(e.dataTransfer.files);
-  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
@@ -741,225 +561,6 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
 
         {activeTab === "Exames" && <ExamesTab patientId={patientId} />}
 
-        {false && (
-          <div className="hidden">
-            <CardHiro className="rounded-2xl p-5">
-              <div
-                className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-black/15 p-8 transition-colors hover:border-hiro-green/40 hover:bg-black/[0.02]"
-                onDrop={handleDrop}
-                onDragOver={(e) => e.preventDefault()}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="h-8 w-8 text-hiro-muted/50" />
-                <p className="text-[13px] text-hiro-muted">
-                  Arraste arquivos ou clique para selecionar
-                </p>
-                <p className="text-[11px] text-hiro-muted/60">PDF · JPG · PNG</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  multiple
-                  onChange={(e) => appendFiles(e.target.files)}
-                />
-              </div>
-
-              {exams.length === 0 ? (
-                <p className="mt-4 text-[13px] italic text-hiro-muted/60">
-                  Nenhum exame enviado. Faça upload de laudos, imagens e resultados.
-                </p>
-              ) : (
-                exams.map((exam) => {
-                  const hasFile = uploadedFileMap.has(exam.id);
-                  const isThisAnalyzing = analyzingExamId === exam.id && analysis?.loading;
-                  return (
-                    <div
-                      key={exam.id}
-                      className="glass-card-input mt-3 flex items-center gap-3 rounded-xl p-4"
-                    >
-                      <div
-                        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
-                        style={iconCircleGlassOnLightCard}
-                      >
-                        <FileText className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-medium text-hiro-text">
-                          {exam.fileName}
-                        </p>
-                        <p className="text-[11px] text-hiro-muted">
-                          {exam.date} · {examTypeLabels[exam.type]}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {hasFile && (
-                          <button
-                            className={`inline-flex items-center gap-1 text-[12px] font-medium transition-colors ${
-                              isThisAnalyzing
-                                ? "text-hiro-muted"
-                                : "text-hiro-green hover:underline"
-                            }`}
-                            disabled={!!isThisAnalyzing}
-                            onClick={() => {
-                              const file = uploadedFileMap.get(exam.id);
-                              if (file) {
-                                setAnalyzingExamId(exam.id);
-                                handleAnalyzeExam(file);
-                              }
-                            }}
-                          >
-                            {isThisAnalyzing ? (
-                              <><Loader2 className="h-3 w-3 animate-spin" /> Analisando...</>
-                            ) : (
-                              <><Sparkles className="h-3 w-3" strokeWidth={1.75} /> Analisar</>
-                            )}
-                          </button>
-                        )}
-                        <button className="text-[12px] text-hiro-green hover:underline">Ver</button>
-                        <button
-                          className="text-[12px] text-hiro-muted hover:text-hiro-red"
-                          onClick={() => {
-                            setExams((prev) => prev.filter((item) => item.id !== exam.id));
-                            setUploadedFileMap((prev) => { const n = new Map(prev); n.delete(exam.id); return n; });
-                            if (analyzingExamId === exam.id) { setAnalysis(null); setAnalyzingExamId(null); }
-                          }}
-                        >
-                          Remover
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </CardHiro>
-
-            {/* Analysis results — shown below when an exam has been analyzed */}
-            {analysis && (
-              <CardHiro className="rounded-2xl p-5">
-                <OverlineLabel>RESULTADO DA ANÁLISE</OverlineLabel>
-
-                {analysis.loading && (
-                  <div className="mt-4 flex items-center justify-center gap-2 py-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-hiro-green" />
-                    <p className="text-[13px] text-hiro-muted">Analisando exame...</p>
-                  </div>
-                )}
-
-                {analysis.error && (
-                  <div className="mt-3 rounded-xl border border-hiro-red/30 bg-hiro-red/10 px-4 py-3 text-[13px] text-hiro-red">
-                    {analysis.error}
-                  </div>
-                )}
-
-                {!analysis.loading && analysis.results.length > 0 && (
-                  <div className="mt-4 space-y-3">
-                    {analysis.summary && (
-                      <div className="rounded-xl border border-hiro-green/20 bg-hiro-green/5 px-4 py-3">
-                        <p className="text-[12px] font-medium text-hiro-green">Resumo</p>
-                        <p className="mt-1 text-[13px] leading-relaxed text-hiro-text">
-                          {analysis.summary}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="overflow-hidden rounded-xl border border-black/[0.06]">
-                      <table className="w-full text-left text-[13px]">
-                        <thead>
-                          <tr className="border-b border-black/[0.06] bg-black/[0.02]">
-                            <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">Exame</th>
-                            <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">Valor</th>
-                            <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">Status</th>
-                            <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-hiro-muted">Evolução</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {analysis.results.map((r, i) => {
-                            const cfg = STATUS_CONFIG[r.status] ?? STATUS_CONFIG.normal;
-                            const Icon = cfg.icon;
-                            const isNumeric = !isNaN(parseFloat(r.value));
-                            const isSelected = selectedForTracking.has(r.name);
-                            return (
-                              <tr key={i} className="border-b border-black/[0.04] last:border-0">
-                                <td className="px-3 py-2">
-                                  <p className="font-medium text-hiro-text">{r.name}</p>
-                                  {r.reference && <p className="text-[11px] text-hiro-muted">Ref: {r.reference}</p>}
-                                </td>
-                                <td className="whitespace-nowrap px-3 py-2 tabular-nums text-hiro-text">{r.value} {r.unit}</td>
-                                <td className="px-3 py-2">
-                                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${cfg.bg} ${cfg.text}`}>
-                                    <Icon className="h-3 w-3" strokeWidth={2} />
-                                    {cfg.label}
-                                  </span>
-                                </td>
-                                <td className="px-3 py-2">
-                                  {isNumeric && (
-                                    <label className="flex cursor-pointer items-center gap-1.5">
-                                      <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={() => toggleTracking(r.name)}
-                                        className="h-3.5 w-3.5 rounded border-hiro-muted/40 accent-hiro-green"
-                                      />
-                                      <span className="text-[11px] text-hiro-muted">Acompanhar</span>
-                                    </label>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Tracking selection summary + save */}
-                    {selectedForTracking.size > 0 && (
-                      <div className="rounded-xl border border-hiro-green/20 bg-hiro-green/5 px-4 py-3">
-                        <p className="text-[12px] text-hiro-muted mb-2">
-                          {selectedForTracking.size} valor(es) para acompanhamento:
-                        </p>
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {analysis.results
-                            .filter((r) => selectedForTracking.has(r.name))
-                            .map((r) => (
-                              <span key={r.name} className="rounded-full border border-hiro-green/20 bg-white/60 px-2.5 py-1 text-[11px] font-medium text-hiro-text">
-                                {r.name}: {r.value} {r.unit}
-                              </span>
-                            ))}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={saveMetricsToPatient}
-                          className="w-full rounded-xl bg-[#2d5a47] py-2.5 text-[13px] font-medium text-white transition-all duration-200 hover:bg-[#244a3b] active:scale-[0.98]"
-                        >
-                          Adicionar à evolução do paciente
-                        </button>
-                      </div>
-                    )}
-
-                    {trackingSaved && selectedForTracking.size === 0 && (
-                      <p className="text-center text-[12px] text-hiro-green">
-                        Valores adicionados à evolução do paciente.
-                      </p>
-                    )}
-
-                    {analysis.results.some((r) => r.status !== "normal") && (
-                      <div className="flex items-center gap-2 rounded-xl border border-hiro-amber/30 bg-[#FAEEDA]/50 px-4 py-2.5">
-                        <AlertTriangle className="h-4 w-4 shrink-0 text-hiro-amber" strokeWidth={1.75} />
-                        <p className="text-[12px] text-hiro-text">
-                          {analysis.results.filter((r) => r.status !== "normal").length}{" "}
-                          {analysis.results.filter((r) => r.status !== "normal").length === 1
-                            ? "valor fora da faixa normal"
-                            : "valores fora da faixa normal"}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardHiro>
-            )}
-          </div>
-        )}
       </section>
 
       {/* ─── Modals ──────────────────────────────────────────────────────── */}
