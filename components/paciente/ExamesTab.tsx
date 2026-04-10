@@ -118,7 +118,7 @@ export function ExamesTab({ patientId }: ExamesTabProps) {
       setAnalysis({ examId: fileId, loading: false, results, summary, error: null });
 
       // Save to patient
-      if (results.length > 0) {
+      if (results.length > 0 && patient) {
         const savedExam: SavedExam = {
           id: `exam-${Date.now()}`,
           name: data.type === "hemograma" ? "Hemograma" : data.type === "bioquimica" ? "Bioquímica" : data.type === "urina" ? "Urina" : data.type === "hormonal" ? "Hormonal" : file.name.replace(/\.[^.]+$/, ""),
