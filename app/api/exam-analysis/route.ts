@@ -98,8 +98,11 @@ REGRAS:
 - A resposta DEVE começar com { e terminar com }
 - Mantenha a resposta curta e completa
 
+Extraia também a data em que o exame foi realizado (procure "Data de coleta", "Data do exame", "Data de realização", etc).
+
 Formato:
 {
+  "examDate": "2026-04-05",
   "results": [
     {"name": "Nome", "value": "valor", "unit": "unidade", "status": "normal", "reference": "ref"}
   ],
@@ -107,8 +110,9 @@ Formato:
   "type": "hemograma"
 }
 
-Os valores possíveis de "status" são: "normal", "alto", "baixo".
-Os valores possíveis de "type" são: "hemograma", "bioquimica", "urina", "hormonal", "imagem", "outro".`;
+"examDate": formato YYYY-MM-DD, ou null se não encontrar a data.
+"status": "normal", "alto" ou "baixo".
+"type": "hemograma", "bioquimica", "urina", "hormonal", "imagem" ou "outro".`;
 
   try {
     const model = isPdf
@@ -141,6 +145,7 @@ Os valores possíveis de "type" são: "hemograma", "bioquimica", "urina", "hormo
     const parsed = parseJson(text);
 
     return NextResponse.json({
+      examDate: typeof parsed.examDate === "string" ? parsed.examDate : null,
       results: Array.isArray(parsed.results) ? parsed.results : [],
       summary: typeof parsed.summary === "string" ? parsed.summary : "",
       type: typeof parsed.type === "string" ? parsed.type : "outro",

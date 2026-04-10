@@ -13,6 +13,7 @@ export interface Patient {
   exams: Exam[];
   metrics: PatientMetrics[];
   trackedMetrics?: TrackedMetric[];
+  savedExams?: SavedExam[];
 }
 
 export interface Consultation {
@@ -66,6 +67,24 @@ export interface PatientMetrics {
   diastolic?: number;
   weight?: number;
   glucose?: number;
+}
+
+export interface SavedExamResult {
+  name: string;
+  value: string;
+  unit: string;
+  reference?: string;
+  status?: "normal" | "alto" | "baixo";
+}
+
+export interface SavedExam {
+  id: string;
+  name: string;
+  examDate: string | null;
+  uploadDate: string;
+  type: string;
+  summary: string;
+  results: SavedExamResult[];
 }
 
 export interface TrackedMetricEntry {

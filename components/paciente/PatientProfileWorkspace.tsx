@@ -9,11 +9,12 @@ import {
   Check,
   FileText,
   Loader2,
+  Plus,
   Sparkles,
   Upload,
+  X,
 } from "lucide-react";
 import {
-  CartesianGrid,
   Line,
   LineChart,
   ReferenceLine,
@@ -29,9 +30,14 @@ import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { BadgeStatus } from "@/components/ui/BadgeStatus";
 import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { useConsultationStore } from "@/lib/store";
-import type { Exam, TrackedMetric } from "@/lib/types";
+import type { Exam, SavedExam, TrackedMetric } from "@/lib/types";
+import { formatDateBR } from "@/lib/formatDate";
+import { MetricEvolutionChart } from "@/components/paciente/MetricEvolutionChart";
+import { MetricsSummaryCard } from "@/components/paciente/MetricsSummaryCard";
+import { AddMetricManually } from "@/components/paciente/AddMetricManually";
 import type { ExamResult } from "@/components/consulta/ExamAnalysisPanel";
-import { persistPatient } from "@/lib/persistence";
+import { CIDSearchModal } from "@/components/cid/CIDSearchModal";
+import { ExamesTab } from "@/components/paciente/ExamesTab";
 
 interface ExamAnalysisState {
   examId: string;
@@ -63,6 +69,10 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
   const [analyzingExamId, setAnalyzingExamId] = useState<string | null>(null);
   const [selectedForTracking, setSelectedForTracking] = useState<Set<string>>(new Set());
   const [trackingSaved, setTrackingSaved] = useState(false);
+  const [cidModalOpen, setCidModalOpen] = useState(false);
+  const [medModalOpen, setMedModalOpen] = useState(false);
+  const [newMed, setNewMed] = useState({ name: "", dose: "", status: "active" as const });
+  const [viewingExam, setViewingExam] = useState<SavedExam | null>(null);
 
   const toggleTracking = (name: string) => {
     setSelectedForTracking((prev) => {
@@ -140,13 +150,37 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
       }
 
       const data = await res.json();
+      const results = data.results ?? [];
+      const summary = data.summary ?? "";
+
       setAnalysis({
         examId,
         loading: false,
-        results: data.results ?? [],
-        summary: data.summary ?? "",
+        results,
+        summary,  
         error: null,
       });
+
+      // Save analysis to patient's savedExams
+      if (patient && results.length > 0) {
+        const savedExam: SavedExam = {
+          id: examId,
+          name: data.type === "hemograma" ? "Hemograma" : data.type === "bioquimica" ? "Bioquímica" : data.type === "urina" ? "Urina" : data.type === "hormonal" ? "Hormonal" : file.name.replace(/\.[^.]+$/, ""),
+          examDate: data.examDate ?? null,
+          uploadDate: new Date().toISOString().slice(0, 10),
+          type: data.type ?? "outro",
+          summary,
+          results: results.map((r: ExamResult) => ({
+            name: r.name,
+            value: r.value,
+            unit: r.unit,
+            reference: r.reference,
+            status: r.status,
+          })),
+        };
+        const currentExams = patient.savedExams ?? [];
+        updatePatient(patient.id, { savedExams: [...currentExams, savedExam] });
+      }
     } catch (err) {
       setAnalysis((prev) =>
         prev ? { ...prev, loading: false, error: err instanceof Error ? err.message : "Erro ao analisar" } : null
@@ -391,37 +425,87 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
 
           <div>
             <OverlineLabel>MEDICAMENTOS ATIVOS</OverlineLabel>
-            <div className="mt-2 flex flex-col gap-2">
-              {activeMedications.map((med) => (
-                <div key={med.name} className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[13px] font-medium text-hiro-text">{med.name}</p>
-                    <p className="text-[11px] text-hiro-muted">{med.dose}</p>
+            {activeMedications.length === 0 ? (
+              <p className="mt-2 text-[12px] italic text-hiro-muted/60">Nenhum medicamento ativo.</p>
+            ) : (
+              <div className="mt-2 flex flex-col gap-2">
+                {activeMedications.map((med, i) => (
+                  <div key={`${med.name}-${i}`} className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-medium text-hiro-text">{med.name}</p>
+                      <p className="text-[11px] text-hiro-muted">{med.dose}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {hasInteraction(med.name) && (
+                        <AlertTriangle className="h-3.5 w-3.5 text-hiro-amber" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = patient.medications.filter((m) => m !== med);
+                          updatePatient(patient.id, { medications: updated });
+                        }}
+                        className="shrink-0 rounded-full p-0.5 text-hiro-muted/30 transition-colors hover:text-hiro-red"
+                      >
+                        <X className="h-3 w-3" strokeWidth={2} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <BadgeStatus status="ready" label="Ativo" />
-                    {hasInteraction(med.name) && (
-                      <AlertTriangle className="h-3.5 w-3.5 text-hiro-amber" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setMedModalOpen(true)}
+              className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-hiro-green transition-colors hover:text-hiro-green/80"
+            >
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+              Adicionar medicamento
+            </button>
           </div>
 
           <div>
             <OverlineLabel>CIDS REGISTRADOS</OverlineLabel>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {patient.cids.map((cid) => (
-                <span
-                  key={cid.code}
-                  className="rounded-full border border-black/[0.08] bg-white/50 px-2.5 py-1 text-[11px] text-hiro-muted"
-                >
-                  {cid.code} · {cid.name.split(" ").slice(0, 2).join(" ")}
-                </span>
-              ))}
-            </div>
+            {patient.cids.length === 0 ? (
+              <p className="mt-2 text-[12px] italic text-hiro-muted/60">Nenhum CID registrado.</p>
+            ) : (
+              <div className="mt-2 flex flex-col gap-1.5">
+                {patient.cids.map((cid) => (
+                  <div key={cid.code} className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-hiro-muted">
+                      <span className="font-medium text-hiro-text">{cid.code}</span>
+                      {" · "}
+                      {cid.name.split(" ").slice(0, 3).join(" ")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = patient.cids.filter((c) => c.code !== cid.code);
+                        updatePatient(patient.id, { cids: updated });
+                      }}
+                      className="shrink-0 rounded-full p-0.5 text-hiro-muted/30 transition-colors hover:text-hiro-red"
+                    >
+                      <X className="h-3 w-3" strokeWidth={2} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setCidModalOpen(true)}
+              className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-hiro-green transition-colors hover:text-hiro-green/80"
+            >
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+              Adicionar CID
+            </button>
           </div>
+
+          {/* Tracked metrics summary */}
+          <MetricsSummaryCard
+            trackedMetrics={patient.trackedMetrics ?? []}
+            onViewEvolution={() => setActiveTab("Evolução")}
+          />
         </CardHiro>
       </aside>
 
@@ -500,116 +584,165 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
         )}
 
         {activeTab === "Evolução" && (
-          <div>
-            <div className="mb-5 flex gap-2">
-              {(["3m", "6m", "1a", "Tudo"] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={`rounded-full px-3.5 py-1.5 text-[12px] font-medium transition-colors ${
-                    period === p
-                      ? "bg-hiro-active text-white"
-                      : "glass-card text-hiro-muted hover:opacity-90"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-
-            <CardHiro className="mb-4 rounded-2xl p-5">
-              <OverlineLabel>PRESSÃO ARTERIAL</OverlineLabel>
-              {filteredData.length < 2 ? (
-                <p className="mt-3 text-[13px] italic text-hiro-muted/60">
-                  Dados aparecerão após 2 consultas com esta métrica registrada.
-                </p>
-              ) : (
-                <div className="mt-4 h-[180px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={filteredData} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
-                      <CartesianGrid stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#6B7A6D" }} />
-                      <YAxis tick={{ fontSize: 11, fill: "#6B7A6D" }} />
-                      <Tooltip
-                        contentStyle={{
-                          background: "#E8E4DC",
-                          border: "1px solid rgba(0,0,0,0.08)",
-                          borderRadius: 10,
-                          fontSize: 12,
-                        }}
-                      />
-                      <ReferenceLine y={140} stroke="#D94F4F" strokeDasharray="4 4" strokeWidth={1} />
-                      <ReferenceLine y={90} stroke="#185FA5" strokeDasharray="4 4" strokeWidth={1} />
-                      <Line dataKey="systolic" stroke="#D94F4F" strokeWidth={2} dot={{ r: 3 }} name="Sistólica" />
-                      <Line dataKey="diastolic" stroke="#185FA5" strokeWidth={2} dot={{ r: 3 }} name="Diastólica" />
-                    </LineChart>
-                  </ResponsiveContainer>
+          <div className="space-y-6">
+            {/* Tracked metrics from exam analysis */}
+            {(patient.trackedMetrics ?? []).length > 0 && (
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <OverlineLabel>MÉTRICAS EM ACOMPANHAMENTO</OverlineLabel>
+                  <span className="text-[11px] text-hiro-muted">
+                    {patient.trackedMetrics!.length} {patient.trackedMetrics!.length === 1 ? "métrica" : "métricas"}
+                  </span>
                 </div>
-              )}
-            </CardHiro>
-
-            <CardHiro className="mb-4 rounded-2xl p-5">
-              <OverlineLabel>PESO</OverlineLabel>
-              {filteredData.length < 2 ? (
-                <p className="mt-3 text-[13px] italic text-hiro-muted/60">
-                  Dados aparecerão após 2 consultas com esta métrica registrada.
-                </p>
-              ) : (
-                <div className="mt-4 h-[180px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={filteredData} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
-                      <CartesianGrid stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#6B7A6D" }} />
-                      <YAxis tick={{ fontSize: 11, fill: "#6B7A6D" }} />
-                      <Tooltip
-                        contentStyle={{
-                          background: "#E8E4DC",
-                          border: "1px solid rgba(0,0,0,0.08)",
-                          borderRadius: 10,
-                          fontSize: 12,
-                        }}
-                      />
-                      <Line dataKey="weight" stroke="#2D5C3F" strokeWidth={2} dot={{ r: 3 }} name="Peso" />
-                    </LineChart>
-                  </ResponsiveContainer>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  {patient.trackedMetrics!.map((metric) => (
+                    <MetricEvolutionChart
+                      key={metric.name}
+                      metric={metric}
+                      onRemove={() => {
+                        const updated = (patient.trackedMetrics ?? []).filter(
+                          (m) => m.name !== metric.name,
+                        );
+                        updatePatient(patient.id, { trackedMetrics: updated });
+                      }}
+                    />
+                  ))}
                 </div>
-              )}
-            </CardHiro>
+              </div>
+            )}
 
-            <CardHiro className="rounded-2xl p-5">
-              <OverlineLabel>GLICEMIA</OverlineLabel>
-              {filteredData.length < 2 ? (
-                <p className="mt-3 text-[13px] italic text-hiro-muted/60">
-                  Dados aparecerão após 2 consultas com esta métrica registrada.
-                </p>
-              ) : (
-                <div className="mt-4 h-[180px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={filteredData} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
-                      <CartesianGrid stroke="rgba(0,0,0,0.06)" strokeDasharray="4 4" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#6B7A6D" }} />
-                      <YAxis tick={{ fontSize: 11, fill: "#6B7A6D" }} />
-                      <Tooltip
-                        contentStyle={{
-                          background: "#E8E4DC",
-                          border: "1px solid rgba(0,0,0,0.08)",
-                          borderRadius: 10,
-                          fontSize: 12,
-                        }}
-                      />
-                      <ReferenceLine y={100} stroke="#C68B2F" strokeDasharray="4 4" strokeWidth={1} />
-                      <Line dataKey="glucose" stroke="#C68B2F" strokeWidth={2} dot={{ r: 3 }} name="Glicemia" />
-                    </LineChart>
-                  </ResponsiveContainer>
+            {/* Legacy vitals charts */}
+            {filteredData.length > 0 && (
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <OverlineLabel>SINAIS VITAIS DAS CONSULTAS</OverlineLabel>
+                  <div className="flex gap-1.5">
+                    {(["3m", "6m", "1a", "Tudo"] as const).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPeriod(p)}
+                        className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+                          period === p
+                            ? "bg-hiro-active text-white"
+                            : "glass-card text-hiro-muted hover:opacity-90"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </CardHiro>
+
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <CardHiro className="rounded-2xl p-5">
+                    <p className="text-[13px] font-medium text-hiro-text">Pressão Arterial</p>
+                    {filteredData.filter((d) => d.systolic).length < 2 ? (
+                      <p className="mt-3 text-[13px] italic text-hiro-muted/60">
+                        Dados após 2 consultas com esta métrica.
+                      </p>
+                    ) : (
+                      <div className="mt-3 h-[160px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={filteredData} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
+                            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#6B7A6D" }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 10, fill: "#6B7A6D" }} axisLine={false} tickLine={false} />
+                            <Tooltip contentStyle={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, fontSize: 12 }} />
+                            <ReferenceLine y={140} stroke="#D94F4F" strokeDasharray="4 4" strokeWidth={1} />
+                            <ReferenceLine y={90} stroke="#185FA5" strokeDasharray="4 4" strokeWidth={1} />
+                            <Line dataKey="systolic" stroke="#D94F4F" strokeWidth={2} dot={{ r: 3, stroke: "#fff", strokeWidth: 2 }} name="Sistólica" />
+                            <Line dataKey="diastolic" stroke="#185FA5" strokeWidth={2} dot={{ r: 3, stroke: "#fff", strokeWidth: 2 }} name="Diastólica" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </CardHiro>
+
+                  <CardHiro className="rounded-2xl p-5">
+                    <p className="text-[13px] font-medium text-hiro-text">Peso</p>
+                    {filteredData.filter((d) => d.weight).length < 2 ? (
+                      <p className="mt-3 text-[13px] italic text-hiro-muted/60">
+                        Dados após 2 consultas com esta métrica.
+                      </p>
+                    ) : (
+                      <div className="mt-3 h-[160px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={filteredData} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
+                            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#6B7A6D" }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 10, fill: "#6B7A6D" }} axisLine={false} tickLine={false} />
+                            <Tooltip contentStyle={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, fontSize: 12 }} />
+                            <Line dataKey="weight" stroke="#2D5C3F" strokeWidth={2} dot={{ r: 3, stroke: "#fff", strokeWidth: 2 }} name="Peso" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </CardHiro>
+
+                  <CardHiro className="rounded-2xl p-5">
+                    <p className="text-[13px] font-medium text-hiro-text">Glicemia</p>
+                    {filteredData.filter((d) => d.glucose).length < 2 ? (
+                      <p className="mt-3 text-[13px] italic text-hiro-muted/60">
+                        Dados após 2 consultas com esta métrica.
+                      </p>
+                    ) : (
+                      <div className="mt-3 h-[160px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={filteredData} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
+                            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#6B7A6D" }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 10, fill: "#6B7A6D" }} axisLine={false} tickLine={false} />
+                            <Tooltip contentStyle={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, fontSize: 12 }} />
+                            <ReferenceLine y={100} stroke="#C68B2F" strokeDasharray="4 4" strokeWidth={1} />
+                            <Line dataKey="glucose" stroke="#C68B2F" strokeWidth={2} dot={{ r: 3, stroke: "#fff", strokeWidth: 2 }} name="Glicemia" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </CardHiro>
+                </div>
+              </div>
+            )}
+
+            {/* Manual add */}
+            <AddMetricManually
+              currentMetrics={patient.trackedMetrics ?? []}
+              onSave={(name, value, unit) => {
+                const current: TrackedMetric[] = patient.trackedMetrics ?? [];
+                const today = new Date().toISOString().slice(0, 10);
+                const existingIdx = current.findIndex((m) => m.name === name);
+                let updated: TrackedMetric[];
+                if (existingIdx >= 0) {
+                  updated = current.map((m, i) =>
+                    i === existingIdx
+                      ? { ...m, history: [...m.history, { value, date: today }] }
+                      : m,
+                  );
+                } else {
+                  updated = [
+                    ...current,
+                    { name, unit, history: [{ value, date: today }] },
+                  ];
+                }
+                updatePatient(patient.id, { trackedMetrics: updated });
+              }}
+            />
+
+            {/* Empty state */}
+            {(patient.trackedMetrics ?? []).length === 0 && filteredData.length === 0 && (
+              <div className="py-8 text-center">
+                <p className="text-[13px] text-hiro-muted">
+                  Nenhuma métrica em acompanhamento.
+                </p>
+                <p className="mt-1 text-[12px] text-hiro-muted/60">
+                  Faça upload de exames na aba Exames e selecione valores, ou adicione manualmente acima.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
-        {activeTab === "Exames" && (
-          <div className="space-y-4">
-            {/* Upload area */}
+        {activeTab === "Exames" && <ExamesTab patientId={patientId} />}
+
+        {false && (
+          <div className="hidden">
             <CardHiro className="rounded-2xl p-5">
               <div
                 className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-black/15 p-8 transition-colors hover:border-hiro-green/40 hover:bg-black/[0.02]"
@@ -828,6 +961,82 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
           </div>
         )}
       </section>
+
+      {/* ─── Modals ──────────────────────────────────────────────────────── */}
+
+      <CIDSearchModal
+        isOpen={cidModalOpen}
+        onClose={() => setCidModalOpen(false)}
+        existingCodes={patient.cids.map((c) => c.code)}
+        onAdd={(code, name) => {
+          if (patient.cids.some((c) => c.code === code)) return;
+          const updated = [
+            ...patient.cids,
+            { code, name, firstSeen: new Date().toISOString().slice(0, 10), lastSeen: new Date().toISOString().slice(0, 10) },
+          ];
+          updatePatient(patient.id, { cids: updated });
+        }}
+      />
+
+      {medModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-black/[0.08] bg-[#f0ede6] p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-serif text-xl font-normal text-hiro-text">
+                Adicionar Medicamento
+              </h3>
+              <button
+                type="button"
+                onClick={() => { setMedModalOpen(false); setNewMed({ name: "", dose: "", status: "active" }); }}
+                className="rounded-full p-1.5 text-hiro-muted transition-colors hover:bg-black/[0.04] hover:text-hiro-text"
+              >
+                <X className="h-5 w-5" strokeWidth={1.75} />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Nome do medicamento"
+                value={newMed.name}
+                onChange={(e) => setNewMed((p) => ({ ...p, name: e.target.value }))}
+                className="glass-card-input w-full rounded-xl px-3 py-2.5 text-[13px] text-hiro-text outline-none focus:ring-2 focus:ring-hiro-green/30"
+              />
+              <input
+                type="text"
+                placeholder="Dosagem e posologia (ex: 500mg 2x ao dia)"
+                value={newMed.dose}
+                onChange={(e) => setNewMed((p) => ({ ...p, dose: e.target.value }))}
+                className="glass-card-input w-full rounded-xl px-3 py-2.5 text-[13px] text-hiro-text outline-none focus:ring-2 focus:ring-hiro-green/30"
+              />
+            </div>
+            <div className="mt-5 flex gap-3">
+              <ButtonHiro
+                onClick={() => {
+                  if (!newMed.name.trim()) return;
+                  const updated = [
+                    ...patient.medications,
+                    { name: newMed.name.trim(), dose: newMed.dose.trim(), status: "active" as const },
+                  ];
+                  updatePatient(patient.id, { medications: updated });
+                  setNewMed({ name: "", dose: "", status: "active" });
+                  setMedModalOpen(false);
+                }}
+                className="flex-1"
+                disabled={!newMed.name.trim()}
+              >
+                Adicionar
+              </ButtonHiro>
+              <ButtonHiro
+                variant="secondary"
+                onClick={() => { setMedModalOpen(false); setNewMed({ name: "", dose: "", status: "active" }); }}
+                className="px-6"
+              >
+                Cancelar
+              </ButtonHiro>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

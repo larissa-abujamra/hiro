@@ -59,6 +59,7 @@ export async function GET() {
     exams: row.exams ?? [],
     metrics: row.metrics ?? [],
     trackedMetrics: row.tracked_metrics ?? [],
+    savedExams: row.saved_exams ?? [],
   }));
 
   return NextResponse.json({ patients });
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
     exams: patient.exams || [],
     metrics: patient.metrics || [],
     tracked_metrics: patient.trackedMetrics || [],
+    saved_exams: patient.savedExams || [],
   };
 
   console.log("[api/patients POST] upserting patient:", row.id, row.name, {
