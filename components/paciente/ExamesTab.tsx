@@ -151,7 +151,7 @@ export function ExamesTab({ patientId }: ExamesTabProps) {
   }
 
   function saveMetrics() {
-    if (!analysis || selectedForTracking.size === 0) return;
+    if (!analysis || selectedForTracking.size === 0 || !patient) return;
     const currentTracked: TrackedMetric[] = patient.trackedMetrics ?? [];
     const updated = [...currentTracked];
     const today = new Date().toISOString().slice(0, 10);
@@ -172,7 +172,7 @@ export function ExamesTab({ patientId }: ExamesTabProps) {
     setSelectedForTracking(new Set());
   }
 
-  const savedExams = [...(patient.savedExams ?? [])].sort((a, b) => {
+  const savedExams = [...(patient?.savedExams ?? [])].sort((a, b) => {
     const da = a.examDate ?? a.uploadDate;
     const db = b.examDate ?? b.uploadDate;
     return new Date(db).getTime() - new Date(da).getTime();
@@ -319,7 +319,7 @@ export function ExamesTab({ patientId }: ExamesTabProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <button type="button" onClick={() => setViewingExam(exam)} className="text-[12px] font-medium text-hiro-green hover:underline">Ver análise</button>
-                  <button type="button" onClick={() => { const u = (patient.savedExams ?? []).filter((e) => e.id !== exam.id); updatePatient(patient.id, { savedExams: u }); }} className="rounded-full p-0.5 text-hiro-muted/30 hover:text-hiro-red">
+                  <button type="button" onClick={() => { if (!patient) return; const u = (patient.savedExams ?? []).filter((e) => e.id !== exam.id); updatePatient(patient.id, { savedExams: u }); }} className="rounded-full p-0.5 text-hiro-muted/30 hover:text-hiro-red">
                     <X className="h-3 w-3" strokeWidth={2} />
                   </button>
                 </div>
