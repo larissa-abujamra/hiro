@@ -142,7 +142,7 @@ export function MetricEvolutionChart({ metric, onRemove }: MetricEvolutionChartP
                   fontSize: 13,
                   boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
                 }}
-                formatter={(v: number) => [`${v} ${metric.unit}`, metric.name]}
+                formatter={(v) => [`${v ?? ""} ${metric.unit}`, metric.name]}
                 labelFormatter={(l) => `${l}`}
               />
               {ref?.min != null && (
