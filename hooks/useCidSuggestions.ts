@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useConsultationStore } from "@/lib/store";
-import type { CidSuggestion, Patient } from "@/lib/types";
+import type { Patient } from "@/lib/types";
+import { matchDiagnosticos } from "@/lib/cidSearch";
 
 function patientAge(patient: Patient): number {
   return new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear();
@@ -10,9 +11,7 @@ function patientAge(patient: Patient): number {
 
 function buildPatientContext(patient: Patient | null): string | null {
   if (!patient) return null;
-  const meds = patient.medications
-    .map((m) => `${m.name} ${m.dose}`)
-    .join(", ");
+  const meds = patient.medications.map((m) => `${m.name} ${m.dose}`).join(", ");
   const cids = patient.cids.map((c) => c.code).join(", ");
   return `Paciente: ${patient.name}, ${patientAge(patient)} anos.
 CIDs anteriores: ${cids || "nenhum"}.
@@ -22,10 +21,9 @@ Medicamentos: ${meds || "nenhum"}.`;
 export function useCidSuggestions(consultationId: string) {
   const patients = useConsultationStore((s) => s.patients);
   const selectedPatientId = useConsultationStore((s) => s.selectedPatientId);
-  const setCidSuggestions = useConsultationStore((s) => s.setCidSuggestions);
+  const setDiagnosticosSugeridos = useConsultationStore((s) => s.setDiagnosticosSugeridos);
 
-  const selectedPatient =
-    patients.find((p) => p.id === selectedPatientId) ?? null;
+  const selectedPatient = patients.find((p) => p.id === selectedPatientId) ?? null;
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const lastWordCountRef = useRef(0);
@@ -60,38 +58,24 @@ export function useCidSuggestions(consultationId: string) {
           }),
         });
 
-        const data = (await res.json()) as {
-          suggestions?: Array<{
-            code?: string;
-            name?: string;
-            confidence?: number;
-            sourceQuote?: string;
-          }>;
-        };
+        const data = await res.json();
+        const diagnosticos = Array.isArray(data.diagnosticos) ? data.diagnosticos : [];
 
-        if (data.suggestions?.length) {
-          const mapped: CidSuggestion[] = data.suggestions
-            .slice(0, 3)
-            .map((s) => {
-              const raw =
-                typeof s.confidence === "number" ? s.confidence : 0;
-              const confidence =
-                raw > 1 ? Math.min(1, raw / 100) : Math.min(1, Math.max(0, raw));
+        if (diagnosticos.length > 0) {
+          // Match search terms against local CID-10 database
+          const matched = matchDiagnosticos(diagnosticos);
 
-              return {
-                code: typeof s.code === "string" ? s.code : "",
-                name: typeof s.name === "string" ? s.name : "",
-                confidence,
-                sourceQuote:
-                  typeof s.sourceQuote === "string" ? s.sourceQuote : "",
-                confirmed: false,
-              };
-            })
-            .filter((s) => s.code && s.name);
-
-          if (mapped.length > 0) {
-            setCidSuggestions(mapped);
-          }
+          setDiagnosticosSugeridos(
+            matched.map((d) => ({
+              texto: d.texto,
+              categoria: d.categoria,
+              sourceQuote: d.sourceQuote,
+              matchCodes: d.matches.map((m) => ({
+                codigo: m.codigo,
+                descricao: m.descricao,
+              })),
+            }))
+          );
         }
       } catch (err) {
         console.error("CID suggestion error:", err);
@@ -100,7 +84,7 @@ export function useCidSuggestions(consultationId: string) {
         setIsAnalyzing(false);
       }
     },
-    [selectedPatient, setCidSuggestions],
+    [selectedPatient, setDiagnosticosSugeridos],
   );
 
   return { analyze, isAnalyzing };

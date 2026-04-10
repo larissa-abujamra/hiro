@@ -32,6 +32,13 @@ interface SavedSummaryEntry {
   soap: Consultation["soap"];
 }
 
+export interface DiagnosticoSugeridoStore {
+  texto: string;
+  categoria: string;
+  sourceQuote: string;
+  matchCodes: { codigo: string; descricao: string }[];
+}
+
 export interface ActivityEntry {
   id: string;
   type: "consultation_started" | "prontuario_generated" | "consultation_saved" | "patient_created";
@@ -54,6 +61,7 @@ interface ConsultationState {
   recordingSeconds: number;
   liveTranscription: TranscriptionLine[];
   cidSuggestions: CidSuggestion[];
+  diagnosticosSugeridos: DiagnosticoSugeridoStore[];
   detectedItems: DetectedItem[];
   generatedSoap: Consultation["soap"] | null;
   patientSummary: string;
@@ -74,6 +82,7 @@ interface ConsultationState {
   addTranscriptionLine: (line: TranscriptionLine) => void;
   setTranscriptionLines: (lines: TranscriptionLine[]) => void;
   setCidSuggestions: (suggestions: CidSuggestion[]) => void;
+  setDiagnosticosSugeridos: (d: DiagnosticoSugeridoStore[]) => void;
   setDetectedItems: (items: DetectedItem[]) => void;
   addDetectedItem: (item: DetectedItem) => void;
   setGeneratedSoap: (soap: Consultation["soap"]) => void;
@@ -98,6 +107,7 @@ const initialState = {
   recordingSeconds: 0,
   liveTranscription: [],
   cidSuggestions: [],
+  diagnosticosSugeridos: [] as DiagnosticoSugeridoStore[],
   detectedItems: [],
   generatedSoap: null,
   patientSummary: "",
@@ -252,6 +262,7 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
     set((state) => ({ liveTranscription: [...state.liveTranscription, line] })),
   setTranscriptionLines: (lines) => set({ liveTranscription: lines }),
   setCidSuggestions: (suggestions) => set({ cidSuggestions: suggestions }),
+  setDiagnosticosSugeridos: (d) => set({ diagnosticosSugeridos: d }),
   setDetectedItems: (items) => set({ detectedItems: items }),
   addDetectedItem: (item) =>
     set((state) => {
@@ -334,6 +345,7 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
       recordingSeconds: 0,
       liveTranscription: [],
       cidSuggestions: [],
+      diagnosticosSugeridos: [],
       detectedItems: [],
       generatedSoap: null,
       patientSummary: "",

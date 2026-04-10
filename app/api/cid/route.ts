@@ -5,19 +5,19 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-function parseSuggestionsJson(text: string): { suggestions?: unknown[] } {
+function parseJson(text: string): Record<string, unknown> {
   const trimmed = text.trim();
-  const fence = trimmed.match(/^```(?:json)?\s*([\s\S]*?)```$/m);
-  const jsonStr = fence ? fence[1].trim() : trimmed;
-  return JSON.parse(jsonStr) as { suggestions?: unknown[] };
+  try { return JSON.parse(trimmed); } catch {}
+  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fence) return JSON.parse(fence[1].trim());
+  const brace = trimmed.match(/\{[\s\S]*\}/);
+  if (brace) return JSON.parse(brace[0]);
+  return {};
 }
 
 export async function POST(req: NextRequest) {
   if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json(
-      { suggestions: [], error: "ANTHROPIC_API_KEY não configurada" },
-      { status: 503 },
-    );
+    return NextResponse.json({ diagnosticos: [] }, { status: 503 });
   }
 
   let transcription: string;
@@ -25,15 +25,14 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     transcription = typeof body.transcription === "string" ? body.transcription : "";
-    patientContext =
-      typeof body.patientContext === "string" ? body.patientContext : undefined;
+    patientContext = typeof body.patientContext === "string" ? body.patientContext : undefined;
   } catch {
-    return NextResponse.json({ suggestions: [] }, { status: 400 });
+    return NextResponse.json({ diagnosticos: [] }, { status: 400 });
   }
 
   const wordCount = transcription.trim().split(/\s+/).filter(Boolean).length;
   if (!transcription || wordCount < 20) {
-    return NextResponse.json({ suggestions: [] });
+    return NextResponse.json({ diagnosticos: [] });
   }
 
   try {
@@ -45,44 +44,44 @@ export async function POST(req: NextRequest) {
           role: "user",
           content: `Você é um especialista em codificação CID-10 para o sistema de saúde brasileiro.
 
-Analise a transcrição e sugira os CIDs mais prováveis.
-Use APENAS códigos CID-10 em português brasileiro (não ICD-10 em inglês).
-Responda SOMENTE com JSON válido, sem texto antes ou depois.
+Analise a transcrição e identifique os diagnósticos mencionados. Para cada diagnóstico, forneça termos de busca que ajudem o médico a encontrar o CID correto na base de dados.
+
+NÃO invente códigos CID específicos. Sugira termos de busca e categorias.
 
 Contexto do paciente:
 ${patientContext ?? "Não disponível"}
 
-Transcrição até agora:
+Transcrição:
 ${JSON.stringify(transcription)}
 
-Formato de resposta:
+IMPORTANTE: Responda APENAS com JSON puro, sem markdown.
+
+Formato:
 {
-  "suggestions": [
+  "diagnosticos": [
     {
-      "code": "I10",
-      "name": "Hipertensão essencial",
-      "confidence": 94,
-      "sourceQuote": "trecho exato da transcrição que embasou esta sugestão",
-      "reasoning": "explicação em 1 frase curta"
+      "texto": "descrição do diagnóstico identificado",
+      "termos_busca": ["termo1", "termo2", "código parcial como M54"],
+      "categoria": "categoria geral (ex: Dor articular - membro inferior)",
+      "sourceQuote": "trecho da transcrição que embasou"
     }
   ]
 }
 
 Regras:
-- Máximo 3 sugestões, ordenadas por confiança (maior primeiro)
-- Confidence entre 0 e 100
-- sourceQuote deve ser trecho real da transcrição fornecida
-- Preferir especificidade: G44.2 em vez de G44 quando o contexto permitir
-- Se não houver diagnóstico claro ainda: { "suggestions": [] }`,
+- Máximo 4 diagnósticos
+- termos_busca: 3-5 termos relevantes (podem incluir prefixos de CID como I10, M54)
+- Se não houver diagnóstico claro: { "diagnosticos": [] }`,
         },
       ],
     });
 
-    const text =
-      response.content[0]?.type === "text" ? response.content[0].text : "{}";
-    const parsed = parseSuggestionsJson(text);
-    return NextResponse.json(parsed);
+    const text = response.content[0]?.type === "text" ? response.content[0].text : "{}";
+    const parsed = parseJson(text);
+    const diagnosticos = Array.isArray(parsed.diagnosticos) ? parsed.diagnosticos : [];
+
+    return NextResponse.json({ diagnosticos });
   } catch {
-    return NextResponse.json({ suggestions: [] });
+    return NextResponse.json({ diagnosticos: [] });
   }
 }

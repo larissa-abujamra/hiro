@@ -153,6 +153,7 @@ export function GeneratedSummaryWorkspace({
   const recordingSeconds = useConsultationStore((state) => state.recordingSeconds);
   const liveTranscription = useConsultationStore((state) => state.liveTranscription);
   const cidSuggestions = useConsultationStore((state) => state.cidSuggestions);
+  const diagnosticosSugeridos = useConsultationStore((state) => state.diagnosticosSugeridos);
   const detectedItems = useConsultationStore((state) => state.detectedItems);
   const generatedSoap = useConsultationStore((state) => state.generatedSoap);
   const setGeneratedSoap = useConsultationStore((state) => state.setGeneratedSoap);
@@ -416,8 +417,16 @@ export function GeneratedSummaryWorkspace({
       </section>
 
       <aside className="flex flex-col gap-4 lg:col-span-4">
+        {/* CID Confirmado */}
         <CardHiro className="flex flex-col gap-3 rounded-2xl p-5">
           <OverlineLabel>CID-10 CONFIRMADO</OverlineLabel>
+
+          {/* Confirmed CIDs */}
+          {[...resolvedCids.map((c) => ({ code: c.code, name: c.name })), ...addedCids].length === 0 && diagnosticosSugeridos.length === 0 && (
+            <p className="text-[12px] italic text-hiro-muted/60">
+              Nenhum CID confirmado ainda.
+            </p>
+          )}
           {[...resolvedCids.map((c) => ({ code: c.code, name: c.name })), ...addedCids].map(
             (cid) => (
               <div
@@ -441,12 +450,60 @@ export function GeneratedSummaryWorkspace({
               </div>
             ),
           )}
+
+          {/* Suggested diagnoses from AI — doctor picks the exact CID */}
+          {diagnosticosSugeridos.length > 0 && (
+            <div className="mt-2 space-y-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-hiro-amber">
+                Sugerido pela IA — selecione o CID
+              </p>
+              {diagnosticosSugeridos.map((diag, idx) => (
+                <div key={idx} className="rounded-xl border border-hiro-amber/20 bg-[#FAEEDA]/30 px-3 py-2.5">
+                  <p className="text-[12px] font-medium text-hiro-text">{diag.texto}</p>
+                  <p className="text-[10px] text-hiro-muted">{diag.categoria}</p>
+                  {diag.sourceQuote && (
+                    <p className="mt-1 text-[10px] italic text-hiro-muted/60">"{diag.sourceQuote}"</p>
+                  )}
+                  <div className="mt-2 space-y-1">
+                    {diag.matchCodes.slice(0, 5).map((match) => {
+                      const alreadyAdded = addedCids.some((c) => c.code === match.codigo) ||
+                        resolvedCids.some((c) => c.code === match.codigo);
+                      return (
+                        <button
+                          key={match.codigo}
+                          type="button"
+                          disabled={alreadyAdded}
+                          onClick={() => {
+                            setAddedCids((prev) => [...prev, { code: match.codigo, name: match.descricao }]);
+                          }}
+                          className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12px] transition-colors ${
+                            alreadyAdded
+                              ? "opacity-40"
+                              : "hover:bg-black/[0.04]"
+                          }`}
+                        >
+                          <span className="font-semibold text-hiro-green">{match.codigo}</span>
+                          <span className="flex-1 text-hiro-text">{match.descricao}</span>
+                          {alreadyAdded ? (
+                            <Check className="h-3 w-3 text-hiro-green" strokeWidth={2} />
+                          ) : (
+                            <span className="text-[10px] text-hiro-green">+</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => setCidModalOpen(true)}
             className="mt-1 text-left text-[12px] font-medium text-hiro-green transition-colors hover:text-hiro-green/80"
           >
-            + Adicionar CID
+            + Buscar CID manualmente
           </button>
         </CardHiro>
 
