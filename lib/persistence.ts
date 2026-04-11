@@ -19,8 +19,10 @@ export async function persistPatient(patient: Patient): Promise<void> {
     });
 
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      console.error("[persistence] Save FAILED:", res.status, data);
+      const text = await res.text().catch(() => "");
+      let data: Record<string, unknown> = {};
+      try { data = JSON.parse(text); } catch {}
+      console.error("[persistence] Save FAILED:", res.status, data, text);
     } else {
       console.log("[persistence] Save OK for", patient.id);
     }

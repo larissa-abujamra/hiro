@@ -117,8 +117,8 @@ export async function POST(request: Request) {
   console.log("[api/patients POST] result:", { data: upsertData?.length ?? 0, error });
 
   if (error) {
-    console.error("Patient upsert error:", error);
-    return NextResponse.json({ error: `Erro ao salvar paciente: ${error.message}` }, { status: 500 });
+    console.error("Patient upsert error:", JSON.stringify(error));
+    return NextResponse.json({ error: `Erro ao salvar paciente: ${error.message}`, details: error }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
