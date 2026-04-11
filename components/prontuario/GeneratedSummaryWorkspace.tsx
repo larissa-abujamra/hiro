@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
@@ -143,10 +143,13 @@ export function GeneratedSummaryWorkspace({
   patients,
 }: GeneratedSummaryWorkspaceProps) {
   const router = useRouter();
-  const searchParams = new URLSearchParams(
-    typeof window !== "undefined" ? window.location.search : ""
-  );
-  const patientIdFromUrl = searchParams.get("patient");
+  // Use useSearchParams for proper Next.js client-side URL param reading
+  const [patientIdFromUrl, setPatientIdFromUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get("patient");
+    if (pid) setPatientIdFromUrl(pid);
+  }, []);
 
   const patientsInStore = useConsultationStore((state) => state.patients);
   const selectedPatientId = useConsultationStore((state) => state.selectedPatientId);
@@ -170,12 +173,24 @@ export function GeneratedSummaryWorkspace({
 
   // Find patient: from store selection, from URL param, or first available
   const resolvedPatientId = selectedPatientId ?? patientIdFromUrl;
+
+  if (typeof window !== "undefined") {
+    console.log("[Prontuário] selectedPatientId:", selectedPatientId);
+    console.log("[Prontuário] patientIdFromUrl:", patientIdFromUrl);
+    console.log("[Prontuário] resolvedPatientId:", resolvedPatientId);
+    console.log("[Prontuário] patients in store:", sourcePatients.map((p) => `${p.id} (${p.name})`));
+  }
+
   const patient =
     (resolvedPatientId
       ? sourcePatients.find((item) => item.id === resolvedPatientId)
       : null) ??
     sourcePatients[0] ??
     null;
+
+  if (typeof window !== "undefined") {
+    console.log("[Prontuário] Resolved patient:", patient?.id, patient?.name);
+  }
 
   // If viewing a saved consultation from history, load its data
   const savedConsultation = patient?.consultations.find(

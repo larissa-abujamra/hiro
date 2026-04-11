@@ -286,7 +286,9 @@ Medicamentos ativos: ${sp.medications
         updatePatient(selectedPatientId, updates);
       }
 
-      router.push(`/consulta/${consultationId}/resumo${selectedPatientId ? `?patient=${selectedPatientId}` : ""}`);
+      const resumoUrl = `/consulta/${consultationId}/resumo${selectedPatientId ? `?patient=${selectedPatientId}` : ""}`;
+      console.log("[Consultation] Redirecting to:", resumoUrl, "selectedPatientId:", selectedPatientId);
+      router.push(resumoUrl);
     } catch (err) {
       console.error("Prontuário error:", err);
       setGenerateError(

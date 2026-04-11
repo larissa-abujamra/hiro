@@ -86,11 +86,14 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
       if (!targetPatientId) return;
       addActivity({ type: "patient_created", patientName });
     }
-    resetConsultation();
+    // Set the consultation state directly — don't call resetConsultation()
+    // as it clears selectedPatientId which can cause race conditions
     selectPatient(targetPatientId);
     setActiveConsultation(consultationId);
     setConsultationReason(consultationReason);
     addActivity({ type: "consultation_started", patientName });
+
+    console.log("[NewConsultation] Starting consultation:", consultationId, "for patient:", targetPatientId, patientName);
     router.push(`/consulta/${consultationId}`);
   };
 
