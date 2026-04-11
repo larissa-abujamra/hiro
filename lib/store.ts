@@ -64,6 +64,7 @@ interface ConsultationState {
   diagnosticosSugeridos: DiagnosticoSugeridoStore[];
   detectedItems: DetectedItem[];
   generatedSoap: Consultation["soap"] | null;
+  generatedSpecialtyFields: Record<string, string>;
   patientSummary: string;
   flags: string[];
   savedSummaries: SavedSummaryEntry[];
@@ -86,6 +87,7 @@ interface ConsultationState {
   setDetectedItems: (items: DetectedItem[]) => void;
   addDetectedItem: (item: DetectedItem) => void;
   setGeneratedSoap: (soap: Consultation["soap"]) => void;
+  setGeneratedSpecialtyFields: (fields: Record<string, string>) => void;
   setPatientSummary: (summary: string) => void;
   setFlags: (flags: string[]) => void;
   saveSummary: (entry: SavedSummaryEntry) => void;
@@ -110,6 +112,7 @@ const initialState = {
   diagnosticosSugeridos: [] as DiagnosticoSugeridoStore[],
   detectedItems: [],
   generatedSoap: null,
+  generatedSpecialtyFields: {} as Record<string, string>,
   patientSummary: "",
   flags: [],
   savedSummaries: [],
@@ -273,6 +276,7 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
       return { detectedItems: [...state.detectedItems, item] };
     }),
   setGeneratedSoap: (soap) => set({ generatedSoap: soap }),
+  setGeneratedSpecialtyFields: (fields) => set({ generatedSpecialtyFields: fields }),
   setPatientSummary: (summary) => set({ patientSummary: summary }),
   setFlags: (flags) => set({ flags }),
   saveSummary: (entry) =>
@@ -348,6 +352,7 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
       diagnosticosSugeridos: [],
       detectedItems: [],
       generatedSoap: null,
+      generatedSpecialtyFields: {},
       patientSummary: "",
       flags: [],
       newPatientDraft: {

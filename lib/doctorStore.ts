@@ -18,7 +18,9 @@ export interface DoctorProfile {
 
 interface DoctorState {
   profile: DoctorProfile;
+  selectedSpecialtyFields: string[];
   setProfile: (updates: Partial<DoctorProfile>) => void;
+  setSelectedSpecialtyFields: (fields: string[]) => void;
   isProfileComplete: () => boolean;
 }
 
@@ -39,8 +41,10 @@ export const useDoctorStore = create<DoctorState>()(
   persist(
     (set, get) => ({
       profile: emptyProfile,
+      selectedSpecialtyFields: [],
       setProfile: (updates) =>
         set((state) => ({ profile: { ...state.profile, ...updates } })),
+      setSelectedSpecialtyFields: (fields) => set({ selectedSpecialtyFields: fields }),
       isProfileComplete: () => {
         const { nome, sobrenome, cpf, crm, uf, data_nascimento } =
           get().profile;

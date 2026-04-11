@@ -50,6 +50,7 @@ import { ReceitaModal } from "@/components/documentos/ReceitaModal";
 import { PedidoExamesModal } from "@/components/documentos/PedidoExamesModal";
 import type { Medicamento } from "@/lib/generateReceita";
 import { useDoctorStore } from "@/lib/doctorStore";
+import { specialtyConfigs } from "@/data/specialty-fields";
 
 function CopyFullSoapButton({ soap }: { soap: { s: string; o: string; a: string; p: string } }) {
   const [copied, setCopied] = useState(false);
@@ -157,6 +158,7 @@ export function GeneratedSummaryWorkspace({
   const detectedItems = useConsultationStore((state) => state.detectedItems);
   const generatedSoap = useConsultationStore((state) => state.generatedSoap);
   const setGeneratedSoap = useConsultationStore((state) => state.setGeneratedSoap);
+  const generatedSpecialtyFields = useConsultationStore((state) => state.generatedSpecialtyFields);
   const flags = useConsultationStore((state) => state.flags);
   const saveSummary = useConsultationStore((state) => state.saveSummary);
   const saveConsultationToPatient = useConsultationStore(
@@ -378,6 +380,7 @@ export function GeneratedSummaryWorkspace({
         <CardHiro className="hiro-surface-glow rounded-2xl p-5">
           <div className="flex flex-col gap-4">
             {(["s", "o", "a", "p"] as const).map((key) => {
+              const sectionMap = { s: "subjetivo", o: "objetivo", a: "avaliacao", p: "plano" } as const;
               const soapHeading =
                 key === "s"
                   ? { title: "Subjetivo", hint: "Relato do paciente" }
@@ -386,6 +389,14 @@ export function GeneratedSummaryWorkspace({
                     : key === "a"
                       ? { title: "Avaliação", hint: "Diagnóstico / raciocínio" }
                       : { title: "Plano", hint: "Conduta" };
+
+              // Find specialty fields for this section
+              const specialty = doctorProfile.especialidade;
+              const config = specialty ? specialtyConfigs[specialty] : null;
+              const sectionFields = config?.fields.filter(
+                (f) => f.section === sectionMap[key] && generatedSpecialtyFields[f.id]
+              ) ?? [];
+
               return (
               <div key={key} className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -406,6 +417,19 @@ export function GeneratedSummaryWorkspace({
                     t.style.height = `${t.scrollHeight}px`;
                   }}
                 />
+                {sectionFields.length > 0 && (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 rounded-xl border border-black/[0.04] bg-white/30 px-4 py-3">
+                    {sectionFields.map((f) => (
+                      <div key={f.id} className="text-[12px]">
+                        <span className="text-hiro-muted">{f.label}: </span>
+                        <span className="font-medium text-hiro-text">
+                          {generatedSpecialtyFields[f.id]}
+                          {f.unit ? ` ${f.unit}` : ""}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               );
             })}

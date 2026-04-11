@@ -16,6 +16,8 @@ import { useDetection } from "@/hooks/useDetection";
 import { useTranscription } from "@/hooks/useTranscription";
 import { useConsultationStore } from "@/lib/store";
 import type { DetectedItem, Patient } from "@/lib/types";
+import { useDoctorStore } from "@/lib/doctorStore";
+import { specialtyConfigs } from "@/data/specialty-fields";
 import { ExamAnalysisPanel } from "@/components/consulta/ExamAnalysisPanel";
 
 function detectedItemMeta(item: DetectedItem) {
@@ -220,6 +222,15 @@ Medicamentos ativos: ${sp.medications
         return;
       }
 
+      // Build specialty fields from doctor profile
+      const doctorState = useDoctorStore.getState();
+      const specialty = doctorState.profile.especialidade;
+      const selectedFieldIds = doctorState.selectedSpecialtyFields;
+      const config = specialty ? specialtyConfigs[specialty] : null;
+      const activeFields = config?.fields
+        .filter((f) => selectedFieldIds.includes(f.id))
+        .map((f) => ({ id: f.id, label: f.label, unit: f.unit, section: f.section })) ?? [];
+
       const res = await fetch("/api/prontuario", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -228,6 +239,7 @@ Medicamentos ativos: ${sp.medications
           patientContext,
           confirmedCids: store.cidSuggestions,
           detectedItems: store.detectedItems,
+          specialtyFields: activeFields.length > 0 ? activeFields : undefined,
         }),
       });
 
@@ -239,6 +251,7 @@ Medicamentos ativos: ${sp.medications
         soap?: { s?: string; o?: string; a?: string; p?: string };
         summary?: string;
         flags?: unknown[];
+        specialtyFields?: Record<string, string>;
         error?: string;
       };
 
@@ -259,6 +272,11 @@ Medicamentos ativos: ${sp.medications
           ? data.flags.filter((f): f is string => typeof f === "string")
           : [],
       );
+
+      // Store specialty fields
+      if (data.specialtyFields && Object.keys(data.specialtyFields).length > 0) {
+        useConsultationStore.getState().setGeneratedSpecialtyFields(data.specialtyFields);
+      }
 
       // Persist vitals to the patient record if entered
       if (selectedPatientId && (vitals.peso || vitals.altura)) {

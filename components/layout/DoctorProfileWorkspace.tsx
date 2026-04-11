@@ -6,6 +6,7 @@ import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { ButtonHiro } from "@/components/ui/ButtonHiro";
 import { useDoctorStore } from "@/lib/doctorStore";
+import { SpecialtyFieldsConfig } from "@/components/settings/SpecialtyFieldsConfig";
 
 const UF_LIST = [
   "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT",
@@ -36,6 +37,8 @@ export function DoctorProfileWorkspace() {
   const profile = useDoctorStore((s) => s.profile);
   const setProfile = useDoctorStore((s) => s.setProfile);
   const isProfileComplete = useDoctorStore((s) => s.isProfileComplete);
+  const selectedSpecialtyFields = useDoctorStore((s) => s.selectedSpecialtyFields);
+  const setSelectedSpecialtyFields = useDoctorStore((s) => s.setSelectedSpecialtyFields);
   const [saved, setSaved] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
@@ -47,6 +50,7 @@ export function DoctorProfileWorkspace() {
   const complete = isProfileComplete();
 
   return (
+    <>
     <form onSubmit={handleSave} className="space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
@@ -199,5 +203,17 @@ export function DoctorProfileWorkspace() {
         )}
       </div>
     </form>
+
+    {/* Specialty fields config */}
+    {profile.especialidade && (
+      <CardHiro className="mt-5 rounded-2xl p-5">
+        <SpecialtyFieldsConfig
+          specialty={profile.especialidade}
+          selectedFields={selectedSpecialtyFields}
+          onSave={setSelectedSpecialtyFields}
+        />
+      </CardHiro>
+    )}
+    </>
   );
 }

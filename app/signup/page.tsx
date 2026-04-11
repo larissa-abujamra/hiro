@@ -232,7 +232,7 @@ export default function SignupPage() {
                 autoComplete="name"
                 required
                 className={inputClass}
-                placeholder="Larissa Oliveira"
+                placeholder="João Silva"
                 value={fields.nome}
                 onChange={setField("nome")}
               />
