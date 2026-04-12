@@ -108,16 +108,18 @@ function AnimatedNumber({
 
 function Navbar({ onScrollTo }: { onScrollTo: (id: string) => void }) {
   return (
-    <nav
-      className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06]"
-      style={{
-        background: "rgba(14, 22, 16, 0.75)",
-        backdropFilter: "blur(24px) saturate(180%)",
-        WebkitBackdropFilter: "blur(24px) saturate(180%)",
-      }}
-    >
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 md:px-8">
-        <span className="font-serif text-2xl font-normal tracking-tight text-white/90">
+    <header className="fixed top-5 left-1/2 z-50 -translate-x-1/2">
+      <nav
+        className="flex items-center gap-4 rounded-full px-5 py-2.5 md:gap-10 md:px-10 md:py-3"
+        style={{
+          background: "rgba(14, 26, 18, 0.65)",
+          backdropFilter: "blur(20px) saturate(180%)",
+          WebkitBackdropFilter: "blur(20px) saturate(180%)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
+        }}
+      >
+        <span className="font-serif text-xl font-normal tracking-tight text-white/85 italic pl-2">
           hiro.
         </span>
 
@@ -131,17 +133,17 @@ function Navbar({ onScrollTo }: { onScrollTo: (id: string) => void }) {
               key={id}
               type="button"
               onClick={() => onScrollTo(id)}
-              className="text-[13px] text-white/50 transition-colors hover:text-white/90"
+              className="text-[13px] text-white/45 transition-colors hover:text-white/90"
             >
               {label}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-5 pl-3">
           <Link
             href="/login"
-            className="hidden text-[13px] font-medium text-white/60 transition-colors hover:text-white md:inline"
+            className="hidden text-[13px] font-medium text-white/50 transition-colors hover:text-white md:inline"
           >
             Entrar
           </Link>
@@ -149,13 +151,13 @@ function Navbar({ onScrollTo }: { onScrollTo: (id: string) => void }) {
             href="https://calendly.com/abujamra-usc/30min"
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-full bg-white/90 px-5 py-2 text-[13px] font-medium text-[#0e1610] transition-all duration-200 hover:bg-white hover:-translate-y-px hover:shadow-lg"
+            className="rounded-full bg-[#f5f0e8] px-5 py-2 text-[13px] font-medium text-[#1a3a2f] transition-all duration-200 hover:bg-white hover:-translate-y-px hover:shadow-lg"
           >
             Agendar Demo
           </a>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }
 

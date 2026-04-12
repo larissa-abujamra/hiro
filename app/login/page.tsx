@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { EtherealShadow } from "@/components/ui/ethereal-shadow";
+import { AnimatedDots } from "@/components/ui/animated-dots";
 
 const inputClass =
   "w-full rounded-xl border border-white/10 bg-white/6 px-4 py-3 text-[14px] text-white/90 placeholder:text-white/28 outline-none transition-all duration-200 focus:border-white/22 focus:bg-white/10 focus:shadow-[0_0_0_3px_rgba(255,255,255,0.05)]";
@@ -45,39 +45,23 @@ export default function LoginPage() {
     /* Full-screen canvas — EtherealShadow needs a sized parent */
     <div className="relative min-h-screen w-full" style={{ background: "#0d1a12" }}>
 
-      {/* Animated ethereal background — fills the entire screen */}
+      {/* Animated dots background */}
       <div className="absolute inset-0 z-0">
-        <EtherealShadow
-          color="rgba(34, 87, 66, 1)"
-          animation={{ scale: 80, speed: 60 }}
-          noise={{ opacity: 0.3, scale: 1 }}
-          style={{ width: "100%", height: "100%" }}
+        <AnimatedDots
+          colors={[[45, 90, 71], [127, 182, 154]]}
+          dotSize={3}
+          speed={1}
         />
       </div>
 
-      {/* Extra depth layers on top of the shadow */}
-      <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
-        {/* Warm yellowish top-right hint */}
-        <div
-          className="absolute"
-          style={{
-            top: "-10%",
-            right: "0%",
-            width: "min(60vw, 480px)",
-            height: "min(60vw, 480px)",
-            background:
-              "radial-gradient(ellipse at 60% 35%, rgba(180, 155, 60, 0.13) 0%, transparent 65%)",
-          }}
-        />
-        {/* Grey-green centre vignette for depth */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(6, 14, 9, 0.55) 100%)",
-          }}
-        />
-      </div>
+      {/* Vignette overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 z-[1]"
+        aria-hidden
+        style={{
+          background: "radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(6, 14, 9, 0.6) 100%)",
+        }}
+      />
 
       {/* Form centred on top */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
