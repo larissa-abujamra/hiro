@@ -7,6 +7,7 @@ import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { ButtonHiro } from "@/components/ui/ButtonHiro";
 import { useDoctorStore } from "@/lib/doctorStore";
 import { SpecialtyFieldsConfig } from "@/components/settings/SpecialtyFieldsConfig";
+import { specialtyOptions } from "@/data/specialty-fields";
 
 const UF_LIST = [
   "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT",
@@ -166,13 +167,33 @@ export function DoctorProfileWorkspace() {
             </select>
           </Field>
           <Field label="Especialidade">
-            <input
+            <select
               className={inputClass}
-              placeholder="Clínica Geral"
-              value={profile.especialidade}
-              onChange={(e) => setProfile({ especialidade: e.target.value })}
-            />
+              value={specialtyOptions.includes(profile.especialidade) ? profile.especialidade : profile.especialidade ? "Outra" : ""}
+              onChange={(e) => {
+                if (e.target.value === "Outra") {
+                  setProfile({ especialidade: "Outra" });
+                } else {
+                  setProfile({ especialidade: e.target.value });
+                }
+              }}
+            >
+              <option value="">Selecione</option>
+              {specialtyOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </Field>
+          {(profile.especialidade === "Outra" || (profile.especialidade && !specialtyOptions.includes(profile.especialidade))) && (
+            <Field label="Qual especialidade?">
+              <input
+                className={inputClass}
+                placeholder="Especifique sua especialidade"
+                value={profile.especialidade === "Outra" ? "" : profile.especialidade}
+                onChange={(e) => setProfile({ especialidade: e.target.value })}
+              />
+            </Field>
+          )}
           <Field label="Clínica / Consultório">
             <input
               className={inputClass}

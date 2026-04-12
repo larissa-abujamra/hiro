@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { specialtyOptions } from "@/data/specialty-fields";
 
 const UF_LIST = [
   "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT",
@@ -353,14 +354,17 @@ export default function SignupPage() {
               <label htmlFor="especialidade" className={labelClass}>
                 Especialidade
               </label>
-              <input
+              <select
                 id="especialidade"
-                type="text"
                 className={inputClass}
-                placeholder="Ex: Clínica Geral, Cardiologia…"
                 value={fields.especialidade}
                 onChange={setField("especialidade")}
-              />
+              >
+                <option value="">Selecione</option>
+                {specialtyOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
             </div>
 
             {error && (

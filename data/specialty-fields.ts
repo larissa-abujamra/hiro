@@ -127,4 +127,17 @@ export const specialtyConfigs: Record<string, SpecialtyConfig> = {
   },
 };
 
-export const specialties = Object.keys(specialtyConfigs);
+/** All specialties available in the dropdown — those with custom fields first, then extras */
+export const specialtyOptions = [
+  ...Object.keys(specialtyConfigs),
+  "Gastroenterologia",
+  "Geriatria",
+  "Oftalmologia",
+  "Otorrinolaringologia",
+  "Pneumologia",
+  "Reumatologia",
+  "Urologia",
+  "Outra",
+].filter((v, i, a) => a.indexOf(v) === i); // dedupe
+
+export const specialties = specialtyOptions;
