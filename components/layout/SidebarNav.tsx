@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { Mic, Users, LogOut } from "lucide-react";
+import { Calendar, Mic, Users, LogOut } from "lucide-react";
 import { useDoctorStore } from "@/lib/doctorStore";
 import { createClient } from "@/lib/supabase/client";
 
@@ -82,6 +82,12 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           icon={<Mic strokeWidth={1.75} />}
           label="Nova consulta"
           prefetch={false}
+          onClick={onNavigate}
+        />
+        <NavItem
+          href="/agenda"
+          icon={<Calendar strokeWidth={1.75} />}
+          label="Agenda"
           onClick={onNavigate}
         />
         <NavItem

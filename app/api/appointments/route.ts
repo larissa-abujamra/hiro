@@ -2,121 +2,105 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-async function getSupabaseClients() {
+async function getClients() {
   const cookieStore = await cookies();
-
   const auth = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-        setAll(c) {
-          try { c.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch {}
-        },
+        setAll(c) { try { c.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch {} },
       },
     }
   );
-
   const admin = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll() {},
-      },
-    }
+    { cookies: { getAll: () => cookieStore.getAll(), setAll() {} } }
   );
-
   return { auth, admin };
 }
 
-// GET — list appointments for the current user (today + next 7 days)
-export async function GET() {
-  const { auth, admin } = await getSupabaseClients();
+// GET — list all appointments (optional date range via query params)
+export async function GET(request: Request) {
+  const { auth, admin } = await getClients();
   const { data: { user } } = await auth.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
-  const now = new Date();
-  const nextWeek = new Date(now);
-  nextWeek.setDate(nextWeek.getDate() + 7);
+  const { searchParams } = new URL(request.url);
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
 
-  const { data, error } = await admin
+  let query = admin
     .from("appointments")
     .select("*")
     .eq("user_id", user.id)
-    .gte("scheduled_time", now.toISOString())
-    .lte("scheduled_time", nextWeek.toISOString())
-    .order("scheduled_time", { ascending: true });
+    .order("datetime", { ascending: true });
+
+  if (from) query = query.gte("datetime", from);
+  if (to) query = query.lte("datetime", to);
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Appointments fetch error:", error);
-    return NextResponse.json({ error: "Erro ao buscar consultas" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao buscar agendamentos" }, { status: 500 });
   }
 
-  const appointments = (data ?? []).map((a) => ({
-    id: a.id,
-    title: a.patient_name,
-    startTime: a.scheduled_time,
-    endTime: a.scheduled_time,
-    date: a.scheduled_time,
-    source: a.source,
-  }));
-
-  return NextResponse.json({ appointments });
+  return NextResponse.json({ appointments: data ?? [] });
 }
 
-// POST — create a manual appointment
+// POST — create appointment
 export async function POST(request: Request) {
-  const { auth, admin } = await getSupabaseClients();
+  const { auth, admin } = await getClients();
   const { data: { user } } = await auth.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
-  let patientName: string;
-  let scheduledTime: string;
+  let body;
   try {
-    const body = await request.json();
-    patientName = body.patient_name;
-    scheduledTime = body.scheduled_time;
-    if (!patientName?.trim() || !scheduledTime) {
-      return NextResponse.json({ error: "Nome e horário são obrigatórios" }, { status: 400 });
-    }
+    body = await request.json();
   } catch {
     return NextResponse.json({ error: "Corpo inválido" }, { status: 400 });
   }
 
+  if (!body.patient_name?.trim() || !body.datetime) {
+    return NextResponse.json({ error: "Nome e horário são obrigatórios" }, { status: 400 });
+  }
+
+  const row = {
+    user_id: user.id,
+    patient_name: body.patient_name.trim(),
+    patient_phone: body.patient_phone || null,
+    patient_cpf: body.patient_cpf || null,
+    patient_dob: body.patient_dob || null,
+    patient_sex: body.patient_sex || null,
+    patient_id: body.patient_id || null,
+    datetime: body.datetime,
+    duration_minutes: body.duration_minutes || 30,
+    type: body.type || "first_visit",
+    insurance: body.insurance || null,
+    status: body.status || "scheduled",
+    notes: body.notes || null,
+  };
+
   const { data, error } = await admin
     .from("appointments")
-    .insert({
-      user_id: user.id,
-      patient_name: patientName.trim(),
-      scheduled_time: scheduledTime,
-      source: "manual",
-    })
+    .insert(row)
     .select()
     .single();
 
   if (error) {
     console.error("Appointment create error:", error);
-    return NextResponse.json({ error: "Erro ao criar consulta" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao criar agendamento" }, { status: 500 });
   }
 
-  return NextResponse.json({
-    appointment: {
-      id: data.id,
-      title: data.patient_name,
-      startTime: data.scheduled_time,
-      endTime: data.scheduled_time,
-      date: data.scheduled_time,
-      source: data.source,
-    },
-  });
+  return NextResponse.json({ appointment: data });
 }
 
-// DELETE — remove an appointment
+// DELETE — remove appointment
 export async function DELETE(request: Request) {
-  const { auth, admin } = await getSupabaseClients();
+  const { auth, admin } = await getClients();
   const { data: { user } } = await auth.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
@@ -124,16 +108,8 @@ export async function DELETE(request: Request) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID obrigatório" }, { status: 400 });
 
-  const { error } = await admin
-    .from("appointments")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
-
-  if (error) {
-    console.error("Appointment delete error:", error);
-    return NextResponse.json({ error: "Erro ao remover consulta" }, { status: 500 });
-  }
+  const { error } = await admin.from("appointments").delete().eq("id", id).eq("user_id", user.id);
+  if (error) return NextResponse.json({ error: "Erro ao remover" }, { status: 500 });
 
   return NextResponse.json({ success: true });
 }

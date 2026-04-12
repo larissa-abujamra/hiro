@@ -3,8 +3,8 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-playfair);
-  --color-hiro-bg: #dfdbd2;
-  --color-hiro-card: #d5d1c8;
+  --color-hiro-bg: #f0ede6;
+  --color-hiro-card: #e8e4dc;
   --color-hiro-active: #2d5c3f;
   --color-hiro-text: #1c2b1e;
   --color-hiro-muted: #6b7a6d;
@@ -20,7 +20,7 @@ html {
 }
 
 body {
-  background-color: #dfdbd2;
+  background-color: #f0ede6;
   color: #1c2b1e;
   position: relative;
 }
