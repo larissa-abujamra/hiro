@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ButtonHiro } from "@/components/ui/ButtonHiro";
 import { CardHiro } from "@/components/ui/CardHiro";
@@ -10,8 +12,9 @@ import type { Patient } from "@/lib/types";
 import { formatDateBR } from "@/lib/formatDate";
 
 interface NewConsultationFlowProps {
-  /** Fallback when o store ainda não tem pacientes (ex.: SSR inicial). */
   patients?: Patient[];
+  appointmentId?: string;
+  initialPatientName?: string;
 }
 
 const REASONS = [
@@ -30,10 +33,17 @@ const REASONS = [
   "Outro",
 ];
 
-export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {}) {
+export function NewConsultationFlow({ patients, appointmentId: propAppointmentId, initialPatientName: propPatientName }: NewConsultationFlowProps = {}) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Read from URL directly (client-side navigation doesn't always pass server props)
+  const appointmentId = propAppointmentId ?? searchParams.get("appointmentId") ?? undefined;
+  const initialPatientName = propPatientName ?? searchParams.get("patientName") ?? undefined;
+
   const [query, setQuery] = useState("");
   const [showOptional, setShowOptional] = useState(false);
+  const [appointmentData, setAppointmentData] = useState<Record<string, string | null> | null>(null);
   const patientsInStore = useConsultationStore((state) => state.patients);
   const intakeMode = useConsultationStore((state) => state.intakeMode);
   const selectedPatientId = useConsultationStore((state) => state.selectedPatientId);
@@ -54,6 +64,66 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
   const addActivity = useConsultationStore((state) => state.addActivity);
   const resetConsultation = useConsultationStore((state) => state.resetConsultation);
   const sourcePatients = patientsInStore.length ? patientsInStore : (patients ?? []);
+
+  // Load appointment data if coming from agenda
+  useEffect(() => {
+    console.log("[NewConsultation] appointmentId:", appointmentId, "initialPatientName:", initialPatientName);
+
+    if (!appointmentId) {
+      if (initialPatientName) {
+        setIntakeMode("new");
+        setNewPatientDraft({ name: initialPatientName });
+      }
+      return;
+    }
+
+    console.log("[NewConsultation] Fetching appointment:", appointmentId);
+    fetch(`/api/appointments/${appointmentId}`)
+      .then((res) => {
+        console.log("[NewConsultation] Fetch response:", res.status);
+        return res.ok ? res.json() : null;
+      })
+      .then((data) => {
+        console.log("[NewConsultation] Appointment data:", data);
+        const appt = data?.appointment;
+        if (!appt) {
+          console.error("[NewConsultation] No appointment in response");
+          return;
+        }
+
+        setAppointmentData(appt);
+
+        // Check if patient already exists in the store by name
+        const existing = sourcePatients.find(
+          (p) => p.name.toLowerCase() === appt.patient_name?.toLowerCase()
+        );
+
+        if (existing) {
+          setIntakeMode("existing");
+          selectPatient(existing.id);
+        } else {
+          setIntakeMode("new");
+          setNewPatientDraft({
+            name: appt.patient_name ?? "",
+            dateOfBirth: appt.patient_dob ?? "",
+            sex: appt.patient_sex === "M" ? "M" : appt.patient_sex === "F" ? "F" : "Other",
+          });
+        }
+
+        // Set consultation reason based on type
+        const typeToReason: Record<string, string> = {
+          first_visit: "Primeira consulta",
+          follow_up: "Retorno clínico",
+          routine: "Consulta de rotina",
+          urgent: "Urgência / Encaixe",
+          exam_review: "Revisão de exames",
+        };
+        if (appt.type && typeToReason[appt.type]) {
+          setConsultationReason(typeToReason[appt.type]);
+        }
+      })
+      .catch(() => {});
+  }, [appointmentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filteredPatients = useMemo(
     () =>
@@ -99,6 +169,14 @@ export function NewConsultationFlow({ patients }: NewConsultationFlowProps = {})
 
   return (
     <div className="mt-6 space-y-4 pb-24">
+      {appointmentData && (
+        <div className="flex items-center gap-2 rounded-xl border border-hiro-green/20 bg-hiro-green/5 px-4 py-3">
+          <Calendar className="h-4 w-4 text-hiro-green" strokeWidth={1.75} />
+          <p className="text-[13px] text-hiro-green">
+            Consulta agendada: <span className="font-medium">{appointmentData.patient_name}</span>
+          </p>
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         <CardHiro
           active={intakeMode === "existing"}

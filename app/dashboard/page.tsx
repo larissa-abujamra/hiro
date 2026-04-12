@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Mic, Users } from "lucide-react";
 import { DailyMetricsCard } from "@/components/dashboard/DailyMetricsCard";
-import { CalendarWidget } from "@/components/calendar/CalendarWidget";
+import { TodayAppointments } from "@/components/dashboard/TodayAppointments";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting";
 import { createClient } from "@/lib/supabase/server";
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
 
       <div className="mt-6 grid grid-cols-1 items-start gap-5 overflow-visible md:grid-cols-2">
         <div className="min-w-0">
-          <CalendarWidget />
+          <TodayAppointments />
         </div>
 
         <section className="glass-card min-w-0 overflow-visible rounded-2xl p-6">

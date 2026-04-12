@@ -358,7 +358,7 @@ export default function AgendaPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "in_progress" }),
     });
-    router.push(`/consulta/nova?patientName=${encodeURIComponent(appt.patient_name)}`);
+    router.push(`/consulta/nova?appointmentId=${appt.id}`);
   }
 
   function navigate(dir: number) {

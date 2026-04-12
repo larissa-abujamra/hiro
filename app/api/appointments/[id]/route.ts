@@ -22,7 +22,28 @@ async function getClients() {
   return { auth, admin };
 }
 
-// PUT — update appointment
+// GET — fetch single appointment
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { auth, admin } = await getClients();
+  const { data: { user } } = await auth.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
+  const { id } = await params;
+  const { data, error } = await admin
+    .from("appointments")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (error) {
+    console.error("[api/appointments GET]", error);
+    return NextResponse.json({ error: "Agendamento não encontrado" }, { status: 404 });
+  }
+  return NextResponse.json({ appointment: data });
+}
+
+// PUT — update appointment (split update + fetch to avoid PGRST116)
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { auth, admin } = await getClients();
   const { data: { user } } = await auth.auth.getUser();
@@ -36,20 +57,39 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Corpo inválido" }, { status: 400 });
   }
 
-  const { data, error } = await admin
+  console.log("[api/appointments PUT]", id, body);
+
+  // Step 1: update (no .select().single())
+  const { error: updateError } = await admin
     .from("appointments")
     .update(body)
     .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (updateError) {
+    console.error("[api/appointments PUT] update error:", updateError);
+    return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  // Step 2: fetch the updated row
+  const { data, error: fetchError } = await admin
+    .from("appointments")
+    .select("*")
+    .eq("id", id)
     .eq("user_id", user.id)
-    .select()
     .single();
 
-  if (error) {
-    console.error("Appointment update error:", error);
-    return NextResponse.json({ error: "Erro ao atualizar agendamento" }, { status: 500 });
+  if (fetchError) {
+    // Update worked but fetch failed — still success
+    return NextResponse.json({ success: true });
   }
 
   return NextResponse.json({ appointment: data });
+}
+
+// PATCH — alias for PUT
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
+  return PUT(request, props);
 }
 
 // DELETE — delete appointment
