@@ -123,16 +123,25 @@ function AppointmentModal({
 }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    patient_name: "", patient_phone: "", datetime: "",
+    patient_name: "", patient_phone: "",
+    date: "", // dd/mm/aaaa
+    time: "08:00", // HH:MM
     duration_minutes: "30", type: "first_visit", insurance: "", notes: "", status: "scheduled",
   });
 
   useEffect(() => {
     if (initial) {
+      const d = new Date(initial.datetime);
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, "0");
+      const mins = String(Math.round(d.getMinutes() / 15) * 15).padStart(2, "0");
       setForm({
         patient_name: initial.patient_name,
         patient_phone: initial.patient_phone ?? "",
-        datetime: initial.datetime.slice(0, 16),
+        date: `${day}/${month}/${year}`,
+        time: `${hours}:${mins === "60" ? "00" : mins}`,
         duration_minutes: String(initial.duration_minutes),
         type: initial.type, insurance: initial.insurance ?? "",
         notes: initial.notes ?? "", status: initial.status,
@@ -140,20 +149,35 @@ function AppointmentModal({
     } else if (isOpen) {
       const now = new Date();
       now.setMinutes(Math.ceil(now.getMinutes() / 15) * 15, 0, 0);
-      setForm({ patient_name: "", patient_phone: "", datetime: now.toISOString().slice(0, 16), duration_minutes: "30", type: "first_visit", insurance: "", notes: "", status: "scheduled" });
+      const day = String(now.getDate()).padStart(2, "0");
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const year = now.getFullYear();
+      const hours = String(now.getHours()).padStart(2, "0");
+      const mins = String(now.getMinutes()).padStart(2, "0");
+      setForm({ patient_name: "", patient_phone: "", date: `${day}/${month}/${year}`, time: `${hours}:${mins}`, duration_minutes: "30", type: "first_visit", insurance: "", notes: "", status: "scheduled" });
     }
   }, [initial, isOpen]);
 
   if (!isOpen) return null;
 
+  function buildDatetime(): string | null {
+    const parts = form.date.split("/");
+    if (parts.length !== 3) return null;
+    const [dd, mm, yyyy] = parts;
+    const [hh, min] = form.time.split(":");
+    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min));
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.patient_name.trim() || !form.datetime) return;
+    const datetime = buildDatetime();
+    if (!form.patient_name.trim() || !datetime) return;
     setSaving(true);
     await onSave({
       patient_name: form.patient_name.trim(),
       patient_phone: form.patient_phone || null,
-      datetime: new Date(form.datetime).toISOString(),
+      datetime,
       duration_minutes: Number(form.duration_minutes),
       type: form.type, insurance: form.insurance || null,
       notes: form.notes || null, status: form.status,
@@ -182,10 +206,41 @@ function AppointmentModal({
             <label className={labelClass}>Telefone</label>
             <input className={inputClass} placeholder="(00) 00000-0000" value={form.patient_phone} onChange={(e) => setForm((f) => ({ ...f, patient_phone: e.target.value }))} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className={labelClass}>Data e hora *</label>
-              <input type="datetime-local" className={inputClass} required value={form.datetime} onChange={(e) => setForm((f) => ({ ...f, datetime: e.target.value }))} />
+              <label className={labelClass}>Data *</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                className={inputClass}
+                placeholder="dd/mm/aaaa"
+                maxLength={10}
+                required
+                value={form.date}
+                onChange={(e) => {
+                  let v = e.target.value.replace(/[^\d/]/g, "");
+                  const digits = v.replace(/\//g, "");
+                  if (digits.length >= 3 && !v.includes("/")) {
+                    v = digits.slice(0, 2) + "/" + digits.slice(2);
+                  }
+                  if (digits.length >= 5 && v.split("/").length < 3) {
+                    const p = v.split("/");
+                    v = p[0] + "/" + (p[1]?.slice(0, 2) ?? "") + "/" + (p[1]?.slice(2) ?? "") + (p[2] ?? "");
+                  }
+                  if (v.length > 10) v = v.slice(0, 10);
+                  setForm((f) => ({ ...f, date: v }));
+                }}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Hora *</label>
+              <select className={inputClass} value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}>
+                {Array.from({ length: 24 * 4 }, (_, i) => {
+                  const h = String(Math.floor(i / 4)).padStart(2, "0");
+                  const m = String((i % 4) * 15).padStart(2, "0");
+                  return <option key={i} value={`${h}:${m}`}>{h}:{m}</option>;
+                })}
+              </select>
             </div>
             <div>
               <label className={labelClass}>Duração</label>
