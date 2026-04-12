@@ -14,21 +14,11 @@ import {
 } from "lucide-react";
 import { CardHiro } from "@/components/ui/CardHiro";
 import { ButtonHiro } from "@/components/ui/ButtonHiro";
+import { AppointmentModal, type Appointment } from "@/components/agenda/AppointmentModal";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
-interface Appointment {
-  id: string;
-  patient_name: string;
-  patient_phone?: string;
-  patient_id?: string;
-  datetime: string;
-  duration_minutes: number;
-  type: string;
-  insurance?: string;
-  status: string;
-  notes?: string;
-}
+// Appointment type imported from AppointmentModal
 
 const TYPE_LABELS: Record<string, string> = {
   first_visit: "Primeira consulta",
@@ -47,16 +37,6 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
   no_show: { label: "Não compareceu", bg: "bg-hiro-red/10", text: "text-hiro-red" },
 };
 
-const INSURANCE_OPTIONS = [
-  "Particular", "Unimed", "Bradesco Saúde", "SulAmérica", "Amil",
-  "NotreDame Intermédica", "Hapvida", "Porto Seguro", "Outro",
-];
-
-const inputClass =
-  "glass-card-input w-full rounded-xl px-3 py-2.5 text-[13px] text-hiro-text outline-none focus:ring-2 focus:ring-hiro-green/30";
-
-const labelClass =
-  "block text-[11px] font-semibold uppercase tracking-wide text-hiro-muted mb-1";
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -108,195 +88,6 @@ function AppointmentCard({ appt, onSelect }: { appt: Appointment; onSelect: () =
         {status.label}
       </span>
     </button>
-  );
-}
-
-/* ─── Modal ──────────────────────────────────────────────────────────────── */
-
-function AppointmentModal({
-  isOpen, onClose, onSave, initial,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (data: Record<string, unknown>) => Promise<void>;
-  initial?: Appointment | null;
-}) {
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    patient_name: "", patient_phone: "",
-    date: "", // dd/mm/aaaa
-    time: "08:00", // HH:MM
-    duration_minutes: "30", type: "first_visit", insurance: "", notes: "", status: "scheduled",
-  });
-
-  useEffect(() => {
-    if (initial) {
-      const d = new Date(initial.datetime);
-      const day = String(d.getDate()).padStart(2, "0");
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const year = d.getFullYear();
-      const hours = String(d.getHours()).padStart(2, "0");
-      const mins = String(Math.round(d.getMinutes() / 15) * 15).padStart(2, "0");
-      setForm({
-        patient_name: initial.patient_name,
-        patient_phone: initial.patient_phone ?? "",
-        date: `${day}/${month}/${year}`,
-        time: `${hours}:${mins === "60" ? "00" : mins}`,
-        duration_minutes: String(initial.duration_minutes),
-        type: initial.type, insurance: initial.insurance ?? "",
-        notes: initial.notes ?? "", status: initial.status,
-      });
-    } else if (isOpen) {
-      const now = new Date();
-      now.setMinutes(Math.ceil(now.getMinutes() / 15) * 15, 0, 0);
-      const day = String(now.getDate()).padStart(2, "0");
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const year = now.getFullYear();
-      const hours = String(now.getHours()).padStart(2, "0");
-      const snappedMins = String(Math.ceil(now.getMinutes() / 15) * 15 % 60).padStart(2, "0");
-      setForm({ patient_name: "", patient_phone: "", date: `${day}/${month}/${year}`, time: `${hours}:${snappedMins}`, duration_minutes: "30", type: "first_visit", insurance: "", notes: "", status: "scheduled" });
-    }
-  }, [initial, isOpen]);
-
-  if (!isOpen) return null;
-
-  function buildDatetime(): string | null {
-    const parts = form.date.split("/");
-    if (parts.length !== 3) return null;
-    const [dd, mm, yyyy] = parts;
-    const [hh, min] = form.time.split(":");
-    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min));
-    return isNaN(d.getTime()) ? null : d.toISOString();
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const datetime = buildDatetime();
-    console.log("[Agenda] Submit — date:", form.date, "time:", form.time, "datetime:", datetime, "name:", form.patient_name);
-    if (!form.patient_name.trim() || !datetime) {
-      console.error("[Agenda] Submit blocked — missing name or invalid date");
-      return;
-    }
-    setSaving(true);
-    try {
-      await onSave({
-        patient_name: form.patient_name.trim(),
-        patient_phone: form.patient_phone || null,
-        datetime,
-        duration_minutes: Number(form.duration_minutes),
-        type: form.type, insurance: form.insurance || null,
-        notes: form.notes || null, status: form.status,
-      });
-    } catch (err) {
-      console.error("[Agenda] Save error:", err);
-    }
-    setSaving(false);
-  }
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-black/[0.08] bg-[#f0ede6] p-6 shadow-2xl">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="font-serif text-xl font-normal text-hiro-text">
-            {initial ? "Editar Agendamento" : "Novo Agendamento"}
-          </h2>
-          <button type="button" onClick={onClose} className="rounded-full p-1.5 text-hiro-muted hover:bg-black/[0.04]">
-            <X className="h-5 w-5" strokeWidth={1.75} />
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          <div>
-            <label className={labelClass}>Paciente *</label>
-            <input className={inputClass} placeholder="Nome do paciente" required value={form.patient_name} onChange={(e) => setForm((f) => ({ ...f, patient_name: e.target.value }))} />
-          </div>
-          <div>
-            <label className={labelClass}>Telefone</label>
-            <input className={inputClass} placeholder="(00) 00000-0000" value={form.patient_phone} onChange={(e) => setForm((f) => ({ ...f, patient_phone: e.target.value }))} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className={labelClass}>Data *</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                className={inputClass}
-                placeholder="dd/mm/aaaa"
-                maxLength={10}
-                required
-                value={form.date}
-                onChange={(e) => {
-                  let v = e.target.value.replace(/[^\d/]/g, "");
-                  const digits = v.replace(/\//g, "");
-                  if (digits.length >= 3 && !v.includes("/")) {
-                    v = digits.slice(0, 2) + "/" + digits.slice(2);
-                  }
-                  if (digits.length >= 5 && v.split("/").length < 3) {
-                    const p = v.split("/");
-                    v = p[0] + "/" + (p[1]?.slice(0, 2) ?? "") + "/" + (p[1]?.slice(2) ?? "") + (p[2] ?? "");
-                  }
-                  if (v.length > 10) v = v.slice(0, 10);
-                  setForm((f) => ({ ...f, date: v }));
-                }}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Hora *</label>
-              <select className={inputClass} value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}>
-                {Array.from({ length: 24 * 4 }, (_, i) => {
-                  const h = String(Math.floor(i / 4)).padStart(2, "0");
-                  const m = String((i % 4) * 15).padStart(2, "0");
-                  return <option key={i} value={`${h}:${m}`}>{h}:{m}</option>;
-                })}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Duração</label>
-              <select className={inputClass} value={form.duration_minutes} onChange={(e) => setForm((f) => ({ ...f, duration_minutes: e.target.value }))}>
-                <option value="15">15 min</option>
-                <option value="30">30 min</option>
-                <option value="45">45 min</option>
-                <option value="60">60 min</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Tipo</label>
-              <select className={inputClass} value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
-                {Object.entries(TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Convênio</label>
-              <select className={inputClass} value={form.insurance} onChange={(e) => setForm((f) => ({ ...f, insurance: e.target.value }))}>
-                <option value="">Selecione</option>
-                {INSURANCE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </div>
-          </div>
-          {initial && (
-            <div>
-              <label className={labelClass}>Status</label>
-              <select className={inputClass} value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
-                {Object.entries(STATUS_CONFIG).map(([v, c]) => <option key={v} value={v}>{c.label}</option>)}
-              </select>
-            </div>
-          )}
-          <div>
-            <label className={labelClass}>Observações</label>
-            <textarea className={`${inputClass} resize-none`} rows={2} placeholder="Anotações..." value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-          </div>
-        </div>
-
-        <div className="mt-5 flex gap-3">
-          <ButtonHiro type="submit" className="flex-1" disabled={saving || !form.patient_name.trim()}>
-            {saving ? "Salvando..." : initial ? "Salvar" : "Agendar"}
-          </ButtonHiro>
-          <ButtonHiro variant="secondary" type="button" onClick={onClose} className="px-6">Cancelar</ButtonHiro>
-        </div>
-      </form>
-    </div>
   );
 }
 
