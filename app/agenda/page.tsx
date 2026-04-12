@@ -153,8 +153,8 @@ function AppointmentModal({
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const year = now.getFullYear();
       const hours = String(now.getHours()).padStart(2, "0");
-      const mins = String(now.getMinutes()).padStart(2, "0");
-      setForm({ patient_name: "", patient_phone: "", date: `${day}/${month}/${year}`, time: `${hours}:${mins}`, duration_minutes: "30", type: "first_visit", insurance: "", notes: "", status: "scheduled" });
+      const snappedMins = String(Math.ceil(now.getMinutes() / 15) * 15 % 60).padStart(2, "0");
+      setForm({ patient_name: "", patient_phone: "", date: `${day}/${month}/${year}`, time: `${hours}:${snappedMins}`, duration_minutes: "30", type: "first_visit", insurance: "", notes: "", status: "scheduled" });
     }
   }, [initial, isOpen]);
 
@@ -172,16 +172,24 @@ function AppointmentModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const datetime = buildDatetime();
-    if (!form.patient_name.trim() || !datetime) return;
+    console.log("[Agenda] Submit — date:", form.date, "time:", form.time, "datetime:", datetime, "name:", form.patient_name);
+    if (!form.patient_name.trim() || !datetime) {
+      console.error("[Agenda] Submit blocked — missing name or invalid date");
+      return;
+    }
     setSaving(true);
-    await onSave({
-      patient_name: form.patient_name.trim(),
-      patient_phone: form.patient_phone || null,
-      datetime,
-      duration_minutes: Number(form.duration_minutes),
-      type: form.type, insurance: form.insurance || null,
-      notes: form.notes || null, status: form.status,
-    });
+    try {
+      await onSave({
+        patient_name: form.patient_name.trim(),
+        patient_phone: form.patient_phone || null,
+        datetime,
+        duration_minutes: Number(form.duration_minutes),
+        type: form.type, insurance: form.insurance || null,
+        notes: form.notes || null, status: form.status,
+      });
+    } catch (err) {
+      console.error("[Agenda] Save error:", err);
+    }
     setSaving(false);
   }
 
@@ -326,7 +334,13 @@ export default function AgendaPage() {
   async function handleSave(data: Record<string, unknown>) {
     const url = selected ? `/api/appointments/${selected.id}` : "/api/appointments";
     const method = selected ? "PUT" : "POST";
-    await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    console.log("[Agenda] Saving to:", method, url, data);
+    const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    const result = await res.json().catch(() => ({}));
+    console.log("[Agenda] Save result:", res.status, result);
+    if (!res.ok) {
+      console.error("[Agenda] Save failed:", result);
+    }
     setModalOpen(false);
     setSelected(null);
     fetchAppointments();

@@ -84,6 +84,8 @@ export async function POST(request: Request) {
     notes: body.notes || null,
   };
 
+  console.log("[api/appointments POST] Inserting:", JSON.stringify(row));
+
   const { data, error } = await admin
     .from("appointments")
     .insert(row)
@@ -91,10 +93,11 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    console.error("Appointment create error:", error);
-    return NextResponse.json({ error: "Erro ao criar agendamento" }, { status: 500 });
+    console.error("[api/appointments POST] Error:", JSON.stringify(error));
+    return NextResponse.json({ error: `Erro ao criar agendamento: ${error.message}`, details: error }, { status: 500 });
   }
 
+  console.log("[api/appointments POST] Success:", data?.id);
   return NextResponse.json({ appointment: data });
 }
 
