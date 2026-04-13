@@ -68,13 +68,6 @@ export function DoctorProfileWorkspace() {
         </div>
       </div>
 
-      {!complete && (
-        <div className="rounded-xl border border-hiro-amber/40 bg-[#FAEEDA]/50 px-4 py-3 text-[13px] text-hiro-text">
-          Preencha os campos obrigatórios para habilitar a prescrição digital via
-          Memed.
-        </div>
-      )}
-
       {/* Dados pessoais */}
       <CardHiro className="rounded-2xl p-5">
         <OverlineLabel>DADOS PESSOAIS</OverlineLabel>
@@ -82,7 +75,7 @@ export function DoctorProfileWorkspace() {
           <Field label="Nome *">
             <input
               className={inputClass}
-              placeholder="Larissa"
+              placeholder="Nome"
               value={profile.nome}
               onChange={(e) => setProfile({ nome: e.target.value })}
             />
@@ -90,7 +83,7 @@ export function DoctorProfileWorkspace() {
           <Field label="Sobrenome *">
             <input
               className={inputClass}
-              placeholder="Oliveira"
+              placeholder="Sobrenome"
               value={profile.sobrenome}
               onChange={(e) => setProfile({ sobrenome: e.target.value })}
             />
