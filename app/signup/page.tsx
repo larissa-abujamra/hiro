@@ -147,7 +147,7 @@ export default function SignupPage() {
         uf: fields.uf,
         especialidade: fields.especialidade,
       });
-      router.push("/dashboard");
+      router.push("/onboarding");
       router.refresh();
       return;
     }
