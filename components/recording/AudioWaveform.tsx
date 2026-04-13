@@ -24,12 +24,15 @@ export function AudioWaveform({
   seconds,
   className,
 }: AudioWaveformProps) {
+  const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [bars, setBars] = useState<number[]>([]);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => setMounted(true), []);
 
   const connectAudio = useCallback(async () => {
     try {
@@ -125,6 +128,10 @@ export function AudioWaveform({
   // Calculate which bar indices get timestamp labels (every ~10 seconds)
   const samplesPerSecond = 1000 / SAMPLE_INTERVAL;
   const samplesPerMark = Math.round(samplesPerSecond * 10);
+
+  if (!mounted) {
+    return <div className={className} style={{ height: 80 }} />;
+  }
 
   return (
     <div className={className}>

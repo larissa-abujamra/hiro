@@ -52,23 +52,6 @@ export function RecordButton({ phase, onClick, disabled }: RecordButtonProps) {
         )}
       </span>
 
-      {/* CSS animation */}
-      <style jsx>{`
-        @keyframes recBtnPulse {
-          0% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          70% {
-            transform: scale(1.5);
-            opacity: 0;
-          }
-          100% {
-            transform: scale(1.5);
-            opacity: 0;
-          }
-        }
-      `}</style>
     </button>
   );
 }

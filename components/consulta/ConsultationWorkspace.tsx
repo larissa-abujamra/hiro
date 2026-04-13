@@ -82,6 +82,7 @@ export function ConsultationWorkspace({
   const updatePatient = useConsultationStore((state) => state.updatePatient);
   const resetConsultation = useConsultationStore((state) => state.resetConsultation);
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [recordingPhase, setRecordingPhase] = useState<"idle" | "recording" | "paused">(
@@ -112,6 +113,8 @@ export function ConsultationWorkspace({
 
   const { analyze } = useDetection(consultationId);
   const { analyze: analyzeCids } = useCidSuggestions(consultationId);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (activeConsultationId !== consultationId) {
@@ -463,14 +466,14 @@ Medicamentos ativos: ${sp.medications
                     : "Pausado — toque para continuar"}
               </p>
 
-              {/* Errors */}
-              {!isSupported && (
+              {/* Errors — only render after mount to avoid hydration mismatch */}
+              {mounted && !isSupported && (
                 <div className="w-full rounded-xl border border-hiro-red/30 bg-[#FAECE7] px-4 py-3 text-sm text-hiro-red">
                   Reconhecimento de voz não disponível neste navegador. Use Chrome
                   ou Edge para transcrição em tempo real.
                 </div>
               )}
-              {error && isSupported && (
+              {mounted && error && isSupported && (
                 <div className="w-full rounded-xl border border-hiro-red/30 bg-[#FAECE7] px-4 py-3 text-sm text-hiro-red">
                   {error}
                 </div>

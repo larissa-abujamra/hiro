@@ -257,6 +257,13 @@ main {
   gap: 0.45em;
 }
 
+/* Record button pulse */
+@keyframes recBtnPulse {
+  0% { transform: scale(1); opacity: 1; }
+  70% { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
 @keyframes waveBar {
   0%,
   100% {

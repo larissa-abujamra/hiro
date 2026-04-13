@@ -68,7 +68,7 @@ export function DashboardGreeting({ serverName, serverSexo }: DashboardGreetingP
       {subGreeting && (
         <p className="mt-1.5 text-[14px] text-hiro-muted">{subGreeting}</p>
       )}
-      <p className="mt-1 text-sm leading-relaxed text-hiro-muted/60">
+      <p className="mt-1 text-sm leading-relaxed text-hiro-muted/60" suppressHydrationWarning>
         {new Date().toLocaleDateString("pt-BR", {
           weekday: "long",
           day: "numeric",
