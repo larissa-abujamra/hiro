@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GaitNet · Cattle Respiratory Risk Monitor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f1117;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* TOP NAV */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 28px;
+      border-bottom: 0.5px solid rgba(255,255,255,0.08);
+      background: #13161f;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-mark {
+      width: 30px; height: 30px;
+      background: #16a34a;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; color: #fff;
+    }
+    .logo-text { font-size: 16px; font-weight: 600; color: #f1f5f9; }
+    .logo-sub { font-size: 11px; color: #64748b; margin-top: 1px; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .header-badge {
+      font-size: 11px; padding: 4px 10px; border-radius: 5px;
+      background: rgba(220,38,38,0.15); color: #f87171;
+      border: 0.5px solid rgba(220,38,38,0.3);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .pulse-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #f87171; animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+    .header-farm { font-size: 12px; color: #64748b; }
+
+    /* MAIN LAYOUT */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 0;
+      height: calc(100vh - 57px);
+    }
+
+    /* LEFT PANEL — VIDEO */
+    .video-panel {
+      display: flex;
+      flex-direction: column;
+      padding: 16px 20px;
+      gap: 12px;
+      border-right: 0.5px solid rgba(255,255,255,0.06);
+    }
+    .cam-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cam-bar-left { display: flex; align-items: center; gap: 10px; }
+    .cam-label { font-size: 12px; color: #94a3b8; }
+    .cam-id { font-size: 12px; font-weight: 500; color: #e2e8f0; }
+    .model-tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 4px;
+      background: rgba(255,255,255,0.06); color: #64748b;
+      border: 0.5px solid rgba(255,255,255,0.08);
+    }
+    canvas#cvCanvas {
+      width: 100%;
+      border-radius: 10px;
+      border: 0.5px solid rgba(255,255,255,0.08);
+      display: block;
+    }
+
+    /* METRIC CARDS */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .metric-card {
+      background: #1a1f2e;
+      border: 0.5px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .metric-label { font-size: 10px; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .metric-value { font-size: 22px; font-weight: 500; color: #f1f5f9; }
+    .metric-unit { font-size: 11px; color: #475569; margin-top: 1px; }
+    .metric-delta { font-size: 10px; margin-top: 3px; }
+    .delta-up { color: #f87171; }
+    .delta-ok { color: #4ade80; }
+
+    /* RIGHT PANEL */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow-y: auto;
+    }
+    .panel-section {
+      padding: 16px 18px;
+      border-bottom: 0.5px solid rgba(255,255,255,0.06);
+    }
+    .section-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #475569;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    /* RISK SCORE */
+    .risk-score-big {
+      font-size: 48px;
+      font-weight: 600;
+      line-height: 1;
+      margin-bottom: 4px;
+      transition: color 0.6s;
+    }
+    .risk-sublabel { font-size: 11px; color: #64748b; margin-bottom: 12px; }
+    .risk-track {
+      height: 8px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .risk-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease, background 0.6s ease;
+    }
+    .risk-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: #475569;
+    }
+
+    /* ALERT BOX */
+    .alert-box {
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.5;
+      border: 0.5px solid;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      transition: background 0.5s, border-color 0.5s, color 0.5s;
+    }
+    .alert-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .alert-warn { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.35); color: #fde68a; }
+    .alert-ok { background: rgba(22,163,74,0.1); border-color: rgba(22,163,74,0.3); color: #86efac; }
+    .alert-critical { background: rgba(220,38,38,0.12); border-color: rgba(220,38,38,0.35); color: #fca5a5; }
+
+    /* GAIT CHART */
+    canvas#strideChart {
+      width: 100%;
+      display: block;
+      border-radius: 6px;
+    }
+
+    /* PEN MAP */
+    canvas#penMap {
+      width: 100%;
+      display: block;
+      border-radius: 6px;
+    }
+
+    /* EVENT LOG */
+    .event-log {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 10px;
+      color: #64748b;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: 140px;
+      overflow: hidden;
+    }
+    .event-row { display: flex; gap: 8px; }
+    .ev-ts { color: #334155; flex-shrink: 0; }
+    .ev-ok { color: #4ade80; }
+    .ev-warn { color: #fbbf24; }
+    .ev-crit { color: #f87171; }
+    .ev-neutral { color: #64748b; }
+
+    /* FOOTER */
+    footer {
+      padding: 8px 28px;
+      border-top: 0.5px solid rgba(255,255,255,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: #334155;
+      background: #0f1117;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">G</div>
+    <div>
+      <div class="logo-text">GaitNet</div>
+      <div class="logo-sub">Cattle Respiratory Intelligence</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="header-badge">
+      <div class="pulse-dot"></div>
+      LIVE MONITORING
+    </div>
+    <div class="header-farm">Sunrise Ranch · Amarillo, TX &nbsp;|&nbsp; 847 head tracked</div>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: VIDEO PANEL -->
+  <div class="video-panel">
+    <div class="cam-bar">
+      <div class="cam-bar-left">
+        <span class="cam-label">Camera</span>
+        <span class="cam-id">CAM-04 · Pen B</span>
+        <span class="model-tag">YOLOv8-pose · GaitNet v2.1 · 29 FPS</span>
+      </div>
+      <span style="font-size:11px;color:#475569;" id="clockLabel"></span>
+    </div>
+
+    <canvas id="cvCanvas" width="900" height="400"></canvas>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Stride length</div>
+        <div class="metric-value" id="mStride">1.42</div>
+        <div class="metric-unit">meters</div>
+        <div class="metric-delta delta-ok" id="dStride">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Cadence</div>
+        <div class="metric-value" id="mCadence">54</div>
+        <div class="metric-unit">steps / min</div>
+        <div class="metric-delta delta-ok" id="dCadence">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Asymmetry index</div>
+        <div class="metric-value" id="mAsym">0.12</div>
+        <div class="metric-unit">L / R ratio</div>
+        <div class="metric-delta delta-ok" id="dAsym">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Head bob amplitude</div>
+        <div class="metric-value" id="mBob">3.1</div>
+        <div class="metric-unit">cm</div>
+        <div class="metric-delta delta-ok" id="dBob">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <div class="panel-section">
+      <div class="section-title">Respiratory risk score · #A1082</div>
+      <div class="risk-score-big" id="riskBig">18%</div>
+      <div class="risk-sublabel" id="riskLabel">Low risk · Gait nominal</div>
+      <div class="risk-track">
+        <div class="risk-fill" id="riskFill" style="width:18%;background:#22c55e;"></div>
+      </div>
+      <div class="risk-ticks"><span>0</span><span>Low</span><span>Moderate</span><span>High</span><span>100</span></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Alert</div>
+      <div class="alert-box alert-ok" id="alertBox">
+        <span class="alert-icon">✓</span>
+        <div id="alertText">Gait pattern nominal. No anomalies detected.</div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Stride waveform (last 60s)</div>
+      <canvas id="strideChart" width="264" height="80"></canvas>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Pen B · animal map</div>
+      <canvas id="penMap" width="264" height="120"></canvas>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Event log</div>
+      <div class="event-log" id="eventLog"></div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <span>GaitNet v2.1 · Model trained on 2.3M bovine gait sequences · USDA compliant</span>
+  <span id="footerTime"></span>
+</footer>
+
+<script>
+// ─── CLOCK ───
+function updateClock() {
+  const now = new Date();
+  const ts = now.toLocaleTimeString('en-US', {hour12:false});
+  const ds = now.toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('clockLabel').textContent = ds + ' · ' + ts;
+  document.getElementById('footerTime').textContent = 'Last sync: ' + ts;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── MAIN CANVAS ───
+const canvas = document.getElementById('cvCanvas');
+const ctx = canvas.getContext('2d');
+const W = 900, H = 400;
+canvas.width = W; canvas.height = H;
+
+let t = 0, phase = 0;
+let riskLevel = 0.18, targetRisk = 0.18;
+let anomalyMode = false, anomalyTimer = 0;
+const ANOM_INTERVAL = 480, ANOM_DURATION = 200;
+
+function lerp(a,b,t){ return a+(b-a)*t; }
+function noise(x){ return Math.sin(x*1.3)*0.5+Math.sin(x*2.7)*0.3+Math.sin(x*0.7)*0.2; }
+
+const BX = 230, BY = 195;
+
+function getCowKeypoints(ph, anom) {
+  const legSwing  = Math.sin(ph) * (anom ? 28 : 16);
+  const legSwing2 = Math.sin(ph + Math.PI) * (anom ? 28 : 16);
+  const headBob   = Math.sin(ph*2) * (anom ? 9 : 3.5);
+  const bodyWobble = anom ? Math.sin(ph*1.3)*5 : 0;
+  const by = BY + bodyWobble;
+  return {
+    nose:    { x: BX-185, y: by-25+headBob },
+    head:    { x: BX-165, y: by-35+headBob },
+    neck:    { x: BX-120, y: by-12+headBob*0.5 },
+    spine0:  { x: BX-60,  y: by-48 },
+    spine1:  { x: BX,     y: by-50 },
+    spine2:  { x: BX+65,  y: by-46 },
+    hip:     { x: BX+115, y: by-32 },
+    tail:    { x: BX+160, y: by-18+Math.sin(ph*0.7)*6 },
+    fl_knee: { x: BX-100, y: by+14 },
+    fl_hoof: { x: BX-100+legSwing, y: by+70 },
+    fr_knee: { x: BX-80,  y: by+14 },
+    fr_hoof: { x: BX-80+legSwing2, y: by+70+(anom?8:0) },
+    rl_knee: { x: BX+90,  y: by+14 },
+    rl_hoof: { x: BX+90+legSwing2, y: by+70 },
+    rr_knee: { x: BX+108, y: by+14 },
+    rr_hoof: { x: BX+108+legSwing, y: by+70+(anom?6:0) },
+  };
+}
+
+function drawBg() {
+  ctx.fillStyle = '#111827';
+  ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+  ctx.lineWidth = 1;
+  for(let i=0;i<W;i+=80){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,H); ctx.stroke(); }
+  for(let j=0;j<H;j+=60){ ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(W,j); ctx.stroke(); }
+  ctx.fillStyle = '#0f1825';
+  ctx.fillRect(0, H-70, W, 70);
+  ctx.fillStyle = 'rgba(22,163,74,0.05)';
+  ctx.fillRect(BX-220, BY-100, 440, 200);
+}
+
+function drawBoundingBox(kp, anom) {
+  const pts = Object.values(kp);
+  const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
+  const x0=Math.min(...xs)-18, y0=Math.min(...ys)-18;
+  const x1=Math.max(...xs)+18, y1=Math.max(...ys)+18;
+  const color = anom ? '#f59e0b' : '#22d3ee';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([]);
+  ctx.strokeRect(x0,y0,x1-x0,y1-y0);
+  const cs=12;
+  ctx.lineWidth=2.5;
+  [[x0,y0],[x1,y0],[x0,y1],[x1,y1]].forEach(([cx,cy],i)=>{
+    const sx=i%2===0?1:-1, sy=i<2?1:-1;
+    ctx.beginPath(); ctx.moveTo(cx,cy+sy*cs); ctx.lineTo(cx,cy); ctx.lineTo(cx+sx*cs,cy); ctx.stroke();
+  });
+  ctx.font='500 11px monospace'; ctx.fillStyle=color;
+  ctx.fillText(anom ? '⚠ ID #A1082 · FLAGGED · conf 0.94' : 'ID #A1082 · conf 0.97', x0+4, y0-6);
+}
+
+function drawSkeleton(kp, anom) {
+  const boneColor  = anom ? '#fb923c' : '#34d399';
+  const jointColor = anom ? '#fbbf24' : '#6ee7b7';
+  const bones = [
+    ['nose','head'],['head','neck'],['neck','spine0'],['spine0','spine1'],
+    ['spine1','spine2'],['spine2','hip'],['hip','tail'],
+    ['neck','fl_knee'],['fl_knee','fl_hoof'],
+    ['neck','fr_knee'],['fr_knee','fr_hoof'],
+    ['hip','rl_knee'],['rl_knee','rl_hoof'],
+    ['hip','rr_knee'],['rr_knee','rr_hoof'],
+  ];
+  ctx.strokeStyle=boneColor; ctx.lineWidth=2; ctx.setLineDash([]);
+  bones.forEach(([a,b])=>{
+    if(!kp[a]||!kp[b]) return;
+    ctx.beginPath(); ctx.moveTo(kp[a].x,kp[a].y); ctx.lineTo(kp[b].x,kp[b].y); ctx.stroke();
+  });
+  Object.entries(kp).forEach(([name,pt])=>{
+    ctx.beginPath(); ctx.arc(pt.x,pt.y,name.includes('hoof')?4:3,0,Math.PI*2);
+    ctx.fillStyle=jointColor; ctx.fill();
+  });
+}
+
+function drawGaitWave(ph, anom) {
+  const baseY = H-35;
+  ctx.strokeStyle = anom ? '#f59e0b' : '#22d3ee';
+  ctx.lineWidth=1.5; ctx.setLineDash([]);
+  ctx.beginPath();
+  for(let x=0;x<W;x++){
+    const tt=(x/W)*Math.PI*10+ph;
+    const amp = anom ? 14+Math.random()*4 : 9;
+    const y = baseY+Math.sin(tt)*amp+(anom?noise(tt)*5:noise(tt)*1.5);
+    x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  ctx.font='10px monospace'; ctx.fillStyle='rgba(255,255,255,0.25)';
+  ctx.fillText('stride waveform', 8, H-50);
+}
+
+function drawHUD(anom) {
+  ctx.fillStyle='rgba(0,0,0,0.6)';
+  ctx.fillRect(W-160,8,152,82);
+  ctx.strokeStyle='rgba(255,255,255,0.08)';
+  ctx.lineWidth=0.5; ctx.strokeRect(W-160,8,152,82);
+  ctx.font='10px monospace';
+  ctx.fillStyle='#22d3ee';
+  ctx.fillText('GaitNet v2.1', W-152,24);
+  ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.fillText('Backbone: YOLOv8-pose',W-152,38);
+  ctx.fillText('FPS: 29  ·  Latency: 34ms',W-152,52);
+  ctx.fillText('GPU: NVIDIA A100',W-152,66);
+  ctx.fillStyle= anom ? '#f59e0b' : '#22d3ee';
+  ctx.font='500 10px monospace';
+  ctx.fillText(anom ? '● STATUS: ANOMALY DETECTED' : '● STATUS: NOMINAL', W-152,80);
+
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.fillRect(W-160,96,152,30);
+  ctx.strokeRect(W-160,96,152,30);
+  ctx.fillStyle='rgba(255,255,255,0.35)';
+  ctx.font='10px monospace';
+  const now=new Date();
+  ctx.fillText(now.toLocaleTimeString('en-US',{hour12:false})+' · CAM-04', W-152, 115);
+}
+
+// ─── STRIDE CHART ───
+const sc = document.getElementById('strideChart');
+const sctx = sc.getContext('2d');
+const strideHistory = Array(80).fill(1.42);
+
+function drawStrideChart(anom, val) {
+  strideHistory.push(val);
+  if(strideHistory.length>80) strideHistory.shift();
+  const sw=264, sh=80;
+  sctx.fillStyle='#111827';
+  sctx.fillRect(0,0,sw,sh);
+  sctx.strokeStyle='rgba(255,255,255,0.05)';
+  sctx.lineWidth=0.5;
+  [20,40,60].forEach(y=>{ sctx.beginPath(); sctx.moveTo(0,y); sctx.lineTo(sw,y); sctx.stroke(); });
+  sctx.strokeStyle= anom ? '#f59e0b' : '#34d399';
+  sctx.lineWidth=1.5;
+  sctx.beginPath();
+  strideHistory.forEach((v,i)=>{
+    const x=(i/79)*sw;
+    const y=sh-((v-0.7)/(1.8-0.7))*(sh-10)-5;
+    i===0?sctx.moveTo(x,y):sctx.lineTo(x,y);
+  });
+  sctx.stroke();
+  sctx.font='9px monospace'; sctx.fillStyle='rgba(255,255,255,0.2)';
+  sctx.fillText('1.8m',2,12); sctx.fillText('0.7m',2,sh-4);
+}
+
+// ─── PEN MAP ───
+const pm = document.getElementById('penMap');
+const pmctx = pm.getContext('2d');
+const otherCows = [
+  {x:40, y:30, id:'1081', risk:0.1},
+  {x:100,y:50, id:'1083', risk:0.22},
+  {x:170,y:25, id:'1084', risk:0.08},
+  {x:220,y:70, id:'1085', risk:0.15},
+  {x:60, y:90, id:'1086', risk:0.31},
+  {x:145,y:95, id:'1087', risk:0.09},
+];
+
+function drawPenMap(anom, mainRisk) {
+  const pw=264, ph=120;
+  pmctx.fillStyle='#111827';
+  pmctx.fillRect(0,0,pw,ph);
+  pmctx.strokeStyle='rgba(255,255,255,0.12)';
+  pmctx.lineWidth=1;
+  pmctx.strokeRect(4,4,pw-8,ph-8);
+  pmctx.font='8px monospace'; pmctx.fillStyle='rgba(255,255,255,0.2)';
+  pmctx.fillText('PEN B', 10, 16);
+
+  otherCows.forEach(c=>{
+    const col = c.risk<0.2?'#22c55e':c.risk<0.4?'#f59e0b':'#ef4444';
+    pmctx.beginPath(); pmctx.arc(c.x+20, c.y+20, 6, 0, Math.PI*2);
+    pmctx.fillStyle=col+'33'; pmctx.fill();
+    pmctx.strokeStyle=col; pmctx.lineWidth=1; pmctx.stroke();
+  });
+
+  const mx=BX/W*(pw-40)+20, my=50;
+  const mcol = mainRisk<0.35?'#22c55e':mainRisk<0.65?'#f59e0b':'#ef4444';
+  pmctx.beginPath(); pmctx.arc(mx, my, 9, 0, Math.PI*2);
+  pmctx.fillStyle=mcol+'44'; pmctx.fill();
+  pmctx.strokeStyle=mcol; pmctx.lineWidth=2; pmctx.stroke();
+  if(anom){
+    pmctx.beginPath(); pmctx.arc(mx,my,14,0,Math.PI*2);
+    pmctx.strokeStyle='rgba(245,158,11,0.4)'; pmctx.lineWidth=1.5; pmctx.stroke();
+  }
+  pmctx.font='500 9px monospace'; pmctx.fillStyle=mcol;
+  pmctx.fillText('#A1082', mx+11, my+4);
+}
+
+// ─── METRICS ───
+function updateMetrics(anom, risk) {
+  const r = Math.min((risk-0.18)/0.65, 1);
+  const stride = anom ? (1.42-r*0.48).toFixed(2) : (1.42+noise(t*0.02)*0.03).toFixed(2);
+  const cad    = anom ? Math.round(54-r*16) : 54+Math.round(noise(t*0.03)*2);
+  const asym   = anom ? (0.12+r*0.34).toFixed(2) : (0.12+noise(t*0.04)*0.01).toFixed(2);
+  const bob    = anom ? (3.1+r*6.2).toFixed(1) : (3.1+noise(t*0.05)*0.2).toFixed(1);
+
+  document.getElementById('mStride').textContent = stride;
+  document.getElementById('mCadence').textContent = cad;
+  document.getElementById('mAsym').textContent = asym;
+  document.getElementById('mBob').textContent = bob;
+
+  if(anom) {
+    document.getElementById('dStride').textContent = '↓ vs baseline'; document.getElementById('dStride').className='metric-delta delta-up';
+    document.getElementById('dCadence').textContent= '↓ vs baseline'; document.getElementById('dCadence').className='metric-delta delta-up';
+    document.getElementById('dAsym').textContent=   '↑ asymmetry';   document.getElementById('dAsym').className='metric-delta delta-up';
+    document.getElementById('dBob').textContent=    '↑ head bob';    document.getElementById('dBob').className='metric-delta delta-up';
+  } else {
+    document.getElementById('dStride').textContent = '✓ normal'; document.getElementById('dStride').className='metric-delta delta-ok';
+    document.getElementById('dCadence').textContent= '✓ normal'; document.getElementById('dCadence').className='metric-delta delta-ok';
+    document.getElementById('dAsym').textContent=   '✓ normal'; document.getElementById('dAsym').className='metric-delta delta-ok';
+    document.getElementById('dBob').textContent=    '✓ normal'; document.getElementById('dBob').className='metric-delta delta-ok';
+  }
+
+  const pct = Math.round(risk*100);
+  document.getElementById('riskBig').textContent = pct+'%';
+  document.getElementById('riskBig').style.color = risk>0.65?'#f87171':risk>0.35?'#fbbf24':'#4ade80';
+  document.getElementById('riskLabel').textContent = risk>0.65?'High risk · Immediate review recommended':risk>0.35?'Moderate risk · Elevated monitoring':'Low risk · Gait nominal';
+  const fill=document.getElementById('riskFill');
+  fill.style.width=pct+'%';
+  fill.style.background=risk>0.65?'#dc2626':risk>0.35?'#f59e0b':'#22c55e';
+
+  const ab=document.getElementById('alertBox');
+  const at=document.getElementById('alertText');
+  if(risk>0.65){
+    ab.className='alert-box alert-critical';
+    at.textContent='Critical: Severe gait irregularity detected. Asymmetry and reduced stride consistent with early BRD. Veterinary review within 2h recommended.';
+  } else if(risk>0.35){
+    ab.className='alert-box alert-warn';
+    at.textContent='Warning: Mild gait asymmetry and reduced stride length detected. Monitoring closely — no immediate action required.';
+  } else {
+    ab.className='alert-box alert-ok';
+    at.textContent='Gait pattern nominal. Stride, cadence, and symmetry within expected range.';
+  }
+
+  drawStrideChart(anom, parseFloat(stride));
+  drawPenMap(anom, risk);
+}
+
+// ─── EVENT LOG ───
+const logEl = document.getElementById('eventLog');
+const events = [];
+function addEvent(msg, type) {
+  const ts = new Date().toLocaleTimeString('en-US',{hour12:false});
+  events.unshift({ts, msg, type});
+  if(events.length>8) events.pop();
+  logEl.innerHTML = events.map(e=>`<div class="event-row"><span class="ev-ts">${e.ts}</span><span class="ev-${e.type}">${e.msg}</span></div>`).join('');
+}
+
+addEvent('System online · GaitNet v2.1 initialized', 'ok');
+addEvent('Pen B camera active · 29 FPS', 'ok');
+addEvent('Cow #A1082 detected · tracking active', 'ok');
+addEvent('Baseline gait loaded · stride ref 1.42m', 'neutral');
+
+// ─── ANIMATION LOOP ───
+function frame() {
+  t++;
+  phase += anomalyMode ? 0.042 : 0.058;
+
+  if(!anomalyMode && t % ANOM_INTERVAL === 0) {
+    anomalyMode = true; anomalyTimer = 0;
+    targetRisk = 0.6 + Math.random()*0.28;
+    addEvent('Gait anomaly detected · #A1082 · asymmetry +0.29', 'warn');
+    if(targetRisk > 0.75) addEvent('High-risk threshold crossed · alert triggered', 'crit');
+  }
+  if(anomalyMode) {
+    anomalyTimer++;
+    if(anomalyTimer < 40) riskLevel = lerp(riskLevel, targetRisk, 0.04);
+    else if(anomalyTimer > ANOM_DURATION) {
+      riskLevel = lerp(riskLevel, 0.18, 0.025);
+      if(riskLevel < 0.21) {
+        anomalyMode = false; targetRisk = 0.18;
+        addEvent('Gait returning to baseline · continued monitoring', 'ok');
+      }
+    }
+  } else {
+    riskLevel = lerp(riskLevel, 0.18+noise(t*0.007)*0.04, 0.03);
+  }
+
+  const kp = getCowKeypoints(phase, anomalyMode);
+  drawBg();
+  drawGaitWave(phase, anomalyMode);
+  drawBoundingBox(kp, anomalyMode);
+  drawSkeleton(kp, anomalyMode);
+  drawHUD(anomalyMode);
+  updateMetrics(anomalyMode, riskLevel);
+
+  requestAnimationFrame(frame);
+}
+
+frame();
+</script>
+</body>
+</html>

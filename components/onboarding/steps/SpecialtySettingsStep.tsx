@@ -34,7 +34,7 @@ export function SpecialtySettingsStep({ specialty, settings, onUpdate }: Special
                 className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 px-4 py-3.5 transition-all ${s[q.id] ? "border-hiro-green/40 bg-hiro-green/5" : "border-black/[0.06] hover:border-black/[0.12]"}`}
               >
                 <div className={`flex h-6 w-6 items-center justify-center rounded-md transition-colors ${s[q.id] ? "bg-hiro-green text-white" : "bg-black/[0.06]"}`}>
-                  {s[q.id] && <Check className="h-4 w-4" strokeWidth={2} />}
+                  {!!s[q.id] && <Check className="h-4 w-4" strokeWidth={2} />}
                 </div>
                 <span className="text-hiro-text">Ativar</span>
               </div>
