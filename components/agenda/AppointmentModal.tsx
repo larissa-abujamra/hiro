@@ -13,6 +13,9 @@ export interface Appointment {
   id: string;
   patient_name: string;
   patient_phone?: string;
+  patient_cpf?: string;
+  patient_dob?: string;
+  patient_sex?: string;
   patient_id?: string;
   datetime: string;
   duration_minutes: number;
@@ -98,8 +101,8 @@ export function AppointmentModal({ isOpen, onClose, onSave, initial }: Appointme
       setForm({
         patient_name: initial.patient_name,
         patient_phone: initial.patient_phone ?? "",
-        patient_cpf: (initial as Record<string, unknown>).patient_cpf as string ?? "",
-        patient_dob: (initial as Record<string, unknown>).patient_dob as string ?? "",
+        patient_cpf: initial.patient_cpf ?? "",
+        patient_dob: initial.patient_dob ?? "",
         date: `${day}/${month}/${year}`, time: `${hours}:${mins}`,
         duration_minutes: String(initial.duration_minutes),
         type: initial.type, insurance: initial.insurance ?? "",
