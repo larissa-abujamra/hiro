@@ -65,16 +65,16 @@ export function DashboardGreeting({ serverName, serverSexo }: DashboardGreetingP
           {firstName ? `${title} ${firstName}.` : "médico(a)."}
         </span>
       </h1>
-      {subGreeting && (
-        <p className="mt-1.5 text-[14px] text-hiro-muted">{subGreeting}</p>
-      )}
-      <p className="mt-1 text-sm leading-relaxed text-hiro-muted/60" suppressHydrationWarning>
-        {new Date().toLocaleDateString("pt-BR", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })}
+      <p className="mt-1.5 text-[14px] text-hiro-muted" suppressHydrationWarning>
+        {subGreeting && <>{subGreeting} <span className="text-hiro-muted/40">·</span> </>}
+        <span className="text-hiro-muted/60">
+          {new Date().toLocaleDateString("pt-BR", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
+        </span>
       </p>
     </header>
   );
