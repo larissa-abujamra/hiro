@@ -10,6 +10,7 @@ import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { useConsultationStore } from "@/lib/store";
 import type { Patient } from "@/lib/types";
 import { formatDateBR } from "@/lib/formatDate";
+import { persistPatient } from "@/lib/persistence";
 
 interface NewConsultationFlowProps {
   patients?: Patient[];
@@ -140,10 +141,12 @@ export function NewConsultationFlow({ patients, appointmentId: propAppointmentId
         Boolean(newPatientDraft.name) &&
         Boolean(newPatientDraft.dateOfBirth)));
 
-  const handleStartConsultation = () => {
-    if (!canStart) return;
+  const [isStarting, setIsStarting] = useState(false);
 
-    const consultationId = `cons-${Date.now()}`;
+  const handleStartConsultation = async () => {
+    if (!canStart || isStarting) return;
+    setIsStarting(true);
+
     let targetPatientId: string | null = null;
     let patientName = "";
     if (intakeMode === "existing" && selectedPatientId) {
@@ -153,18 +156,56 @@ export function NewConsultationFlow({ patients, appointmentId: propAppointmentId
     } else {
       patientName = newPatientDraft.name.trim();
       targetPatientId = createPatientFromDraft();
-      if (!targetPatientId) return;
+      if (!targetPatientId) {
+        setIsStarting(false);
+        return;
+      }
       addActivity({ type: "patient_created", patientName });
-    }
-    // Set the consultation state directly — don't call resetConsultation()
-    // as it clears selectedPatientId which can cause race conditions
-    selectPatient(targetPatientId);
-    setActiveConsultation(consultationId);
-    setConsultationReason(consultationReason);
-    addActivity({ type: "consultation_started", patientName });
 
-    console.log("[NewConsultation] Starting consultation:", consultationId, "for patient:", targetPatientId, patientName);
-    router.push(`/consulta/${consultationId}`);
+      // Ensure the new patient exists in Supabase before creating the
+      // consultation (the FK from consultations.patient_id needs it).
+      const createdPatient = useConsultationStore
+        .getState()
+        .patients.find((p) => p.id === targetPatientId);
+      if (createdPatient) {
+        await persistPatient(createdPatient);
+      }
+    }
+
+    try {
+      const res = await fetch("/api/consultations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patient_id: targetPatientId,
+          appointment_id: appointmentId,
+          chief_complaint: consultationReason,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("[NewConsultation] Failed to create consultation:", err);
+        setIsStarting(false);
+        return;
+      }
+
+      const consultation = await res.json();
+      const consultationId = consultation.id as string;
+
+      // Set the consultation state directly — don't call resetConsultation()
+      // as it clears selectedPatientId which can cause race conditions
+      selectPatient(targetPatientId);
+      setActiveConsultation(consultationId);
+      setConsultationReason(consultationReason);
+      addActivity({ type: "consultation_started", patientName });
+
+      console.log("[NewConsultation] Starting consultation:", consultationId, "for patient:", targetPatientId, patientName);
+      router.push(`/consulta/${consultationId}`);
+    } catch (err) {
+      console.error("[NewConsultation] Error creating consultation:", err);
+      setIsStarting(false);
+    }
   };
 
   return (
@@ -340,8 +381,8 @@ export function NewConsultationFlow({ patients, appointmentId: propAppointmentId
 
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-black/8 bg-hiro-bg/95 p-4 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-end gap-3">
-          <ButtonHiro onClick={handleStartConsultation} disabled={!canStart}>
-            Iniciar consulta
+          <ButtonHiro onClick={handleStartConsultation} disabled={!canStart || isStarting}>
+            {isStarting ? "Iniciando..." : "Iniciar consulta"}
           </ButtonHiro>
         </div>
       </div>

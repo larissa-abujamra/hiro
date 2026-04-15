@@ -22,19 +22,28 @@ async function getClients() {
   return { auth, admin };
 }
 
-// GET — list all patients for the current user
-export async function GET() {
+// GET — list all patients for the current user (supports ?q= for name search)
+export async function GET(request: Request) {
   const { auth, admin } = await getClients();
   const { data: { user } } = await auth.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
-  console.log("[api/patients GET] user:", user.id, user.email);
+  const { searchParams } = new URL(request.url);
+  const q = searchParams.get("q")?.trim() ?? "";
 
-  const { data, error } = await admin
+  console.log("[api/patients GET] user:", user.id, user.email, "q:", q);
+
+  let query = admin
     .from("patients")
     .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  if (q.length >= 2) {
+    query = query.ilike("name", `%${q}%`).limit(10);
+  }
+
+  const { data, error } = await query;
 
   console.log("[api/patients GET] result:", { count: data?.length ?? 0, error });
 
@@ -52,6 +61,7 @@ export async function GET() {
     height: row.height ?? undefined,
     weight: row.weight ?? undefined,
     phone: row.phone ?? undefined,
+    cpf: row.cpf ?? undefined,
     conditions: row.conditions ?? [],
     medications: row.medications ?? [],
     cids: row.cids ?? [],
@@ -76,6 +86,55 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Corpo inválido" }, { status: 400 });
+  }
+
+  // ─── Quick-create mode (flat shape) ─────────────────────────────────────
+  // Used by the appointment modal when creating a new patient on the fly.
+  // Body: { name, phone?, cpf?, date_of_birth?, sex? } — returns the created row.
+  if (!body.patient && body.name) {
+    const cpfDigits = body.cpf ? String(body.cpf).replace(/\D/g, "") : "";
+    const row = {
+      id: `patient-${Date.now()}`,
+      user_id: user.id,
+      name: String(body.name).trim(),
+      date_of_birth: body.date_of_birth || null,
+      sex: body.sex || "Other",
+      phone: body.phone || null,
+      cpf: cpfDigits || null,
+      conditions: [],
+      medications: [],
+      cids: [],
+      consultations: [],
+      exams: [],
+      metrics: [],
+      tracked_metrics: [],
+      saved_exams: [],
+    };
+
+    console.log("[api/patients POST quick-create] inserting:", row.id, row.name);
+
+    const { data, error } = await admin
+      .from("patients")
+      .insert(row)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[api/patients POST quick-create] error:", error);
+      return NextResponse.json(
+        { error: `Erro ao criar paciente: ${error.message}` },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      id: data.id,
+      name: data.name,
+      phone: data.phone,
+      cpf: data.cpf,
+      date_of_birth: data.date_of_birth,
+      sex: data.sex,
+    });
   }
 
   const patient = body.patient;

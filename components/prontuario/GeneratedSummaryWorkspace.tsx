@@ -164,9 +164,6 @@ export function GeneratedSummaryWorkspace({
   const generatedSpecialtyFields = useConsultationStore((state) => state.generatedSpecialtyFields);
   const flags = useConsultationStore((state) => state.flags);
   const saveSummary = useConsultationStore((state) => state.saveSummary);
-  const saveConsultationToPatient = useConsultationStore(
-    (state) => state.saveConsultationToPatient,
-  );
   const addActivity = useConsultationStore((state) => state.addActivity);
 
   const sourcePatients = patientsInStore.length ? patientsInStore : patients;
@@ -296,24 +293,41 @@ export function GeneratedSummaryWorkspace({
     setTimeout(() => setToast(null), 1800);
   };
 
-  const persistConsultation = () => {
+  const persistConsultation = async () => {
     if (!patient) return;
-    saveConsultationToPatient({
-      id: consultationId,
-      patientId: patient.id,
-      date: savedConsultation?.date ?? new Date().toISOString().slice(0, 10),
-      reason: resolvedReason,
-      duration: resolvedDuration,
-      transcription: resolvedTranscription,
-      soap,
-      confirmedCids: resolvedCids,
-      detectedItems: resolvedDetectedItems,
-      documents: generatedDocs.map((doc) => ({
-        type: doc.type,
-        status: doc.status,
-        content: doc.summary,
-      })),
-    });
+
+    const soapPayload = {
+      subjetivo: soap.s,
+      objetivo: soap.o,
+      avaliacao: soap.a,
+      plano: soap.p,
+    };
+
+    try {
+      const res = await fetch(`/api/consultations/${consultationId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcription: JSON.stringify(resolvedTranscription),
+          subjetivo: soap.s,
+          objetivo: soap.o,
+          avaliacao: soap.a,
+          plano: soap.p,
+          soap: soapPayload,
+          chief_complaint: resolvedReason,
+          duration_minutes: resolvedDuration,
+          ended_at: new Date().toISOString(),
+          status: "completed",
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("[Prontuário] Failed to persist consultation:", err);
+      }
+    } catch (err) {
+      console.error("[Prontuário] Error persisting consultation:", err);
+    }
   };
 
   const handleSavePDF = () => {

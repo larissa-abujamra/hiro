@@ -6,6 +6,7 @@ export interface Patient {
   height?: number;
   weight?: number;
   phone?: string;
+  cpf?: string;
   conditions?: string[];
   medications: Medication[];
   cids: CidEntry[];
