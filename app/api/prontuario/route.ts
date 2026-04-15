@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
   let specialtyFields: SpecialtyFieldInput[] = [];
   let writingPreferences: Record<string, unknown> = {};
   let writingProfile: Record<string, unknown> | null = null;
+  let doctorSpecialty: string | null = null;
+  let enabledSpecialtyFieldNames: string[] = [];
   try {
     const body = await req.json();
     transcription = typeof body.transcription === "string" ? body.transcription : "";
@@ -55,7 +57,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ soap: { s: "", o: "", a: "", p: "" }, summary: "", flags: [], specialtyFields: {} });
   }
 
-  // Fetch user's writing preferences from Supabase
+  // Fetch the doctor's profile — specialty, specialty_fields (enabled flags),
+  // writing_preferences and writing_profile — so the SOAP generation honors
+  // the onboarding configuration. Errors here are logged (not swallowed) so
+  // misconfigured setups show up in the server log instead of silently
+  // degrading to the default prompt.
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -64,15 +70,59 @@ export async function POST(req: NextRequest) {
       { cookies: { getAll: () => cookieStore.getAll(), setAll(c) { try { c.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch {} } } }
     );
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    if (!user) {
+      console.warn("[prontuario] No authenticated user — proceeding without doctor preferences");
+    } else {
       const admin = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { cookies: { getAll: () => cookieStore.getAll(), setAll() {} } });
-      const { data: profile } = await admin.from("profiles").select("writing_preferences, writing_profile").eq("id", user.id).single();
-      if (profile?.writing_preferences) writingPreferences = profile.writing_preferences as Record<string, unknown>;
-      if (profile?.writing_profile) {
-        try { writingProfile = typeof profile.writing_profile === "string" ? JSON.parse(profile.writing_profile) : profile.writing_profile; } catch {}
+      const { data: profile, error: profileError } = await admin
+        .from("profiles")
+        .select("specialty, specialty_fields, writing_preferences, writing_profile")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) {
+        console.error("[prontuario] Failed to load profile:", profileError);
+      } else if (!profile) {
+        console.warn("[prontuario] Profile not found for user:", user.id);
+      } else {
+        if (profile.writing_preferences) {
+          writingPreferences = profile.writing_preferences as Record<string, unknown>;
+        }
+        if (profile.writing_profile) {
+          try {
+            writingProfile = typeof profile.writing_profile === "string"
+              ? JSON.parse(profile.writing_profile)
+              : profile.writing_profile;
+          } catch (err) {
+            console.error("[prontuario] Failed to parse writing_profile JSON:", err);
+          }
+        }
+        if (typeof profile.specialty === "string") {
+          doctorSpecialty = profile.specialty;
+        }
+        if (Array.isArray(profile.specialty_fields)) {
+          enabledSpecialtyFieldNames = (profile.specialty_fields as Array<{ name?: string; enabled?: boolean }>)
+            .filter((f) => f && f.enabled && typeof f.name === "string")
+            .map((f) => f.name as string);
+        }
+
+        console.log("[prontuario] Loaded doctor profile:", {
+          userId: user.id,
+          specialty: doctorSpecialty,
+          enabledFieldsCount: enabledSpecialtyFieldNames.length,
+          enabledFields: enabledSpecialtyFieldNames,
+          tone: writingPreferences.tone ?? null,
+          planFormat: writingPreferences.planFormat ?? null,
+          includeSuggestedCID: writingPreferences.includeSuggestedCID ?? null,
+          includeSuggestedReturn: writingPreferences.includeSuggestedReturn ?? null,
+          includeDateTime: writingPreferences.includeDateTime ?? null,
+          hasWritingProfile: Boolean(writingProfile),
+        });
       }
     }
-  } catch { /* proceed without preferences */ }
+  } catch (err) {
+    console.error("[prontuario] Unexpected error loading doctor profile:", err);
+  }
 
   if (!transcription || transcription.trim().length < 20) {
     return NextResponse.json({ soap: { s: "", o: "", a: "", p: "" }, summary: "", flags: [], specialtyFields: {} });
@@ -110,7 +160,25 @@ export async function POST(req: NextRequest) {
     specialtyPromptSection = `\nCAMPOS ESPECÍFICOS DA ESPECIALIDADE:\n${parts.join("\n\n")}\nSe um campo não foi mencionado na consulta, não o inclua.\n`;
 
     specialtyJsonSection = `,\n  "specialtyFields": {\n${specialtyFields.map((f) => `    "${f.id}": "valor extraído ou null"`).join(",\n")}\n  }`;
+  } else if (enabledSpecialtyFieldNames.length > 0) {
+    // No rich specialty metadata sent from the client — fall back to the
+    // list of enabled field names from the doctor's onboarding profile so
+    // the prompt still reflects what the doctor wants captured.
+    specialtyPromptSection = `\nCAMPOS DO EXAME FÍSICO / ESPECIALIDADE HABILITADOS PELO MÉDICO${doctorSpecialty ? ` (${doctorSpecialty})` : ""}:\n${enabledSpecialtyFieldNames.map((n) => `- ${n}`).join("\n")}\nInclua estes campos no Objetivo quando mencionados na transcrição; não invente valores.\n`;
   }
+
+  console.log("[prontuario] Generating SOAP with preferences:", {
+    tone: writingPreferences.tone ?? "(default: formal)",
+    planFormat: writingPreferences.planFormat ?? "(default: none)",
+    includeSuggestedCID: Boolean(writingPreferences.includeSuggestedCID),
+    includeSuggestedReturn: Boolean(writingPreferences.includeSuggestedReturn),
+    includeDateTime: Boolean(writingPreferences.includeDateTime),
+    specialty: doctorSpecialty,
+    clientSpecialtyFieldsCount: specialtyFields.length,
+    profileEnabledFieldsCount: enabledSpecialtyFieldNames.length,
+    hasWritingProfile: Boolean(writingProfile?.instrucao_para_ia),
+    transcriptionLength: transcription.length,
+  });
 
   try {
     const response = await client.messages.create({
