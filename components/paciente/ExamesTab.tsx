@@ -18,6 +18,8 @@ import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { formatDateBR } from "@/lib/formatDate";
 import { useConsultationStore } from "@/lib/store";
 import type { Exam, SavedExam, TrackedMetric } from "@/lib/types";
+import { ExamsList } from "@/components/exams/ExamsList";
+import { ExamUpload } from "@/components/exams/ExamUpload";
 
 export interface ExamResult {
   name: string;
@@ -65,6 +67,7 @@ export function ExamesTab({ patientId }: ExamesTabProps) {
   const [selectedForTracking, setSelectedForTracking] = useState<Set<string>>(new Set());
   const [trackingSaved, setTrackingSaved] = useState(false);
   const [viewingExam, setViewingExam] = useState<SavedExam | null>(null);
+  const [examsReloadKey, setExamsReloadKey] = useState(0);
 
   if (!patient) return null;
 
@@ -180,9 +183,27 @@ export function ExamesTab({ patientId }: ExamesTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* Upload */}
+      {/* Exames arquivados (tabela exams) — fluxo centralizado */}
       <CardHiro className="rounded-2xl p-5">
-        <OverlineLabel>ENVIAR EXAME</OverlineLabel>
+        <OverlineLabel>EXAMES DO PACIENTE</OverlineLabel>
+        <p className="mt-1 text-[12px] text-hiro-muted">
+          Arquivo completo dos exames enviados. Analise com IA para gerar um
+          resumo clínico do documento.
+        </p>
+        <div className="mt-3">
+          <ExamUpload
+            patientId={patient.id}
+            onUploadComplete={() => setExamsReloadKey((k) => k + 1)}
+          />
+        </div>
+        <div className="mt-4">
+          <ExamsList patientId={patient.id} reloadKey={examsReloadKey} />
+        </div>
+      </CardHiro>
+
+      {/* Análise de valores laboratoriais (fluxo legado — extração de métricas) */}
+      <CardHiro className="rounded-2xl p-5">
+        <OverlineLabel>ANALISAR VALORES LABORATORIAIS</OverlineLabel>
         <div
           className="mt-3 flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-black/15 p-6 transition-colors hover:border-hiro-green/40 hover:bg-black/[0.02]"
           onDrop={(e) => { e.preventDefault(); appendFiles(e.dataTransfer.files); }}

@@ -19,6 +19,8 @@ import type { DetectedItem, Patient } from "@/lib/types";
 import { useDoctorStore } from "@/lib/doctorStore";
 import { specialtyConfigs } from "@/data/specialty-fields";
 import { ExamAnalysisPanel } from "@/components/consulta/ExamAnalysisPanel";
+import { ExamsList } from "@/components/exams/ExamsList";
+import { ExamUpload } from "@/components/exams/ExamUpload";
 
 function detectedItemMeta(item: DetectedItem) {
   const badgeClass =
@@ -98,6 +100,7 @@ export function ConsultationWorkspace({
     spo2: "",
   });
   const [freeNotes, setFreeNotes] = useState("");
+  const [examsReloadKey, setExamsReloadKey] = useState(0);
   const [examText, setExamText] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
   const recordingPanelRef = useRef<HTMLDivElement>(null);
@@ -667,6 +670,23 @@ Medicamentos ativos: ${sp.medications
               </div>
             )}
           </div>
+        </div>
+
+        <div className="glass-warm flex flex-col gap-4 rounded-2xl p-5">
+          <OverlineLabel>EXAMES DO PACIENTE</OverlineLabel>
+          <p className="text-xs leading-relaxed text-hiro-muted">
+            Exames arquivados. Envie novos arquivos ou analise com IA para
+            referenciar durante a consulta.
+          </p>
+          <ExamUpload
+            patientId={patient.id}
+            onUploadComplete={() => setExamsReloadKey((k) => k + 1)}
+          />
+          <ExamsList
+            patientId={patient.id}
+            reloadKey={examsReloadKey}
+            compact
+          />
         </div>
 
         <div className="glass-warm flex flex-col gap-4 rounded-2xl p-5">

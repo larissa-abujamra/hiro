@@ -7,6 +7,7 @@ import { formatDateBR } from "@/lib/formatDate";
 import { PatientSearch, type PatientSearchResult } from "@/components/patients/PatientSearch";
 import { useConsultationStore } from "@/lib/store";
 import type { Patient } from "@/lib/types";
+import { fileToBase64 } from "@/lib/file-utils";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -24,15 +25,6 @@ export interface Appointment {
   insurance?: string;
   status: string;
   notes?: string;
-  attached_exams?: AttachedExam[];
-}
-
-interface AttachedExam {
-  name: string;
-  type: string;
-  size: number;
-  data: string; // base64
-  uploadedAt: string;
 }
 
 type PatientMode = "new" | "existing" | null;
@@ -191,15 +183,6 @@ export function AppointmentModal({ isOpen, onClose, onSave, initial }: Appointme
     setFiles((prev) => [...prev, ...valid]);
   }
 
-  function fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
   // Build datetime
   function buildDatetime(): string | null {
     const parts = form.date.split("/");
@@ -268,16 +251,38 @@ export function AppointmentModal({ isOpen, onClose, onSave, initial }: Appointme
         }
       }
 
-      // Convert files to base64
-      const attachedExams = await Promise.all(
-        files.map(async (f) => ({
-          name: f.name,
-          type: f.type,
-          size: f.size,
-          data: await fileToBase64(f),
-          uploadedAt: new Date().toISOString(),
-        }))
-      );
+      // Upload pending exams to the central exams table (one row per file),
+      // linked to the patient. Requires patientId — skip if we don't have one.
+      if (patientId && files.length > 0) {
+        await Promise.all(
+          files.map(async (f) => {
+            try {
+              const base64 = await fileToBase64(f);
+              const res = await fetch("/api/exams", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  patient_id: patientId,
+                  name: f.name,
+                  file_name: f.name,
+                  file_data: base64,
+                  file_type: f.type,
+                }),
+              });
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                console.error("[AppointmentModal] exam upload failed:", err);
+              }
+            } catch (err) {
+              console.error("[AppointmentModal] exam upload error:", err);
+            }
+          }),
+        );
+      } else if (!patientId && files.length > 0) {
+        console.warn(
+          "[AppointmentModal] Files selected but no patient_id — exams not uploaded.",
+        );
+      }
 
       await onSave({
         patient_name: form.patient_name.trim(),
@@ -292,7 +297,6 @@ export function AppointmentModal({ isOpen, onClose, onSave, initial }: Appointme
         insurance: form.insurance || null,
         notes: form.notes || null,
         status: form.status,
-        ...(attachedExams.length > 0 ? { attached_exams: attachedExams } : {}),
       });
     } catch (err) {
       console.error("[Agenda] Save error:", err);
