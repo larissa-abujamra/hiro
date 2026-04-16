@@ -185,11 +185,11 @@ function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
               Foque no paciente.
               <br />
               <span className="italic font-light text-[#7fb69a]">
-                O <em className="font-semibold">Hiro</em> cuida do prontuário.
+                O <em className="font-semibold">hiro</em> cuida do prontuário.
               </span>
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/45 md:text-lg">
-              O Hiro usa inteligência artificial para transcrever suas consultas e
+              O hiro usa inteligência artificial para transcrever suas consultas e
               gerar prontuários SOAP completos — em segundos.
             </p>
           </div>
@@ -197,7 +197,7 @@ function HeroSection({ onScrollTo }: { onScrollTo: (id: string) => void }) {
       >
         <img
           src="/dashboard-preview.png"
-          alt="Dashboard do Hiro mostrando métricas, agenda e ações rápidas"
+          alt="Dashboard do hiro mostrando métricas, agenda e ações rápidas"
           className="w-full"
           draggable={false}
         />
@@ -509,7 +509,7 @@ function CTASection() {
             <br /> sua rotina?
           </h2>
           <p className="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-white/40">
-            Agende uma demonstração gratuita e veja o Hiro em ação.
+            Agende uma demonstração gratuita e veja o hiro em ação.
           </p>
           <a
             href="https://calendly.com/abujamra-usc/30min"
@@ -567,7 +567,7 @@ function Footer() {
 
         <div className="text-center text-[12px] text-white/20 md:text-right">
           <p>Feito no Brasil</p>
-          <p className="mt-0.5">2026 Hiro. Todos os direitos reservados.</p>
+          <p className="mt-0.5">2026 hiro. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

@@ -28,10 +28,10 @@ function NavItem({ href, label, icon, onClick, prefetch }: NavItemProps) {
       href={href}
       prefetch={prefetch}
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-r-xl border-l-2 py-2.5 pl-2.5 pr-3 text-sm font-medium transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hiro-active/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-[0.98] ${
+      className={`flex items-center gap-3 rounded-r-xl border-l-2 py-2.5 pl-2.5 pr-3 text-sm font-medium transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-[0.98] ${
         isActive
-          ? "border-hiro-active bg-[rgba(45,92,63,0.1)] text-hiro-text"
-          : "border-transparent text-hiro-muted hover:bg-black/[0.04] hover:text-hiro-text"
+          ? "border-white bg-white/15 text-white"
+          : "border-transparent text-white/70 hover:bg-white/10 hover:text-white"
       }`}
     >
       <span
@@ -71,8 +71,8 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <>
-      <div className="border-b border-black/10 px-5 py-5">
-        <p className="font-serif text-3xl font-normal tracking-tight text-hiro-text">Hiro.</p>
+      <div className="border-b border-white/15 px-5 py-5">
+        <p className="font-serif text-3xl font-normal tracking-tight text-white">hiro.</p>
       </div>
 
       <nav className="flex-1 space-y-0.5 px-3 py-4">
@@ -98,23 +98,23 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         />
       </nav>
 
-      <div className="border-t border-black/10 px-5 py-4">
+      <div className="border-t border-white/15 px-5 py-4">
         <Link
           href="/perfil"
           onClick={onNavigate}
-          className="group flex flex-col gap-0.5 rounded-xl p-1.5 -mx-1.5 transition-colors hover:bg-black/[0.04]"
+          className="group flex flex-col gap-0.5 rounded-xl p-1.5 -mx-1.5 transition-colors hover:bg-white/10"
         >
-          <span className="flex items-center gap-1.5 text-sm font-medium text-hiro-text group-hover:text-hiro-green transition-colors">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-white/90 group-hover:text-white transition-colors">
             {displayName}
             {showIncompleteDot && (
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-hiro-amber shrink-0" title="Perfil incompleto" />
             )}
           </span>
-          <span className="text-xs text-hiro-muted">{specialty}</span>
+          <span className="text-xs text-white/50">{specialty}</span>
         </Link>
         <button
           onClick={handleLogout}
-          className="mt-2 flex w-full items-center gap-2 rounded-xl px-1.5 py-1.5 -mx-1.5 text-xs text-hiro-muted transition-colors hover:bg-black/[0.04] hover:text-hiro-red"
+          className="mt-2 flex w-full items-center gap-2 rounded-xl px-1.5 py-1.5 -mx-1.5 text-xs text-white/50 transition-colors hover:bg-white/10 hover:text-white/80"
         >
           <LogOut className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
           Sair

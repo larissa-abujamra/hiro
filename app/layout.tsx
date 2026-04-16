@@ -13,7 +13,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Hiro",
+  title: "hiro",
   description: "Aplicação de apoio clínico com IA para médicos",
 };
 
