@@ -13,7 +13,7 @@ export function CompletedStep({ userName }: CompletedStepProps) {
   const steps = [
     { icon: <span className="font-bold text-hiro-green">1</span>, title: "Inicie uma consulta", desc: 'Clique em "Nova Consulta" e selecione o paciente' },
     { icon: <Mic className="h-5 w-5 text-hiro-green" strokeWidth={1.75} />, title: "Grave a conversa", desc: "Pressione gravar e converse normalmente com o paciente" },
-    { icon: <Sparkles className="h-5 w-5 text-hiro-green" strokeWidth={1.75} />, title: "Gere o prontuário", desc: "Com um clique, o Hiro gera o prontuário no seu estilo" },
+    { icon: <Sparkles className="h-5 w-5 text-hiro-green" strokeWidth={1.75} />, title: "Gere o prontuário", desc: "Com um clique, o hiro gera o prontuário no seu estilo" },
   ];
 
   return (
@@ -32,7 +32,7 @@ export function CompletedStep({ userName }: CompletedStepProps) {
           Tudo pronto, Dr(a). {firstName}!
         </h2>
         <p className="mt-2 text-[15px] text-hiro-muted leading-relaxed">
-          Seu Hiro está configurado e pronto para te ajudar nas consultas.
+          Seu hiro está configurado e pronto para te ajudar nas consultas.
         </p>
       </div>
 

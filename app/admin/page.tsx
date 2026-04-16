@@ -128,7 +128,7 @@ export default function AdminPage() {
           Admin
         </h1>
         <p className="mt-1 text-sm text-hiro-muted">
-          Painel administrativo do Hiro
+          Painel administrativo do hiro
         </p>
       </header>
 

@@ -176,7 +176,7 @@ export function OnboardingFlow({ userProfile }: OnboardingFlowProps) {
               disabled={isSubmitting}
               className="rounded-full bg-hiro-green px-8 py-3 text-[14px] font-medium text-white transition-all hover:bg-[#244a3b] disabled:opacity-50"
             >
-              {isSubmitting ? "Salvando..." : "Começar a usar o Hiro"}
+              {isSubmitting ? "Salvando..." : "Começar a usar o hiro"}
             </button>
           ) : (
             <button

@@ -190,7 +190,7 @@ export function DoctorProfileWorkspace() {
           <Field label="Clínica / Consultório">
             <input
               className={inputClass}
-              placeholder="Clínica Hiro"
+              placeholder="Clínica hiro"
               value={profile.clinica}
               onChange={(e) => setProfile({ clinica: e.target.value })}
             />

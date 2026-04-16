@@ -32,7 +32,7 @@ interface Feature {
 }
 
 const features: Feature[] = [
-  { title: "Transcrição em tempo real", subtitle: "Fale normalmente, o Hiro escuta", icon: "Mic" },
+  { title: "Transcrição em tempo real", subtitle: "Fale normalmente, o hiro escuta", icon: "Mic" },
   { title: "Prontuário SOAP automático", subtitle: "Gerado com um clique", icon: "FileText" },
   { title: "Prescrições digitais", subtitle: "Integração com Memed", icon: "Pill" },
   { title: "Agenda sincronizada", subtitle: "Google Calendar conectado", icon: "Calendar" },
@@ -143,7 +143,7 @@ export function FeaturesScroll() {
             </h2>
 
             <p className="mt-4 max-w-md text-base leading-relaxed text-white/40 md:text-lg">
-              O Hiro combina transcrição por voz, inteligência artificial e
+              O hiro combina transcrição por voz, inteligência artificial e
               integrações inteligentes para transformar a forma como você
               documenta suas consultas.
             </p>

@@ -53,7 +53,7 @@ export function UploadStyleStep({ files, onUpdate }: UploadStyleStepProps) {
       <div>
         <h2 className="font-serif text-2xl text-hiro-text">Aprenda meu estilo</h2>
         <p className="mt-2 text-[14px] text-hiro-muted leading-relaxed">
-          Faça upload de 3-5 prontuários que você escreveu anteriormente. O Hiro vai analisar e gerar notas no seu estilo pessoal.
+          Faça upload de 3-5 prontuários que você escreveu anteriormente. O hiro vai analisar e gerar notas no seu estilo pessoal.
         </p>
       </div>
 
@@ -127,7 +127,7 @@ export function UploadStyleStep({ files, onUpdate }: UploadStyleStepProps) {
         <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-hiro-amber" strokeWidth={1.75} />
         <div className="text-[13px] text-hiro-amber leading-relaxed">
           <p className="font-medium mb-0.5">Como funciona?</p>
-          <p>O Hiro analisa a estrutura, tom e terminologia dos seus prontuários para criar um perfil de escrita personalizado. Seus arquivos são processados com segurança e não são armazenados.</p>
+          <p>O hiro analisa a estrutura, tom e terminologia dos seus prontuários para criar um perfil de escrita personalizado. Seus arquivos são processados com segurança e não são armazenados.</p>
         </div>
       </div>
 

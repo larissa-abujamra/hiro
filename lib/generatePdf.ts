@@ -167,7 +167,7 @@ export function generateProntuarioPDF(data: ProntuarioData): void {
     doc.setPage(i);
     setStyle(7.5, "normal", C.muted);
     doc.text(
-      `Gerado pelo Hiro AI Medical Scribe  ·  Documento de uso clínico`,
+      `Gerado pelo hiro AI Medical Scribe  ·  Documento de uso clínico`,
       ML,
       PH - 10,
     );
