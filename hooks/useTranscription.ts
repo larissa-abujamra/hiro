@@ -58,7 +58,7 @@ export function useTranscription() {
 
       // 3. Connect to Deepgram — simple params, no keywords in URL
       const params = new URLSearchParams({
-        model: "nova-2",
+        model: "nova-3",
         language: "pt-BR",
         smart_format: "true",
         punctuate: "true",
