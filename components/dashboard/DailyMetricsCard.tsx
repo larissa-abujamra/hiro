@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useConsultationStore } from "@/lib/store";
 
 function isSameDay(dateStr: string, ref: Date): boolean {
@@ -12,42 +12,60 @@ function isSameDay(dateStr: string, ref: Date): boolean {
   );
 }
 
+interface DbConsultation {
+  id: string;
+  started_at: string;
+  duration_minutes?: number | null;
+  status: string;
+}
+
 export function DailyMetricsCard() {
-  const patients = useConsultationStore((s) => s.patients);
   const activityLog = useConsultationStore((s) => s.activityLog);
+  const [dbConsultations, setDbConsultations] = useState<DbConsultation[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      try {
+        const res = await fetch("/api/consultations?limit=50");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled || !Array.isArray(data)) return;
+        setDbConsultations(
+          data.filter((c: DbConsultation) => isSameDay(c.started_at, today)),
+        );
+      } catch {}
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   const metrics = useMemo(() => {
     const today = new Date();
 
-    // Gather all consultations across all patients that happened today
-    const todayConsultations = patients.flatMap((p) =>
-      p.consultations.filter((c) => isSameDay(c.date, today))
-    );
+    const consultasRealizadas = dbConsultations.filter(
+      (c) => c.status === "completed",
+    ).length;
 
-    const consultasRealizadas = todayConsultations.length;
-
-    // Count prontuarios generated today from activity log
     const prontuariosHoje = activityLog.filter(
-      (a) => a.type === "prontuario_generated" && isSameDay(a.timestamp, today)
+      (a) => a.type === "prontuario_generated" && isSameDay(a.timestamp, today),
     ).length;
 
-    // Count consultations started today from activity log (includes in-progress)
-    const consultasIniciadas = activityLog.filter(
-      (a) => a.type === "consultation_started" && isSameDay(a.timestamp, today)
-    ).length;
-
+    const consultasIniciadas = dbConsultations.length;
     const totalConsultas = Math.max(consultasIniciadas, consultasRealizadas);
 
-    // Average consultation time (in minutes)
-    const durations = todayConsultations
-      .map((c) => c.duration)
+    const durations = dbConsultations
+      .map((c) => c.duration_minutes ?? 0)
       .filter((d) => d > 0);
     const tempoMedio =
       durations.length > 0
         ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
         : 0;
 
-    // Docs percentage
     const docPercent =
       consultasRealizadas > 0
         ? Math.round((prontuariosHoje / consultasRealizadas) * 100)
@@ -60,7 +78,7 @@ export function DailyMetricsCard() {
       tempoMedio,
       docPercent,
     };
-  }, [patients, activityLog]);
+  }, [dbConsultations, activityLog]);
 
   const m = metrics;
 

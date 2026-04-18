@@ -29,6 +29,7 @@ import { MetricsSummaryCard } from "@/components/paciente/MetricsSummaryCard";
 import { AddMetricManually } from "@/components/paciente/AddMetricManually";
 import { CIDSearchModal } from "@/components/cid/CIDSearchModal";
 import { ExamesTab } from "@/components/paciente/ExamesTab";
+import { usePatientConsultations } from "@/hooks/usePatientConsultations";
 
 interface PatientProfileWorkspaceProps {
   patientId: string;
@@ -41,6 +42,7 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
   const patients = useConsultationStore((state) => state.patients);
   const updatePatient = useConsultationStore((state) => state.updatePatient);
   const patient = patients.find((item) => item.id === patientId) ?? patients[0];
+  const { consultations: dbConsultations, isLoading: isLoadingConsultations } = usePatientConsultations(patientId);
   const [activeTab, setActiveTab] = useState<"Histórico" | "Evolução" | "Exames">(
     "Histórico",
   );
@@ -348,7 +350,11 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
 
         {activeTab === "Histórico" && (
           <CardHiro className="rounded-2xl p-5">
-            {patient.consultations.length === 0 ? (
+            {isLoadingConsultations ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-hiro-green border-t-transparent" />
+              </div>
+            ) : dbConsultations.length === 0 ? (
               <div className="py-12 text-center">
                 <p className="text-[13px] text-hiro-muted">
                   Nenhuma consulta registrada ainda.
@@ -358,47 +364,48 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
                 </p>
               </div>
             ) : (
-              [...patient.consultations]
-                .reverse()
-                .map((consultation) => {
-                  const date = new Date(consultation.date);
-                  const day = `${date.getDate()}`.padStart(2, "0");
-                  const monthYear = date.toLocaleDateString("pt-BR", {
-                    month: "short",
-                    year: "2-digit",
-                  });
-                  return (
-                    <div
-                      key={consultation.id}
-                      className="flex gap-4 border-b border-black/[0.06] py-4 last:border-0"
-                    >
-                      <div className="w-16 flex-shrink-0 text-center">
-                        <p className="font-serif text-[15px] font-normal text-hiro-text">{day}</p>
-                        <p className="text-[11px] text-hiro-muted">{monthYear}</p>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[13px] font-medium text-hiro-text">
-                            {consultation.reason}
-                          </p>
-                          <span className="rounded-md bg-[#E6F1FB] px-2 py-0.5 text-[11px] font-medium text-[#185FA5]">
-                            {consultation.confirmedCids[0]?.code}
-                          </span>
-                        </div>
-                        <p className="mt-1 line-clamp-2 text-[12px] text-hiro-muted">
-                          {consultation.soap.p}
-                        </p>
-                        <Link
-                          href={`/consulta/${consultation.id}/resumo?patient=${patientId}`}
-                          className="link-arrow mt-1.5 text-[12px] font-medium text-hiro-green underline-offset-2 hover:underline"
-                        >
-                          <span>Ver prontuário completo</span>
-                          <span aria-hidden>→</span>
-                        </Link>
-                      </div>
+              dbConsultations.map((consultation) => {
+                const date = new Date(consultation.started_at);
+                const day = `${date.getDate()}`.padStart(2, "0");
+                const monthYear = date.toLocaleDateString("pt-BR", {
+                  month: "short",
+                  year: "2-digit",
+                });
+                return (
+                  <div
+                    key={consultation.id}
+                    className="flex gap-4 border-b border-black/[0.06] py-4 last:border-0"
+                  >
+                    <div className="w-16 flex-shrink-0 text-center">
+                      <p className="font-serif text-[15px] font-normal text-hiro-text">{day}</p>
+                      <p className="text-[11px] text-hiro-muted">{monthYear}</p>
                     </div>
-                  );
-                })
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-[13px] font-medium text-hiro-text">
+                          {consultation.chief_complaint || "Atendimento clínico"}
+                        </p>
+                        <BadgeStatus
+                          label={consultation.status === "completed" ? "Concluída" : consultation.status === "in_progress" ? "Em andamento" : "Cancelada"}
+                          status={consultation.status === "completed" ? "ready" : consultation.status === "in_progress" ? "pending" : "danger"}
+                        />
+                      </div>
+                      {consultation.plano && (
+                        <p className="mt-1 line-clamp-2 text-[12px] text-hiro-muted">
+                          {consultation.plano}
+                        </p>
+                      )}
+                      <Link
+                        href={`/consulta/${consultation.id}/resumo?patient=${patientId}`}
+                        className="link-arrow mt-1.5 text-[12px] font-medium text-hiro-green underline-offset-2 hover:underline"
+                      >
+                        <span>Ver prontuário completo</span>
+                        <span aria-hidden>→</span>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })
             )}
           </CardHiro>
         )}

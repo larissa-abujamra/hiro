@@ -21,6 +21,7 @@ import { specialtyConfigs } from "@/data/specialty-fields";
 import { ExamAnalysisPanel } from "@/components/consulta/ExamAnalysisPanel";
 import { ExamsList } from "@/components/exams/ExamsList";
 import { ExamUpload } from "@/components/exams/ExamUpload";
+import { usePatientConsultations } from "@/hooks/usePatientConsultations";
 
 function detectedItemMeta(item: DetectedItem) {
   const badgeClass =
@@ -152,6 +153,8 @@ export function ConsultationWorkspace({
     sourcePatients.find((item) => item.id === selectedPatientId) ??
     sourcePatients[0] ??
     null;
+
+  const { consultations: dbConsultations } = usePatientConsultations(patient?.id);
 
   const age = patient
     ? new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear()
@@ -370,7 +373,15 @@ Medicamentos ativos: ${sp.medications
     void analyzeCids(allTexts);
   }, [lines, analyzeCids]);
 
-  const lastConsultation = patient?.consultations.at(-1) ?? null;
+  const prevConsultations = dbConsultations.filter((c) => c.id !== consultationId && c.status === "completed");
+  const lastDbConsultation = prevConsultations[0] ?? null;
+  const lastConsultation = lastDbConsultation
+    ? {
+        date: lastDbConsultation.started_at?.split("T")[0] ?? "",
+        reason: lastDbConsultation.chief_complaint ?? "Atendimento clínico",
+        soap: lastDbConsultation.subjetivo ? { s: lastDbConsultation.subjetivo ?? "" } : null,
+      }
+    : null;
 
   const detectedByTypes = useMemo(() => {
     const exam = detectedItems.filter((i) => i.type === "exam");
@@ -421,7 +432,7 @@ Medicamentos ativos: ${sp.medications
             </div>
             <div className="flex items-center gap-3">
               <span className="rounded-full bg-white/60 px-2.5 py-1 text-[11px] text-hiro-muted">
-                {patient.consultations.length} consultas anteriores
+                {prevConsultations.length} consultas anteriores
               </span>
               <Link
                 href={`/pacientes/${patient.id}`}

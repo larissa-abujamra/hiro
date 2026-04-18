@@ -143,7 +143,6 @@ export function GeneratedSummaryWorkspace({
   patients,
 }: GeneratedSummaryWorkspaceProps) {
   const router = useRouter();
-  // Use useSearchParams for proper Next.js client-side URL param reading
   const [patientIdFromUrl, setPatientIdFromUrl] = useState<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -166,17 +165,43 @@ export function GeneratedSummaryWorkspace({
   const saveSummary = useConsultationStore((state) => state.saveSummary);
   const addActivity = useConsultationStore((state) => state.addActivity);
 
+  const [consultationData, setConsultationData] = useState<Record<string, unknown> | null>(null);
+  const [isLoadingConsultation, setIsLoadingConsultation] = useState(true);
+
+  useEffect(() => {
+    if (!consultationId) return;
+    let cancelled = false;
+    async function load() {
+      setIsLoadingConsultation(true);
+      try {
+        const res = await fetch(`/api/consultations/${consultationId}`);
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          console.log("[Prontuário] Loaded consultation from DB:", data?.id);
+          setConsultationData(data);
+        }
+      } catch (err) {
+        console.error("[Prontuário] Error loading consultation:", err);
+      } finally {
+        if (!cancelled) setIsLoadingConsultation(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [consultationId]);
+
+  const dbSoap = consultationData
+    ? {
+        s: (consultationData.subjetivo as string) ?? "",
+        o: (consultationData.objetivo as string) ?? "",
+        a: (consultationData.avaliacao as string) ?? "",
+        p: (consultationData.plano as string) ?? "",
+      }
+    : null;
+
+  const dbPatientId = (consultationData?.patient_id as string) ?? null;
   const sourcePatients = patientsInStore.length ? patientsInStore : patients;
-
-  // Find patient: from store selection, from URL param, or first available
-  const resolvedPatientId = selectedPatientId ?? patientIdFromUrl;
-
-  if (typeof window !== "undefined") {
-    console.log("[Prontuário] selectedPatientId:", selectedPatientId);
-    console.log("[Prontuário] patientIdFromUrl:", patientIdFromUrl);
-    console.log("[Prontuário] resolvedPatientId:", resolvedPatientId);
-    console.log("[Prontuário] patients in store:", sourcePatients.map((p) => `${p.id} (${p.name})`));
-  }
+  const resolvedPatientId = selectedPatientId ?? patientIdFromUrl ?? dbPatientId;
 
   const patient =
     (resolvedPatientId
@@ -185,15 +210,10 @@ export function GeneratedSummaryWorkspace({
     sourcePatients[0] ??
     null;
 
-  if (typeof window !== "undefined") {
-    console.log("[Prontuário] Resolved patient:", patient?.id, patient?.name);
-  }
-
-  // If viewing a saved consultation from history, load its data
   const savedConsultation = patient?.consultations.find(
     (c) => c.id === consultationId
   ) ?? null;
-  const isReviewMode = !generatedSoap && !!savedConsultation;
+  const isReviewMode = !generatedSoap && (!!savedConsultation || !!consultationData);
 
   const doctorProfile = useDoctorStore((s) => s.profile);
   const doctorName = doctorProfile.nome
@@ -205,7 +225,7 @@ export function GeneratedSummaryWorkspace({
   const [cidModalOpen, setCidModalOpen] = useState(false);
   const [addedCids, setAddedCids] = useState<{ code: string; name: string }[]>([]);
 
-  const soapSource = generatedSoap ?? savedConsultation?.soap ?? null;
+  const soapSource = generatedSoap ?? dbSoap ?? savedConsultation?.soap ?? null;
   const soap = useMemo(
     () => ({
       s: soapSource?.s ?? "",
@@ -254,10 +274,10 @@ export function GeneratedSummaryWorkspace({
   const resolvedTranscription = liveTranscription.length > 0
     ? liveTranscription
     : savedConsultation?.transcription ?? [];
-  const resolvedReason = consultationReason || savedConsultation?.reason || "Atendimento clínico";
+  const resolvedReason = consultationReason || (consultationData?.chief_complaint as string) || savedConsultation?.reason || "Atendimento clínico";
   const resolvedDuration = recordingSeconds > 0
     ? Math.max(1, Math.round(recordingSeconds / 60))
-    : savedConsultation?.duration ?? 0;
+    : (consultationData?.duration_minutes as number) ?? savedConsultation?.duration ?? 0;
 
   const detectedReturn = resolvedDetectedItems.find((item) => item.type === "return") ?? null;
   const suggestedReturnDate = useMemo(() => {
@@ -364,6 +384,14 @@ export function GeneratedSummaryWorkspace({
     });
     router.push(`/pacientes/${patient?.id ?? ""}`);
   };
+
+  if (isLoadingConsultation && !generatedSoap) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-hiro-green border-t-transparent" />
+      </div>
+    );
+  }
 
   if (!patient) return null;
 
