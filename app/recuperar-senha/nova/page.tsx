@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatedDots } from "@/components/ui/animated-dots";
-import { isValidEmail } from "@/lib/validation";
 
 const inputClass =
   "w-full rounded-xl border border-white/10 bg-white/6 px-4 py-3 text-[14px] text-white/90 placeholder:text-white/28 outline-none transition-all duration-200 focus:border-white/22 focus:bg-white/10 focus:shadow-[0_0_0_3px_rgba(255,255,255,0.05)]";
@@ -13,46 +12,40 @@ const inputClass =
 const labelClass =
   "block text-[11px] font-semibold uppercase tracking-widest text-white/35 mb-1.5";
 
-export default function LoginPage() {
+export default function NovaSenhaPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [emailError, setEmailError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!isValidEmail(email)) {
-      setEmailError("Email inválido");
+    if (password.length < 8) {
+      setError("A senha deve ter no mínimo 8 caracteres");
       return;
     }
-    setEmailError(null);
+    if (password !== confirm) {
+      setError("As senhas não coincidem");
+      return;
+    }
     setError(null);
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: updateError } = await supabase.auth.updateUser({ password });
 
-    if (error) {
-      setError(
-        error.message === "Invalid login credentials"
-          ? "E-mail ou senha incorretos."
-          : error.message
-      );
+    if (updateError) {
+      setError(updateError.message);
       setLoading(false);
       return;
     }
 
-    router.push("/dashboard");
-    router.refresh();
+    router.push("/login");
   }
 
   return (
-    /* Full-screen canvas — EtherealShadow needs a sized parent */
     <div className="relative min-h-screen w-full" style={{ background: "#0d1a12" }}>
-
-      {/* Animated dots background */}
       <div className="absolute inset-0 z-0">
         <AnimatedDots
           colors={[[45, 90, 71], [127, 182, 154]]}
@@ -61,7 +54,6 @@ export default function LoginPage() {
         />
       </div>
 
-      {/* Vignette overlay */}
       <div
         className="pointer-events-none absolute inset-0 z-[1]"
         aria-hidden
@@ -70,21 +62,14 @@ export default function LoginPage() {
         }}
       />
 
-      {/* Form centred on top */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm">
-
-          {/* Logo */}
           <div className="mb-8 text-center">
             <span className="font-serif text-4xl font-normal tracking-tight text-white/90">
               hiro.
             </span>
-            <p className="mt-1.5 text-[13px] text-white/35">
-              Assistente clínico com IA
-            </p>
           </div>
 
-          {/* Liquid glass card */}
           <div
             className="rounded-3xl border border-white/10 p-8"
             style={{
@@ -96,51 +81,41 @@ export default function LoginPage() {
             }}
           >
             <h1 className="mb-6 font-serif text-xl font-normal text-white/85">
-              Entrar na sua conta
+              Nova senha
             </h1>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="email" className={labelClass}>
-                  E-mail
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className={inputClass}
-                  placeholder="voce@clinica.com.br"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
-                />
-                {emailError && (
-                  <p className="mt-1 text-[12px] text-red-300/90">{emailError}</p>
-                )}
-              </div>
-
-              <div>
                 <label htmlFor="password" className={labelClass}>
-                  Senha
+                  Nova senha
                 </label>
                 <input
                   id="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
+                  minLength={8}
                   className={inputClass}
-                  placeholder="••••••••"
+                  placeholder="Mínimo 8 caracteres"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                <div className="mt-1.5 flex justify-end">
-                  <Link
-                    href="/recuperar-senha"
-                    className="text-[12px] text-white/40 underline-offset-2 transition-colors hover:text-white/70 hover:underline"
-                  >
-                    Esqueci minha senha
-                  </Link>
-                </div>
+              </div>
+
+              <div>
+                <label htmlFor="confirm" className={labelClass}>
+                  Confirmar senha
+                </label>
+                <input
+                  id="confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  className={inputClass}
+                  placeholder="••••••••"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                />
               </div>
 
               {error && (
@@ -173,18 +148,17 @@ export default function LoginPage() {
                   e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
-                {loading ? "Entrando…" : "Entrar"}
+                {loading ? "Salvando…" : "Salvar nova senha"}
               </button>
             </form>
           </div>
 
           <p className="mt-5 text-center text-[13px] text-white/32">
-            Ainda não tem conta?{" "}
             <Link
-              href="/signup"
+              href="/login"
               className="font-medium text-white/62 underline-offset-2 transition-colors hover:text-white/90 hover:underline"
             >
-              Criar conta
+              Voltar para login
             </Link>
           </p>
         </div>

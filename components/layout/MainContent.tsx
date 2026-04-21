@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/onboarding"];
+const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/onboarding", "/recuperar-senha"];
 
 export function MainContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

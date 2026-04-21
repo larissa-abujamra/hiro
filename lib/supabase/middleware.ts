@@ -37,6 +37,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/auth") ||
+    pathname.startsWith("/recuperar-senha") ||
     pathname.startsWith("/api/");
 
   // Unauthenticated user trying to access a protected route → /login

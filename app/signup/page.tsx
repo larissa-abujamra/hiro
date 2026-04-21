@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { specialtyOptions } from "@/data/specialty-fields";
+import { isValidEmail } from "@/lib/validation";
 
 const UF_LIST = [
   "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT",
@@ -102,6 +103,7 @@ export default function SignupPage() {
     especialidade: "",
   });
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
@@ -112,6 +114,11 @@ export default function SignupPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isValidEmail(fields.email)) {
+      setEmailError("Email inválido");
+      return;
+    }
+    setEmailError(null);
     setError(null);
     setLoading(true);
 
@@ -285,8 +292,11 @@ export default function SignupPage() {
                 className={inputClass}
                 placeholder="voce@clinica.com.br"
                 value={fields.email}
-                onChange={setField("email")}
+                onChange={(e) => { setFields((prev) => ({ ...prev, email: e.target.value })); setEmailError(null); }}
               />
+              {emailError && (
+                <p className="mt-1 text-[12px] text-red-300/90">{emailError}</p>
+              )}
             </div>
 
             <div>
