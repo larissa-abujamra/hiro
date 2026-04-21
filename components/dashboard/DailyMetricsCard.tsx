@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useConsultationStore } from "@/lib/store";
 
 function isSameDay(dateStr: string, ref: Date): boolean {
   const d = new Date(dateStr);
@@ -17,10 +16,10 @@ interface DbConsultation {
   started_at: string;
   duration_minutes?: number | null;
   status: string;
+  subjetivo?: string | null;
 }
 
 export function DailyMetricsCard() {
-  const activityLog = useConsultationStore((s) => s.activityLog);
   const [dbConsultations, setDbConsultations] = useState<DbConsultation[]>([]);
 
   useEffect(() => {
@@ -45,14 +44,12 @@ export function DailyMetricsCard() {
   }, []);
 
   const metrics = useMemo(() => {
-    const today = new Date();
-
     const consultasRealizadas = dbConsultations.filter(
       (c) => c.status === "completed",
     ).length;
 
-    const prontuariosHoje = activityLog.filter(
-      (a) => a.type === "prontuario_generated" && isSameDay(a.timestamp, today),
+    const prontuariosHoje = dbConsultations.filter(
+      (c) => c.status === "completed" && !!c.subjetivo,
     ).length;
 
     const consultasIniciadas = dbConsultations.length;
@@ -78,7 +75,7 @@ export function DailyMetricsCard() {
       tempoMedio,
       docPercent,
     };
-  }, [dbConsultations, activityLog]);
+  }, [dbConsultations]);
 
   const m = metrics;
 
@@ -180,8 +177,8 @@ export function DailyMetricsCard() {
           <p className="mt-2 text-sm text-hiro-muted">
             {m.tempoMedio > 0
               ? m.tempoMedio <= metaTempo
-                ? "Dentro da meta"
-                : "Acima da meta"
+                ? "Dentro da média"
+                : "Acima da média"
               : "Sem dados ainda"}
           </p>
           <div className="mt-auto pt-5">
