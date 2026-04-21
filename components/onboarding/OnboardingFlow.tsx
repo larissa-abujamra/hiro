@@ -56,6 +56,7 @@ export function OnboardingFlow({ userProfile }: OnboardingFlowProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          specialty: userProfile.specialty,
           specialtyFields: data.specialtyFields.filter((f) => f.enabled),
           writingPreferences: data.writingPreferences,
           specialtySettings: data.specialtySettings,

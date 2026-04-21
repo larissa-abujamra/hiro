@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Check, ChevronDown, ChevronUp, FileText, Pencil, Save, Sparkles, X } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { ButtonHiro } from "@/components/ui/ButtonHiro";
@@ -39,31 +38,36 @@ export function ProfilePreferences({ userId }: ProfilePreferencesProps) {
 
   async function load() {
     setLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("profiles")
-      .select("especialidade, specialty_fields, writing_preferences, writing_profile")
-      .eq("id", userId)
-      .single();
-
-    if (data) {
-      setSpecialty(data.especialidade ?? "Clínica Geral");
-      setFields(data.specialty_fields ?? []);
-      setPrefs(data.writing_preferences ?? null);
-      if (data.writing_profile) {
-        try { setProfile(typeof data.writing_profile === "string" ? JSON.parse(data.writing_profile) : data.writing_profile); } catch {}
+    try {
+      const res = await fetch(`/api/profile/preferences?userId=${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSpecialty(data.specialty ?? "Clínica Geral");
+        setFields(data.specialty_fields ?? []);
+        setPrefs(data.writing_preferences ?? null);
+        if (data.writing_profile) {
+          try { setProfile(typeof data.writing_profile === "string" ? JSON.parse(data.writing_profile) : data.writing_profile); } catch {}
+        }
+      } else {
+        console.error("[ProfilePreferences] Load failed:", res.status);
       }
+    } catch (err) {
+      console.error("[ProfilePreferences] Load error:", err);
     }
     setLoading(false);
   }
 
   async function save() {
     setSaving(true);
-    const supabase = createClient();
-    await supabase.from("profiles").update({
-      specialty_fields: fields,
-      writing_preferences: prefs,
-    }).eq("id", userId);
+    try {
+      await fetch("/api/profile/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ specialty_fields: fields, writing_preferences: prefs }),
+      });
+    } catch (err) {
+      console.error("[ProfilePreferences] Save error:", err);
+    }
     setSaving(false);
     setEditing(false);
   }
@@ -133,7 +137,7 @@ export function ProfilePreferences({ userId }: ProfilePreferencesProps) {
           </div>
           {expanded === "writing" ? <ChevronUp className="h-4 w-4 text-hiro-muted" /> : <ChevronDown className="h-4 w-4 text-hiro-muted" />}
         </button>
-        {expanded === "writing" && prefs && (
+        {expanded === "writing" && prefs && !editing && (
           <div className="border-t border-black/[0.06] px-5 py-4 space-y-3">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -153,6 +157,54 @@ export function ProfilePreferences({ userId }: ProfilePreferencesProps) {
                 {prefs.includeSuggestedCID && <span className="rounded-full bg-hiro-green/10 px-2.5 py-1 text-[11px] font-medium text-hiro-green">CID sugerido</span>}
                 {prefs.includeSuggestedReturn && <span className="rounded-full bg-hiro-green/10 px-2.5 py-1 text-[11px] font-medium text-hiro-green">Retorno sugerido</span>}
               </div>
+            </div>
+          </div>
+        )}
+        {expanded === "writing" && prefs && editing && (
+          <div className="border-t border-black/[0.06] px-5 py-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] text-hiro-muted mb-1">Tom</label>
+                <select
+                  value={prefs.tone}
+                  onChange={(e) => setPrefs({ ...prefs, tone: e.target.value as WritingPreferences["tone"] })}
+                  className="glass-card-input w-full rounded-xl px-3 py-2 text-[13px] text-hiro-text outline-none focus:ring-2 focus:ring-hiro-green/30"
+                >
+                  {Object.entries(TONE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] text-hiro-muted mb-1">Formato do Plano</label>
+                <select
+                  value={prefs.planFormat}
+                  onChange={(e) => setPrefs({ ...prefs, planFormat: e.target.value as WritingPreferences["planFormat"] })}
+                  className="glass-card-input w-full rounded-xl px-3 py-2 text-[13px] text-hiro-text outline-none focus:ring-2 focus:ring-hiro-green/30"
+                >
+                  {Object.entries(FORMAT_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-[11px] text-hiro-muted">Incluir automaticamente:</p>
+              {([
+                ["includeDateTime", "Data e hora"],
+                ["includeDuration", "Duração da consulta"],
+                ["includeSuggestedCID", "CID sugerido"],
+                ["includeSuggestedReturn", "Retorno sugerido"],
+              ] as const).map(([key, label]) => (
+                <label key={key} className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-black/[0.02]">
+                  <div className={`flex h-4.5 w-4.5 items-center justify-center rounded border ${prefs[key] ? "border-hiro-green bg-hiro-green" : "border-black/20"}`}>
+                    {prefs[key] && <Check className="h-3 w-3 text-white" strokeWidth={2.5} />}
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={prefs[key]}
+                    onChange={(e) => setPrefs({ ...prefs, [key]: e.target.checked })}
+                    className="sr-only"
+                  />
+                  <span className="text-[13px] text-hiro-text">{label}</span>
+                </label>
+              ))}
             </div>
           </div>
         )}

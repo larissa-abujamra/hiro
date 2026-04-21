@@ -32,14 +32,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Corpo inválido" }, { status: 400 });
   }
 
+  const updateData: Record<string, unknown> = {
+    onboarding_completed: true,
+    specialty_fields: body.specialtyFields ?? [],
+    writing_preferences: body.writingPreferences ?? {},
+    specialty_settings: body.specialtySettings ?? {},
+  };
+  if (body.specialty) {
+    updateData.specialty = body.specialty;
+  }
+
   const { error } = await admin
     .from("profiles")
-    .update({
-      onboarding_completed: true,
-      specialty_fields: body.specialtyFields ?? [],
-      writing_preferences: body.writingPreferences ?? {},
-      specialty_settings: body.specialtySettings ?? {},
-    })
+    .update(updateData)
     .eq("id", user.id);
 
   if (error) {
