@@ -29,7 +29,9 @@ export default async function DashboardPage() {
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-4 md:px-6 md:py-6">
       <DashboardGreeting serverName={serverName} serverSexo={serverSexo} />
 
-      <DailyMetricsCard />
+      <div className="hidden md:block">
+        <DailyMetricsCard />
+      </div>
 
       <div className="mt-6 grid grid-cols-1 items-start gap-5 overflow-visible md:grid-cols-2">
         <div className="min-w-0">
