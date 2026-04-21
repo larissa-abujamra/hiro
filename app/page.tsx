@@ -140,10 +140,10 @@ function Navbar({ onScrollTo }: { onScrollTo: (id: string) => void }) {
           ))}
         </div>
 
-        <div className="flex items-center gap-5 pl-3">
+        <div className="flex items-center gap-3 pl-3">
           <Link
             href="/login"
-            className="hidden text-[13px] font-medium text-white/50 transition-colors hover:text-white md:inline"
+            className="rounded-full border border-white/20 px-4 py-2 text-[13px] font-medium text-white/70 transition-all duration-200 hover:border-white/40 hover:text-white md:border-0 md:px-0 md:py-0"
           >
             Entrar
           </Link>
