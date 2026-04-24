@@ -113,12 +113,32 @@ export function ConsultationWorkspace({
     start,
     stop,
     wordCount,
+    reset: resetTranscription,
   } = useTranscription();
 
   const { analyze } = useDetection(consultationId);
   const { analyze: analyzeCids } = useCidSuggestions(consultationId);
 
   useEffect(() => setMounted(true), []);
+
+  const initializedConsultationRef = useRef<string | null>(null);
+  const resetTranscriptionRef = useRef(resetTranscription);
+  resetTranscriptionRef.current = resetTranscription;
+
+  useEffect(() => {
+    if (initializedConsultationRef.current === consultationId) return;
+    if (useConsultationStore.getState().isRecording) {
+      console.log("[ConsultationWorkspace] Skip reset — recording in progress", { consultationId });
+      return;
+    }
+    console.log("[ConsultationWorkspace] Reset for consultation", {
+      consultationId,
+      previousId: initializedConsultationRef.current,
+    });
+    initializedConsultationRef.current = consultationId;
+    useConsultationStore.getState().resetConsultationData();
+    resetTranscriptionRef.current();
+  }, [consultationId]);
 
   useEffect(() => {
     if (activeConsultationId !== consultationId) {

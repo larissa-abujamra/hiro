@@ -94,6 +94,7 @@ interface ConsultationState {
   saveConsultationToPatient: (consultation: Consultation) => void;
   addActivity: (entry: Omit<ActivityEntry, "id" | "timestamp">) => void;
   resetConsultation: () => void;
+  resetConsultationData: () => void;
 }
 
 const initialState = {
@@ -360,5 +361,19 @@ export const useConsultationStore = create<ConsultationState>((set) => ({
         dateOfBirth: "",
         sex: "Other",
       },
+    })),
+  resetConsultationData: () =>
+    set((state) => ({
+      ...state,
+      isRecording: false,
+      recordingSeconds: 0,
+      liveTranscription: [],
+      cidSuggestions: [],
+      diagnosticosSugeridos: [],
+      detectedItems: [],
+      generatedSoap: null,
+      generatedSpecialtyFields: {},
+      patientSummary: "",
+      flags: [],
     })),
 }));
