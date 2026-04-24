@@ -8,6 +8,9 @@ interface PedidoExamesData {
   uf: string;
   exames: string[];
   indicacaoClinica: string;
+  clinicAddress?: string;
+  rqe?: string;
+  especialidade?: string;
 }
 
 export function generatePedidoExamesPDF(data: PedidoExamesData) {
@@ -37,8 +40,16 @@ export function generatePedidoExamesPDF(data: PedidoExamesData) {
   });
   doc.text(`Data: ${dateStr}`, pw - margin, y, { align: "right" });
 
+  if (data.clinicAddress) {
+    doc.setFontSize(9);
+    doc.setTextColor(120, 120, 120);
+    const addrLines = doc.splitTextToSize(data.clinicAddress, usable / 1.6);
+    doc.text(addrLines, margin, y);
+    y += addrLines.length * 4;
+  }
+
   // Patient
-  y = 40;
+  y = Math.max(y + 4, 40);
   doc.setFontSize(9);
   doc.setTextColor(100, 100, 100);
   doc.text("PACIENTE", margin, y);
@@ -110,6 +121,13 @@ export function generatePedidoExamesPDF(data: PedidoExamesData) {
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 100, 100);
   doc.text(`CRM: ${data.crm} - ${data.uf}`, pw / 2, y, { align: "center" });
+  if (data.rqe) {
+    y += 5;
+    const rqeLine = data.especialidade
+      ? `RQE: ${data.rqe} - ${data.especialidade}`
+      : `RQE: ${data.rqe}`;
+    doc.text(rqeLine, pw / 2, y, { align: "center" });
+  }
 
   // Watermark
   y += 12;

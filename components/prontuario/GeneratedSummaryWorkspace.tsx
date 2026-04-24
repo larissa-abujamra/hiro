@@ -662,6 +662,9 @@ export function GeneratedSummaryWorkspace({
         doctorName={doctorName}
         crm={doctorProfile.crm || "000000"}
         uf={doctorProfile.uf || "SP"}
+        clinicAddress={doctorProfile.clinic_address || undefined}
+        rqe={doctorProfile.rqe || undefined}
+        especialidade={doctorProfile.especialidade || undefined}
         initialMeds={extractMedsFromPlan(soap.p, resolvedDetectedItems)}
       />
 
@@ -673,6 +676,9 @@ export function GeneratedSummaryWorkspace({
         doctorName={doctorName}
         crm={doctorProfile.crm || "000000"}
         uf={doctorProfile.uf || "SP"}
+        clinicAddress={doctorProfile.clinic_address || undefined}
+        rqe={doctorProfile.rqe || undefined}
+        especialidade={doctorProfile.especialidade || undefined}
         initialExames={extractExamesFromSoap(soap, resolvedDetectedItems)}
         initialIndicacao={soap.a}
       />

@@ -101,6 +101,8 @@ export default function SignupPage() {
     crm: "",
     uf: "",
     especialidade: "",
+    clinic_address: "",
+    rqe: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -134,6 +136,8 @@ export default function SignupPage() {
           crm: fields.crm.replace(/\D/g, ""),
           uf: fields.uf,
           especialidade: fields.especialidade,
+          clinic_address: fields.clinic_address,
+          rqe: fields.rqe,
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -153,6 +157,8 @@ export default function SignupPage() {
         crm: fields.crm.replace(/\D/g, ""),
         uf: fields.uf,
         especialidade: fields.especialidade,
+        clinic_address: fields.clinic_address || null,
+        rqe: fields.rqe || null,
       });
       router.push("/onboarding");
       router.refresh();
@@ -375,6 +381,40 @@ export default function SignupPage() {
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label htmlFor="rqe" className={labelClass}>
+                RQE (opcional)
+              </label>
+              <input
+                id="rqe"
+                type="text"
+                className={inputClass}
+                placeholder="Número do RQE"
+                value={fields.rqe}
+                onChange={setField("rqe")}
+              />
+              <p className="mt-1 text-[11px] text-white/40">
+                Registro de Qualificação de Especialista — aparece na assinatura
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="clinic_address" className={labelClass}>
+                Endereço da clínica (opcional)
+              </label>
+              <input
+                id="clinic_address"
+                type="text"
+                className={inputClass}
+                placeholder="Ex: Rua das Flores, 123 - Jardins, São Paulo - SP"
+                value={fields.clinic_address}
+                onChange={setField("clinic_address")}
+              />
+              <p className="mt-1 text-[11px] text-white/40">
+                Aparece nas receitas e pedidos de exame
+              </p>
             </div>
 
             {error && (

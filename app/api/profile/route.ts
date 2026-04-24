@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-export async function POST(request: Request) {
+async function getClients() {
   const cookieStore = await cookies();
-
   const auth = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -15,37 +14,32 @@ export async function POST(request: Request) {
       },
     }
   );
-
   const admin = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { cookies: { getAll: () => cookieStore.getAll(), setAll() {} } }
   );
+  return { auth, admin };
+}
 
+const ALLOWED_FIELDS = ["clinic_address", "rqe", "especialidade", "crm", "uf"] as const;
+
+export async function PUT(request: NextRequest) {
+  const { auth, admin } = await getClients();
   const { data: { user } } = await auth.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Corpo inválido" }, { status: 400 });
+  const body = await request.json();
+
+  const updateData: Record<string, unknown> = {};
+  for (const field of ALLOWED_FIELDS) {
+    if (body[field] !== undefined) {
+      updateData[field] = body[field] || null;
+    }
   }
 
-  const updateData: Record<string, unknown> = {
-    onboarding_completed: true,
-    specialty_fields: body.specialtyFields ?? [],
-    writing_preferences: body.writingPreferences ?? {},
-    specialty_settings: body.specialtySettings ?? {},
-  };
-  if (body.specialty) {
-    updateData.specialty = body.specialty;
-  }
-  if (body.clinic_address !== undefined) {
-    updateData.clinic_address = body.clinic_address || null;
-  }
-  if (body.rqe !== undefined) {
-    updateData.rqe = body.rqe || null;
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ success: true });
   }
 
   const { error } = await admin
@@ -54,7 +48,7 @@ export async function POST(request: Request) {
     .eq("id", user.id);
 
   if (error) {
-    console.error("[onboarding] Save error:", error);
+    console.error("[profile PUT] Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

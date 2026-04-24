@@ -14,6 +14,8 @@ export interface DoctorProfile {
   email: string;
   especialidade: string;
   clinica: string;
+  clinic_address: string;
+  rqe: string;
 }
 
 interface DoctorState {
@@ -35,6 +37,8 @@ const emptyProfile: DoctorProfile = {
   email: "",
   especialidade: "",
   clinica: "",
+  clinic_address: "",
+  rqe: "",
 };
 
 export const useDoctorStore = create<DoctorState>()(

@@ -13,6 +13,9 @@ interface PedidoExamesModalProps {
   doctorName: string;
   crm: string;
   uf: string;
+  clinicAddress?: string;
+  rqe?: string;
+  especialidade?: string;
   /** Pre-extracted from SOAP */
   initialExames: string[];
   /** Pre-filled from SOAP Assessment */
@@ -51,6 +54,9 @@ export function PedidoExamesModal({
   doctorName,
   crm,
   uf,
+  clinicAddress,
+  rqe,
+  especialidade,
   initialExames,
   initialIndicacao,
 }: PedidoExamesModalProps) {
@@ -98,6 +104,9 @@ export function PedidoExamesModal({
       uf,
       exames,
       indicacaoClinica: indicacao,
+      clinicAddress,
+      rqe,
+      especialidade,
     });
     setGenerated(true);
   }

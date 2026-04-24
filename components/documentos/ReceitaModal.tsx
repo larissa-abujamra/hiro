@@ -12,6 +12,9 @@ interface ReceitaModalProps {
   doctorName: string;
   crm: string;
   uf: string;
+  clinicAddress?: string;
+  rqe?: string;
+  especialidade?: string;
   /** Pre-extracted from SOAP Plan field */
   initialMeds: Medicamento[];
 }
@@ -28,6 +31,9 @@ export function ReceitaModal({
   doctorName,
   crm,
   uf,
+  clinicAddress,
+  rqe,
+  especialidade,
   initialMeds,
 }: ReceitaModalProps) {
   const [meds, setMeds] = useState<Medicamento[]>(
@@ -54,7 +60,7 @@ export function ReceitaModal({
   function handleGenerate() {
     const valid = meds.filter((m) => m.nome.trim());
     if (valid.length === 0) return;
-    generateReceitaPDF({ patientName, doctorName, crm, uf, medicamentos: valid });
+    generateReceitaPDF({ patientName, doctorName, crm, uf, medicamentos: valid, clinicAddress, rqe, especialidade });
     setGenerated(true);
   }
 

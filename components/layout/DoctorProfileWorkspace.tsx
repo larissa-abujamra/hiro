@@ -43,8 +43,23 @@ export function DoctorProfileWorkspace() {
   const setSelectedSpecialtyFields = useDoctorStore((s) => s.setSelectedSpecialtyFields);
   const [saved, setSaved] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinic_address: profile.clinic_address,
+          rqe: profile.rqe,
+          especialidade: profile.especialidade,
+          crm: profile.crm,
+          uf: profile.uf,
+        }),
+      });
+    } catch (err) {
+      console.error("[Profile] Save error:", err);
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -194,6 +209,22 @@ export function DoctorProfileWorkspace() {
               placeholder="Clínica hiro"
               value={profile.clinica}
               onChange={(e) => setProfile({ clinica: e.target.value })}
+            />
+          </Field>
+          <Field label="Endereço da clínica">
+            <input
+              className={inputClass}
+              placeholder="Ex: Rua das Flores, 123 - Jardins, São Paulo - SP"
+              value={profile.clinic_address}
+              onChange={(e) => setProfile({ clinic_address: e.target.value })}
+            />
+          </Field>
+          <Field label="RQE — Registro de Qualificação de Especialista">
+            <input
+              className={inputClass}
+              placeholder="Número do RQE"
+              value={profile.rqe}
+              onChange={(e) => setProfile({ rqe: e.target.value })}
             />
           </Field>
         </div>

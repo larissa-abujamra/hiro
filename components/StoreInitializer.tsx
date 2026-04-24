@@ -54,7 +54,8 @@ function syncDoctorProfile(user: User | null) {
     crm: meta.crm ?? "",
     uf: meta.uf ?? "",
     especialidade: meta.especialidade ?? "",
-    // Don't overwrite cpf/data_nascimento/clinica — they're only set via the profile page
+    clinic_address: meta.clinic_address ?? "",
+    rqe: meta.rqe ?? "",
   });
 }
 
