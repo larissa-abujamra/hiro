@@ -17,6 +17,7 @@ import { useTranscription } from "@/hooks/useTranscription";
 import { useConsultationStore } from "@/lib/store";
 import type { DetectedItem, Patient } from "@/lib/types";
 import { useDoctorStore } from "@/lib/doctorStore";
+import { MEDICAL_DISCLAIMER } from "@/lib/legal";
 import { specialtyConfigs } from "@/data/specialty-fields";
 import { ExamAnalysisPanel } from "@/components/consulta/ExamAnalysisPanel";
 import { ExamsList } from "@/components/exams/ExamsList";
@@ -843,6 +844,9 @@ Medicamentos ativos: ${sp.medications
             )}
           </ButtonHiro>
         </div>
+        <p className="mx-auto max-w-6xl px-4 pb-2 text-center text-[11px] leading-relaxed text-hiro-muted/70 sm:px-6">
+          {MEDICAL_DISCLAIMER}
+        </p>
       </div>
     </div>
   );

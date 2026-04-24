@@ -114,20 +114,6 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
       : null;
   const bmi = bmiValue ? bmiValue.toFixed(1) : "—";
 
-  const bmiBadge = (() => {
-    if (!bmiValue) return null;
-    if (bmiValue < 18.5) {
-      return { label: "Abaixo do peso", className: "bg-[#E6F1FB] text-[#185FA5]" };
-    }
-    if (bmiValue < 25) {
-      return { label: "Normal", className: "bg-[#D6E8DC] text-[#0F6E56]" };
-    }
-    if (bmiValue < 30) {
-      return { label: "Sobrepeso", className: "bg-[#FAEEDA] text-[#854F0B]" };
-    }
-    return { label: "Obesidade", className: "bg-[#FAECE7] text-[#993C1D]" };
-  })();
-
   const activeMedications = patient.medications.filter((med) => med.status === "active");
   const hasInteraction = (medName: string) =>
     activeMedications.some(
@@ -220,13 +206,6 @@ export function PatientProfileWorkspace({ patientId }: PatientProfileWorkspacePr
                 <div className="glass-card-input rounded-xl p-3 text-center">
                   <p className="mb-1 text-[11px] text-hiro-muted">IMC</p>
                   <p className="text-[15px] font-medium text-hiro-text">{bmi}</p>
-                  {bmiBadge && (
-                    <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${bmiBadge.className}`}
-                    >
-                      {bmiBadge.label}
-                    </span>
-                  )}
                 </div>
               </div>
 

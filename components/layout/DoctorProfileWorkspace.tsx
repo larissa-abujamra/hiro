@@ -8,6 +8,7 @@ import { ButtonHiro } from "@/components/ui/ButtonHiro";
 import { useDoctorStore } from "@/lib/doctorStore";
 import { SpecialtyFieldsConfig } from "@/components/settings/SpecialtyFieldsConfig";
 import { specialtyOptions } from "@/data/specialty-fields";
+import { MEDICAL_DISCLAIMER } from "@/lib/legal";
 
 const UF_LIST = [
   "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT",
@@ -229,6 +230,12 @@ export function DoctorProfileWorkspace() {
       </CardHiro>
     )}
 
+    <CardHiro className="mt-5 rounded-2xl p-5">
+      <OverlineLabel>AVISO LEGAL</OverlineLabel>
+      <p className="mt-2 text-[12px] leading-relaxed text-hiro-muted">
+        {MEDICAL_DISCLAIMER}
+      </p>
+    </CardHiro>
     </>
   );
 }

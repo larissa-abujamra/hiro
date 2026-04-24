@@ -41,6 +41,7 @@ import { CardHiro } from "@/components/ui/CardHiro";
 import { OverlineLabel } from "@/components/ui/OverlineLabel";
 import { BadgeStatus } from "@/components/ui/BadgeStatus";
 import { generateProntuarioPDF } from "@/lib/generatePdf";
+import { MEDICAL_DISCLAIMER } from "@/lib/legal";
 import { iconCircleGlassOnLightCard } from "@/lib/iconCircleGlassStyles";
 import { useConsultationStore } from "@/lib/store";
 import type { GeneratedDocument, Patient } from "@/lib/types";
@@ -634,6 +635,10 @@ export function GeneratedSummaryWorkspace({
             prescriptionItems={resolvedDetectedItems.filter((i) => i.type === "prescription")}
           />
         </CardHiro>
+
+        <p className="px-2 text-[12px] leading-relaxed text-hiro-muted/70">
+          {MEDICAL_DISCLAIMER}
+        </p>
       </aside>
 
       {/* ─── Modals ──────────────────────────────────────────────────────── */}

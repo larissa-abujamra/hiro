@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { CheckCircle, Mic, Sparkles } from "lucide-react";
+import { MEDICAL_DISCLAIMER } from "@/lib/legal";
 
 interface CompletedStepProps {
   userName: string;
@@ -58,6 +59,10 @@ export function CompletedStep({ userName }: CompletedStepProps) {
           </motion.div>
         ))}
       </div>
+
+      <p className="mx-auto max-w-md text-[12px] leading-relaxed text-hiro-muted/70">
+        {MEDICAL_DISCLAIMER}
+      </p>
     </div>
   );
 }
